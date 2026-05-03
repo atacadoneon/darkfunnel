@@ -210,11 +210,12 @@ export function CsvImportDialog({ open, onOpenChange }: Props) {
                 type="file" accept=".csv,text/csv" id="csv-file" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); }}
               />
-              <Button asChild>
-                <label htmlFor="csv-file" className="cursor-pointer">
-                  <Upload className="h-4 w-4 mr-2" /> Selecionar arquivo
-                </label>
-              </Button>
+              <label
+                htmlFor="csv-file"
+                className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+              >
+                <Upload className="h-4 w-4 mr-2" /> Selecionar arquivo
+              </label>
             </Card>
             <div className="text-xs text-muted-foreground space-y-1">
               <p><strong>Dica:</strong> Inclua um cabeçalho com nomes claros (Nome, Telefone, E-mail, Valor...).</p>
