@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   DndContext,
   DragOverlay,
@@ -45,7 +46,14 @@ export default function Pipeline() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [defaultStageId, setDefaultStageId] = useState<string | undefined>();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("funil");
+  const [params, setParams] = useSearchParams();
+  const tab = (params.get("tab") as Tab) || "funil";
+  const setTab = (t: Tab) => {
+    const next = new URLSearchParams(params);
+    if (t === "funil") next.delete("tab");
+    else next.set("tab", t);
+    setParams(next, { replace: true });
+  };
   const [search, setSearch] = useState("");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
