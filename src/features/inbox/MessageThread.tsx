@@ -5,10 +5,20 @@ import { cn } from "@/lib/utils";
 import type { MessageRow } from "./hooks";
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === "read") return <CheckCheck className="h-3 w-3 text-blue-500" />;
-  if (status === "delivered") return <CheckCheck className="h-3 w-3" />;
-  if (status === "sent") return <Check className="h-3 w-3" />;
-  if (status === "failed") return <span className="text-destructive text-[10px]">!</span>;
+  // Padrão WhatsApp:
+  // pending  → relógio
+  // sent     → 1 risquinho cinza
+  // delivered→ 2 risquinhos cinza (entregue ao lead)
+  // read     → 2 risquinhos azuis (lido pelo lead)
+  // failed   → !
+  if (status === "read")
+    return <CheckCheck className="h-3.5 w-3.5 text-[#53bdeb]" strokeWidth={2.5} />;
+  if (status === "delivered")
+    return <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={2.5} />;
+  if (status === "sent")
+    return <Check className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={2.5} />;
+  if (status === "failed")
+    return <span className="text-destructive text-[10px] font-bold">!</span>;
   return <Clock className="h-3 w-3 opacity-60" />;
 }
 
