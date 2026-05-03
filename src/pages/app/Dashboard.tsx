@@ -159,11 +159,90 @@ const CONV_ORIGINS = [
   { name: "Google Ads Site", v: 39, pct: 51, color: "hsl(45 95% 55%)" },
 ];
 
+type Scope = "atendimento" | "performance" | "conversoes" | "ads";
+type PeriodPreset =
+  | "today"
+  | "yesterday"
+  | "all"
+  | "this-week"
+  | "last-week"
+  | "this-month"
+  | "last-month"
+  | "this-quarter"
+  | "custom";
+
+const PERIOD_OPTIONS: { v: PeriodPreset; l: string }[] = [
+  { v: "today", l: "Hoje" },
+  { v: "yesterday", l: "Ontem" },
+  { v: "all", l: "Atual (todos)" },
+  { v: "this-week", l: "Esta Semana" },
+  { v: "last-week", l: "Semana Passada" },
+  { v: "this-month", l: "Este Mês" },
+  { v: "last-month", l: "Mês Passado" },
+  { v: "this-quarter", l: "Este Trimestre" },
+  { v: "custom", l: "Personalizado" },
+];
+
+const SCOPE_OPTIONS: { v: Scope; l: string; icon: React.ReactNode }[] = [
+  { v: "atendimento", l: "Atendimento", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+  { v: "performance", l: "Performance", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { v: "conversoes", l: "Conversões", icon: <Target className="h-3.5 w-3.5" /> },
+  { v: "ads", l: "Ads", icon: <Megaphone className="h-3.5 w-3.5" /> },
+];
+
+function computeRange(preset: PeriodPreset, custom?: DateRange): DateRange {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  switch (preset) {
+    case "today":
+      return { from: start, to: end };
+    case "yesterday": {
+      const y = new Date(start); y.setDate(y.getDate() - 1);
+      const ye = new Date(end); ye.setDate(ye.getDate() - 1);
+      return { from: y, to: ye };
+    }
+    case "this-week": {
+      const d = new Date(start); d.setDate(d.getDate() - d.getDay());
+      return { from: d, to: end };
+    }
+    case "last-week": {
+      const d = new Date(start); d.setDate(d.getDate() - d.getDay() - 7);
+      const e = new Date(d); e.setDate(d.getDate() + 6); e.setHours(23, 59, 59, 999);
+      return { from: d, to: e };
+    }
+    case "this-month": {
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { from: d, to: end };
+    }
+    case "last-month": {
+      const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const e = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return { from: d, to: e };
+    }
+    case "this-quarter": {
+      const q = Math.floor(now.getMonth() / 3);
+      const d = new Date(now.getFullYear(), q * 3, 1);
+      return { from: d, to: end };
+    }
+    case "all":
+      return { from: new Date(2000, 0, 1), to: end };
+    case "custom":
+      return custom ?? { from: start, to: end };
+  }
+}
+
 export default function Dashboard() {
   const { current } = useWorkspace();
-  const [period, setPeriod] = useState("custom");
-  const [team, setTeam] = useState("closer");
-  const [scope, setScope] = useState<"atendimento" | "ads" | "conversoes">("atendimento");
+  const { data: pipelines = [] } = usePipelines();
+  const [scope, setScope] = useState<Scope>("atendimento");
+  const [pipelineId, setPipelineId] = useState<string>("all");
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("this-month");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+
+  const range = useMemo(() => computeRange(periodPreset, customRange), [periodPreset, customRange]);
 
   const initials = useMemo(
     () =>
@@ -176,7 +255,7 @@ export default function Dashboard() {
     [current?.name]
   );
 
-  const periodLabel = "Personalizado";
+  const periodLabel = PERIOD_OPTIONS.find((p) => p.v === periodPreset)?.l ?? "Personalizado";
   const peakIdx = HOURS.indexOf(Math.max(...HOURS));
   const hoursData = HOURS.map((v, i) => ({ h: `${i}h`, v, peak: i === peakIdx }));
   const maxVol = Math.max(...VOLUME.map((v) => v.convs));
@@ -184,9 +263,18 @@ export default function Dashboard() {
   const scopeTitle =
     scope === "atendimento"
       ? `Atendimento — ${periodLabel}`
+      : scope === "performance"
+      ? `Performance — ${periodLabel}`
       : scope === "ads"
       ? "Performance de Anúncios por Criativo"
       : "Análise de Conversões por Origem";
+
+  const pipelineLabel =
+    pipelineId === "all"
+      ? "Todos os funis"
+      : pipelines.find((p) => p.id === pipelineId)?.name ?? "Funil";
+
+  const fmt = (d?: Date) => (d ? format(d, "dd/MM/yy", { locale: ptBR }) : "—");
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-[13px] md:p-4">
@@ -206,40 +294,89 @@ export default function Dashboard() {
                 {current?.name ?? "Workspace"}
               </h1>
               <p className="text-[11px] text-muted-foreground">
-                {new Date().toLocaleDateString("pt-BR")} -{" "}
-                {new Date().toLocaleDateString("pt-BR")}
+                {fmt(range.from)} - {fmt(range.to)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <FilterSelect
-                icon={<Users className="h-3.5 w-3.5" />}
-                value={team}
-                onChange={setTeam}
-                options={[
-                  { v: "todos", l: "Todos" },
-                  { v: "closer", l: "-CLOSER" },
-                ]}
-              />
-              <FilterSelect
-                icon={<MessageSquare className="h-3.5 w-3.5" />}
-                value={scope}
-                onChange={(v) => setScope(v as any)}
-                options={[
-                  { v: "atendimento", l: "Atendimento" },
-                  { v: "ads", l: "Ads" },
-                  { v: "conversoes", l: "Conversões" },
-                ]}
-              />
-              <FilterSelect
-                value={period}
-                onChange={setPeriod}
-                options={[
-                  { v: "custom", l: "Personalizado" },
-                  { v: "this-month", l: "Este Mês" },
-                  { v: "last-7", l: "Últimos 7 dias" },
-                  { v: "last-30", l: "Últimos 30 dias" },
-                ]}
-              />
+              {/* 0 - Dashboard selection */}
+              <Select value={scope} onValueChange={(v) => setScope(v as Scope)}>
+                <SelectTrigger className="h-8 w-auto rounded-full border-border/60 bg-background/40 px-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    {SCOPE_OPTIONS.find((o) => o.v === scope)?.icon}
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {SCOPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.v} value={o.v} className="text-xs">
+                      <div className="flex items-center gap-2">
+                        {o.icon}
+                        {o.l}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* 1 - Funil */}
+              <Select value={pipelineId} onValueChange={setPipelineId}>
+                <SelectTrigger className="h-8 w-auto rounded-full border-border/60 bg-background/40 px-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <GitBranch className="h-3.5 w-3.5" />
+                    <span className="truncate max-w-[140px]">{pipelineLabel}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs">Todos os funis</SelectItem>
+                  {pipelines.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-xs">
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* 2 - Período preset */}
+              <Select value={periodPreset} onValueChange={(v) => setPeriodPreset(v as PeriodPreset)}>
+                <SelectTrigger className="h-8 w-auto rounded-full border-border/60 bg-background/40 px-3 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERIOD_OPTIONS.map((o) => (
+                    <SelectItem key={o.v} value={o.v} className="text-xs">
+                      <div className="flex items-center gap-2">
+                        {periodPreset === o.v && <Check className="h-3 w-3" />}
+                        <span className={periodPreset === o.v ? "" : "ml-5"}>{o.l}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* 3 - Date range picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-8 rounded-full border-border/60 bg-background/40 px-3 text-xs font-normal"
+                  >
+                    <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
+                    {fmt(range.from)} - {fmt(range.to)}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-auto p-0">
+                  <Calendar
+                    mode="range"
+                    numberOfMonths={2}
+                    selected={range}
+                    onSelect={(r) => {
+                      setCustomRange(r);
+                      setPeriodPreset("custom");
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardContent>
@@ -247,7 +384,7 @@ export default function Dashboard() {
 
       <h2 className="text-base font-bold tracking-tight">{scopeTitle}</h2>
 
-      {scope === "atendimento" && (
+      {(scope === "atendimento" || scope === "performance") && (
         <AtendimentoView
           hoursData={hoursData}
           maxVol={maxVol}
