@@ -120,7 +120,7 @@ export default function Pipeline() {
     if (overData?.type === "stage" && overData.stage) targetStageId = overData.stage.id;
     else if (overData?.type === "deal" && overData.deal) targetStageId = overData.deal.stage_id;
     if (targetStageId === dragged.stage_id) return;
-    qc.setQueryData<Deal[]>(["deals", current.id], (old) =>
+    qc.setQueryData<Deal[]>(["deals", current.id, { includeArchived: showArchived }], (old) =>
       (old ?? []).map((d) => (d.id === dragged.id ? { ...d, stage_id: targetStageId } : d)));
     const { error } = await supabase.from("deals").update({ stage_id: targetStageId }).eq("id", dragged.id);
     if (error) { toast.error("Falha ao mover: " + error.message); qc.invalidateQueries({ queryKey: ["deals", current.id] }); }
