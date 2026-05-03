@@ -70,6 +70,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const { data: lossReasons = [] } = useLossReasons(true);
 
   const { data: contacts = [] } = useContacts();
+  const { data: channels = [] } = useChannels();
   const { data: members = [] } = useWorkspaceMembers();
   const { data: collabs = [] } = useDealCollaborators(deal?.id ?? null);
 
