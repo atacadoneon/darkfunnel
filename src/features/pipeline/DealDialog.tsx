@@ -35,6 +35,7 @@ import {
   useDealCollaborators, useIsAdmin, useWorkspaceMembers,
 } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
+import { useLossReasons } from "@/features/workspace/CatalogsAdmin";
 import type { Deal, Stage } from "./hooks";
 
 type Props = {
