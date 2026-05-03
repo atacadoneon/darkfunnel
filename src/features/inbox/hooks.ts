@@ -12,7 +12,17 @@ export type ConversationRow = {
   last_message_at: string | null;
   window_expires_at: string | null;
   assigned_user_id: string | null;
-  contacts: { display_name: string | null; phone_e164: string | null; profile_pic_url: string | null } | null;
+  created_at?: string;
+  updated_at?: string;
+  last_message_preview?: string | null;
+  contacts:
+    | {
+        display_name: string | null;
+        phone_e164: string | null;
+        profile_pic_url: string | null;
+        contact_tags?: { tag_id: string }[];
+      }
+    | null;
   channels: { kind: string; display_name: string } | null;
 };
 
@@ -27,7 +37,7 @@ export function useConversations() {
       const { data, error } = await supabase
         .from("conversations")
         .select(
-          "id,contact_id,channel_id,status,unread_count,last_message_at,window_expires_at,assigned_user_id,contacts(display_name,phone_e164,profile_pic_url),channels(kind,display_name)"
+          "id,contact_id,channel_id,status,unread_count,last_message_at,window_expires_at,assigned_user_id,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,contact_tags(tag_id)),channels(kind,display_name)"
         )
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .limit(500);
