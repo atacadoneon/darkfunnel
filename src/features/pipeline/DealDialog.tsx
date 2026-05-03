@@ -122,11 +122,11 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
       if (editing && deal) {
         const { error } = await supabase.from("deals").update(payload).eq("id", deal.id);
         if (error) throw error;
-        toast.success("Negócio atualizado");
+        toast.success("Lead atualizado");
       } else {
         const { error } = await supabase.from("deals").insert(payload);
         if (error) throw error;
-        toast.success("Negócio criado");
+        toast.success("Lead criado");
       }
 
       // garantir owner_id no contato vinculado (se ainda nulo)
@@ -182,7 +182,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
       .update({ archived_at: new Date().toISOString() })
       .eq("id", deal.id);
     if (error) return toast.error(error.message);
-    toast.success("Negócio arquivado");
+    toast.success("Lead arquivado");
     qc.invalidateQueries({ queryKey: ["deals", current.id] });
     onOpenChange(false);
   };
@@ -223,7 +223,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{editing ? "Editar negócio" : "Novo negócio"}</DialogTitle>
+          <DialogTitle>{editing ? "Editar Lead" : "Novo Lead"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -245,7 +245,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
                     <UserIcon className="h-4 w-4 text-muted-foreground" />
                     {selectedContact
                       ? selectedContact.display_name || selectedContact.phone_e164 || "Sem nome"
-                      : "Vincular contato (opcional)"}
+                      : "Vincular contato/chat (opcional)"}
                   </span>
                   <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
                 </Button>
@@ -435,7 +435,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Arquivar negócio?</AlertDialogTitle>
+                    <AlertDialogTitle>Arquivar Lead?</AlertDialogTitle>
                     <AlertDialogDescription>
                       O negócio sai do funil ativo, mas pode ser restaurado depois. O contato permanece intacto.
                     </AlertDialogDescription>
