@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Phone, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,7 @@ const statusVariant: Record<ChannelStatus, { label: string; className: string }>
   expired:      { label: "Expirado",    className: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30" },
 };
 
-export default function Channels() {
+export function ChannelsSection() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
   const { data: channels = [], isLoading } = useChannels();
@@ -37,14 +37,8 @@ export default function Channels() {
   const [editing, setEditing] = useState<ChannelRow | null>(null);
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
 
-  const onNew = () => {
-    setEditing(null);
-    setDialogOpen(true);
-  };
-  const onEdit = (c: ChannelRow) => {
-    setEditing(c);
-    setDialogOpen(true);
-  };
+  const onNew = () => { setEditing(null); setDialogOpen(true); };
+  const onEdit = (c: ChannelRow) => { setEditing(c); setDialogOpen(true); };
 
   const confirmDelete = async () => {
     if (!deleting || !current) return;
@@ -52,9 +46,8 @@ export default function Channels() {
       .from("channels")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", deleting.id);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (error) toast.error(error.message);
+    else {
       toast.success("Canal removido");
       qc.invalidateQueries({ queryKey: ["channels", current.id] });
     }
@@ -62,17 +55,17 @@ export default function Channels() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Canais</h1>
+          <h2 className="text-lg font-semibold">Canais</h2>
           <p className="text-sm text-muted-foreground">
-            Conecte instâncias UAZAPI ou números do WhatsApp Cloud API.
+            Crie quantos canais precisar — WhatsApp Business (QR) ou WhatsApp API (WABA).
           </p>
         </div>
         <Button onClick={onNew}>
           <Plus className="h-4 w-4 mr-2" />
-          Novo canal
+          Criar canal
         </Button>
       </div>
 
@@ -94,20 +87,19 @@ export default function Channels() {
         <div className="grid gap-3">
           {channels.map((c) => {
             const s = statusVariant[c.status];
+            const Icon = c.kind === "uazapi" ? Smartphone : BadgeCheck;
             return (
               <Card key={c.id} className="p-4 flex items-center gap-4">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Phone className="h-5 w-5 text-primary" />
+                  <Icon className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold truncate">{c.display_name}</h3>
                     <Badge variant="outline" className="text-xs">
-                      {c.kind === "uazapi" ? "UAZAPI" : "Cloud API"}
+                      {c.kind === "uazapi" ? "WhatsApp Business" : "WhatsApp API (WABA)"}
                     </Badge>
-                    <Badge variant="outline" className={`text-xs ${s.className}`}>
-                      {s.label}
-                    </Badge>
+                    <Badge variant="outline" className={`text-xs ${s.className}`}>{s.label}</Badge>
                   </div>
                   <div className="text-sm text-muted-foreground mt-0.5">
                     {c.phone_e164 ?? "Sem telefone"} · {c.policy}
@@ -129,7 +121,7 @@ export default function Channels() {
         <div className="flex gap-3">
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <strong>Credenciais (token UAZAPI / access_token Cloud)</strong> são armazenadas
+            <strong>Credenciais</strong> (token UAZAPI / access_token Cloud) são armazenadas
             cifradas (AES-256-GCM) pela Edge Function — disponível no próximo sprint.
             Por enquanto, o canal fica em status <em>pending</em> até o backend se conectar.
           </div>

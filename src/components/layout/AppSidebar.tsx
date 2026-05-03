@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Inbox, Users, Radio, Settings } from "lucide-react";
+import { Inbox, Users, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,6 @@ import {
 const items = [
   { title: "Inbox", url: "/app/inbox", icon: Inbox },
   { title: "Contatos", url: "/app/contacts", icon: Users },
-  { title: "Canais", url: "/app/channels", icon: Radio },
   { title: "Configurações", url: "/app/settings", icon: Settings },
 ];
 
