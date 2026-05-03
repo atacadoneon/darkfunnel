@@ -16,6 +16,7 @@ import ResetPassword from "@/pages/auth/ResetPassword";
 import AppLayout from "@/layouts/AppLayout";
 import Inbox from "@/pages/app/Inbox";
 import Settings from "@/pages/app/Settings";
+import Pipeline from "@/pages/app/Pipeline";
 import Placeholder from "@/pages/app/Placeholder";
 import NotFound from "@/pages/NotFound";
 
