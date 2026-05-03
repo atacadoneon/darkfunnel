@@ -15,6 +15,7 @@ import ForgotPassword from "@/pages/auth/ForgotPassword";
 import ResetPassword from "@/pages/auth/ResetPassword";
 import AppLayout from "@/layouts/AppLayout";
 import Inbox from "@/pages/app/Inbox";
+import Channels from "@/pages/app/Channels";
 import Placeholder from "@/pages/app/Placeholder";
 import NotFound from "@/pages/NotFound";
 
@@ -49,7 +50,7 @@ const App = () => (
                   <Route index element={<Navigate to="inbox" replace />} />
                   <Route path="inbox" element={<Inbox />} />
                   <Route path="contacts" element={<Placeholder title="Contatos" />} />
-                  <Route path="channels" element={<Placeholder title="Canais" />} />
+                  <Route path="channels" element={<Channels />} />
                   <Route path="settings" element={<Placeholder title="Configurações" />} />
                 </Route>
 
