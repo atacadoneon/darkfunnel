@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import {
   User, Tag as TagIcon, ShoppingCart, Paperclip, Calendar,
   Box, Megaphone, Plus, Trash2, Download, Loader2, History,
-  ArrowRight, Phone, Mail, Building2, MapPin,
+  ArrowRight, Phone, Mail, Building2, MapPin, MessageSquare,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
@@ -41,14 +42,58 @@ type Props = {
 };
 
 export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
+  const navigate = useNavigate();
+  const openConversation = async () => {
+    // tenta achar conversation pelo deal_id; fallback contact_id+channel_id
+    const { data: deal } = await supabase
+      .from("deals")
+      .select("contact_id, channel_id, workspace_id")
+      .eq("id", dealId)
+      .maybeSingle();
+    let convId: string | null = null;
+    const { data: c1 } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("deal_id", dealId)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+    convId = (c1 as any)?.id ?? null;
+    if (!convId && deal?.contact_id) {
+      let q = supabase
+        .from("conversations")
+        .select("id")
+        .eq("contact_id", deal.contact_id);
+      if ((deal as any).channel_id) q = q.eq("channel_id", (deal as any).channel_id);
+      const { data: c2 } = await q
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      convId = (c2 as any)?.id ?? null;
+    }
+    if (!convId) {
+      toast.error("Nenhuma conversa vinculada a este Lead.");
+      return;
+    }
+    onOpenChange(false);
+    navigate(`/app/inbox?conversation=${convId}`);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-5 pb-3 border-b">
-          <DialogTitle>Editar Lead</DialogTitle>
-          <DialogDescription className="text-primary/80">
-            Organizado por seções para preenchimento mais rápido.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle>Editar Lead</DialogTitle>
+              <DialogDescription className="text-primary/80">
+                Organizado por seções para preenchimento mais rápido.
+              </DialogDescription>
+            </div>
+            <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={openConversation}>
+              <MessageSquare className="h-3.5 w-3.5" /> Abrir conversa
+            </Button>
+          </div>
         </DialogHeader>
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-6 mt-3 grid grid-cols-7 h-auto bg-transparent p-1 gap-1 rounded-lg border">
