@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useConversations, useMessages } from "@/features/inbox/hooks";
 import { useConversationIdsByMessageSearch } from "@/features/inbox/filterHooks";
 import {
@@ -12,6 +12,7 @@ import { MessageThread } from "@/features/inbox/MessageThread";
 import { Composer } from "@/features/inbox/Composer";
 import { ContactPanel } from "@/features/inbox/ContactPanel";
 import { ConversationHeader } from "@/features/inbox/ConversationHeader";
+import { MessageSearchBar } from "@/features/inbox/MessageSearchBar";
 
 function sortConvs<T extends {
   last_message_at: string | null;
