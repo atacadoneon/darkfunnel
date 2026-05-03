@@ -40,7 +40,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
   return (
     <aside className="w-80 border-l flex flex-col overflow-y-auto bg-card hidden lg:flex">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-sm">Informações do Contato</h3>
+        <h3 className="font-semibold text-sm">Lead</h3>
       </div>
 
       <div className="p-4 flex flex-col items-center text-center border-b">
