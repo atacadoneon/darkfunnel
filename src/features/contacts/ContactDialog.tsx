@@ -63,6 +63,10 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
   const [pic, setPic] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [saving, setSaving] = useState(false);
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [originalTagIds, setOriginalTagIds] = useState<string[]>([]);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const { data: allTags = [] } = useTags();
 
   useEffect(() => {
     if (!open) return;
