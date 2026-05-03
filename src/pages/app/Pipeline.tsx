@@ -216,9 +216,20 @@ export default function Pipeline() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar leads..." className="pl-9 h-10 rounded-lg" />
         </div>
-        <Button variant="outline" className="h-10 gap-2" onClick={() => setFiltersOpen(true)}>
+        <Button variant="outline" className="h-10 gap-2 relative" onClick={() => setFiltersOpen(true)}>
           <SlidersHorizontal className="h-4 w-4" /> Filtros
+          {activeFilters > 0 && (
+            <Badge className="ml-1 h-5 px-1.5 rounded-full">{activeFilters}</Badge>
+          )}
         </Button>
+        {activeFilters > 0 && (
+          <Button variant="ghost" size="sm" className="h-10 gap-1 text-muted-foreground" onClick={() => setFilters(EMPTY_FILTERS)}>
+            <X className="h-3.5 w-3.5" /> Limpar
+          </Button>
+        )}
+        <div className="ml-auto text-xs text-muted-foreground">
+          {filteredDeals.length} de {deals.length} {deals.length === 1 ? "lead" : "leads"}
+        </div>
       </div>
 
       {/* Kanban */}
