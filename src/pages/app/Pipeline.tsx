@@ -6,7 +6,7 @@ import {
 } from "@dnd-kit/core";
 import {
   Plus, KanbanSquare, Settings as SettingsIcon, Upload, ChevronDown, Search, SlidersHorizontal, Users,
-  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer, X,
+  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer, X, List,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
