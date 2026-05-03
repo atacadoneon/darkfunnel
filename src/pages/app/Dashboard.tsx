@@ -12,6 +12,9 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -23,12 +26,17 @@ import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import {
   AlertTriangle,
   BarChart3,
+  CalendarDays,
+  Check,
   CheckCircle2,
   Clock,
   DollarSign,
+  GitBranch,
   LayoutGrid,
+  LineChart as LineIcon,
   MessageSquare,
   MousePointerClick,
+  Megaphone,
   PieChart as PieIcon,
   ShieldCheck,
   ShoppingCart,
@@ -37,8 +45,12 @@ import {
   TrendingDown,
   TrendingUp,
   Trophy,
+  User,
   Users,
 } from "lucide-react";
+import type { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type AccentTone = "danger" | "warning" | "success" | "info" | "purple";
 
