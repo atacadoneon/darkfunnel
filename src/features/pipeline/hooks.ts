@@ -53,7 +53,7 @@ export function useStages() {
   useEffect(() => {
     if (!current) return;
     const ch = supabase
-      .channel(`stages:${current.id}`)
+      .channel(`stages:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pipeline_stages", filter: `workspace_id=eq.${current.id}` },
@@ -88,7 +88,7 @@ export function useDeals() {
   useEffect(() => {
     if (!current) return;
     const ch = supabase
-      .channel(`deals:${current.id}`)
+      .channel(`deals:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "deals", filter: `workspace_id=eq.${current.id}` },
