@@ -130,23 +130,38 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         if (error) throw error;
         toast.success("Lead atualizado");
       } else {
-        // Reaproveitar Lead existente para o par (canal + contato), conforme regra Lead = Chat
+        // Regra Lead = Chat: Lead único por (canal + número de telefone)
         if (channelId && contactId) {
+          const phone = selectedContact?.phone_e164 ?? null;
+          // 1) procurar contatos com mesmo telefone no workspace
+          let contactIds: string[] = [contactId];
+          if (phone) {
+            const { data: sameNumber } = await supabase
+              .from("contacts")
+              .select("id")
+              .eq("workspace_id", current.id)
+              .eq("phone_e164", phone);
+            contactIds = Array.from(new Set([contactId, ...((sameNumber ?? []).map((r: any) => r.id))]));
+          }
           const { data: existing } = await supabase
             .from("deals")
-            .select("id,title")
+            .select("id,title,contact_id")
             .eq("workspace_id", current.id)
             .eq("channel_id", channelId)
-            .eq("contact_id", contactId)
+            .in("contact_id", contactIds)
             .is("archived_at", null)
             .is("deleted_at", null)
             .eq("status", "open")
             .limit(1)
             .maybeSingle();
           if (existing?.id) {
-            toast.info(`Já existe um Lead para este contato neste canal (${existing.title}). Abrindo o existente.`);
-            qc.invalidateQueries({ queryKey: ["deals", current.id] });
-            onOpenChange(false);
+            const ch = channels.find((c) => c.id === channelId);
+            setDuplicateLead({
+              id: existing.id,
+              title: existing.title,
+              channelName: ch?.display_name,
+              phone: phone ?? undefined,
+            });
             setSaving(false);
             return;
           }
