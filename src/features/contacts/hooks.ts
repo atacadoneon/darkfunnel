@@ -3,6 +3,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 
+export type IdentityKind = "whatsapp" | "instagram" | "email";
+
+export type ContactIdentity = {
+  id: string;
+  workspace_id: string;
+  contact_id: string;
+  kind: IdentityKind;
+  value: string;
+  is_primary: boolean;
+  created_at: string;
+};
+
 export type Contact = {
   id: string;
   workspace_id: string;
@@ -10,6 +22,7 @@ export type Contact = {
   phone_e164: string | null;
   profile_pic_url: string | null;
   created_at: string;
+  identities?: ContactIdentity[];
 };
 
 export function useContacts(search: string = "") {
@@ -22,7 +35,9 @@ export function useContacts(search: string = "") {
     queryFn: async (): Promise<Contact[]> => {
       let query = supabase
         .from("contacts")
-        .select("id,workspace_id,display_name,phone_e164,profile_pic_url,created_at")
+        .select(
+          "id,workspace_id,display_name,phone_e164,profile_pic_url,created_at,identities:contact_identities(id,workspace_id,contact_id,kind,value,is_primary,created_at)"
+        )
         .order("created_at", { ascending: false })
         .limit(500);
       if (search.trim()) {
@@ -45,9 +60,20 @@ export function useContacts(search: string = "") {
         { event: "*", schema: "public", table: "contacts", filter: `workspace_id=eq.${current.id}` },
         () => qc.invalidateQueries({ queryKey: ["contacts", current.id] })
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contact_identities", filter: `workspace_id=eq.${current.id}` },
+        () => qc.invalidateQueries({ queryKey: ["contacts", current.id] })
+      )
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
   }, [current, qc]);
 
   return q;
 }
+
+export const IDENTITY_LABELS: Record<IdentityKind, string> = {
+  whatsapp: "WhatsApp",
+  instagram: "Instagram",
+  email: "E-mail",
+};
