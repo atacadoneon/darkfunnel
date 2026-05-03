@@ -22,24 +22,26 @@ export type Contact = {
   phone_e164: string | null;
   profile_pic_url: string | null;
   created_at: string;
+  archived_at?: string | null;
   identities?: ContactIdentity[];
 };
 
-export function useContacts(search: string = "") {
+export function useContacts(search: string = "", includeArchived: boolean = false) {
   const { current } = useWorkspace();
   const qc = useQueryClient();
 
   const q = useQuery({
-    queryKey: ["contacts", current?.id, search],
+    queryKey: ["contacts", current?.id, search, includeArchived],
     enabled: !!current,
     queryFn: async (): Promise<Contact[]> => {
       let query = supabase
         .from("contacts")
         .select(
-          "id,workspace_id,display_name,phone_e164,profile_pic_url,created_at,identities:contact_identities(id,workspace_id,contact_id,kind,value,is_primary,created_at)"
+          "id,workspace_id,display_name,phone_e164,profile_pic_url,created_at,archived_at,identities:contact_identities(id,workspace_id,contact_id,kind,value,is_primary,created_at)"
         )
         .order("created_at", { ascending: false })
         .limit(500);
+      if (!includeArchived) query = query.is("archived_at", null);
       if (search.trim()) {
         const s = `%${search.trim()}%`;
         query = query.or(`display_name.ilike.${s},phone_e164.ilike.${s}`);

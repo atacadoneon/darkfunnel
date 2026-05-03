@@ -29,6 +29,7 @@ export type Deal = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  archived_at?: string | null;
   contact?: { id: string; display_name: string | null; phone_e164: string | null; profile_pic_url: string | null } | null;
 };
 
@@ -77,6 +78,7 @@ export function useDeals() {
         .from("deals")
         .select("*, contact:contacts(id,display_name,phone_e164,profile_pic_url)")
         .is("deleted_at", null)
+        .is("archived_at", null)
         .order("position", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as Deal[];
