@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useContacts } from "@/features/contacts/hooks";
 import {
-  useDealCollaborators, useIsAdmin, useWorkspaceMembers,
+  useDealCollaborators, useIsAdmin, useIsManagerOrAdmin, useWorkspaceMembers,
 } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import { useLossReasons } from "@/features/workspace/CatalogsAdmin";
@@ -50,6 +50,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const { current } = useWorkspace();
   const { user } = useAuth();
   const isAdmin = useIsAdmin();
+  const isManagerOrAdmin = useIsManagerOrAdmin();
   const qc = useQueryClient();
   const editing = !!deal;
 
@@ -78,7 +79,9 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   );
 
   const isOwner = !!deal && deal.assigned_to === user?.id;
-  const canManageCollabs = isAdmin || isOwner || !editing;
+  // Admin, gerente, dono ou negócio novo podem trocar responsável e gerenciar colaboradores
+  const canReassign = isManagerOrAdmin || isOwner || !editing;
+  const canManageCollabs = canReassign;
 
   useEffect(() => {
     if (open) {
@@ -294,7 +297,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
 
           <div className="space-y-1.5">
             <Label>Vendedor responsável</Label>
-            {isAdmin ? (
+            {canReassign ? (
               <Select value={assignedTo ?? user?.id ?? ""} onValueChange={setAssignedTo}>
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
@@ -310,7 +313,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
               <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
                 <Lock className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="truncate">{memberLabel(assignedTo ?? user?.id ?? "")}</span>
-                <Badge variant="outline" className="ml-auto text-[10px]">Somente admin altera</Badge>
+                <Badge variant="outline" className="ml-auto text-[10px]">Somente admin/dono altera</Badge>
               </div>
             )}
           </div>
