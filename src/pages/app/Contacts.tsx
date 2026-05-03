@@ -29,10 +29,13 @@ import { ContactDialog, IDENTITY_ICON } from "@/features/contacts/ContactDialog"
 import {
   MoreHorizontal,
   Search,
-  Trash2,
+  Archive,
+  ArchiveRestore,
   Pencil,
   Users,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,11 +44,12 @@ export default function Contacts() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const { data: contacts = [], isLoading } = useContacts(search);
+  const [showArchived, setShowArchived] = useState(false);
+  const { data: contacts = [], isLoading } = useContacts(search, showArchived);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
-  const [toDelete, setToDelete] = useState<Contact | null>(null);
+  const [toArchive, setToArchive] = useState<Contact | null>(null);
 
   const total = contacts.length;
   const withChannels = useMemo(
@@ -58,17 +62,21 @@ export default function Contacts() {
     setDialogOpen(true);
   };
 
-  const onConfirmDelete = async () => {
-    if (!toDelete || !current) return;
+  const onConfirmArchive = async () => {
+    if (!toArchive || !current) return;
+    const isArchived = !!toArchive.archived_at;
     try {
-      const { error } = await supabase.from("contacts").delete().eq("id", toDelete.id);
+      const { error } = await supabase
+        .from("contacts")
+        .update({ archived_at: isArchived ? null : new Date().toISOString() })
+        .eq("id", toArchive.id);
       if (error) throw error;
-      toast.success("Contato removido");
+      toast.success(isArchived ? "Contato restaurado" : "Contato arquivado");
       qc.invalidateQueries({ queryKey: ["contacts", current.id] });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
-      setToDelete(null);
+      setToArchive(null);
     }
   };
 
