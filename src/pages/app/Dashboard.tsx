@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { usePipelines } from "@/features/pipeline/leadEditHooks";
 import {
   AlertTriangle,
   BarChart3,
