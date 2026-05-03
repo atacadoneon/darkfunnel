@@ -27,6 +27,7 @@ import {
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { useStages } from "@/features/pipeline/hooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
+import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import {
   useAddNote, useConversationNotes,
   useScheduleMessage, useScheduledMessages, useCancelScheduled,
