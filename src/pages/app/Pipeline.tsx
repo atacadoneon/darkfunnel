@@ -256,67 +256,15 @@ export default function Pipeline() {
       <DealDialog open={dialogOpen} onOpenChange={setDialogOpen} stages={stages} deal={editingDeal} defaultStageId={defaultStageId} />
 
       {/* Filtros Sheet */}
-      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent className="w-[360px] sm:w-[400px] overflow-y-auto">
-          <SheetHeader><SheetTitle>Filtros</SheetTitle></SheetHeader>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label>Responsável</Label>
-              <Select value={fAssignee} onValueChange={setFAssignee}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Responsáveis</SelectItem>
-                  <SelectItem value="none">Sem vendedor</SelectItem>
-                  {members.map((m: any) => <SelectItem key={m.user_id} value={m.user_id}>{m.display_name ?? m.email}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Origem do Lead</Label>
-              <Select value={fOrigin} onValueChange={setFOrigin}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as Origens</SelectItem>
-                  {origins.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between border rounded-md p-3">
-              <div>
-                <div className="text-sm font-medium">Ver Arquivados</div>
-                <div className="text-xs text-muted-foreground">Mostrar leads que foram arquivados</div>
-              </div>
-              <Switch checked={fShowArchived} onCheckedChange={setFShowArchived} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label>Valor mín. (R$)</Label>
-                <Input value={fMin} onChange={(e) => setFMin(e.target.value)} type="number" placeholder="Mín" />
-              </div>
-              <div>
-                <Label>Valor máx. (R$)</Label>
-                <Input value={fMax} onChange={(e) => setFMax(e.target.value)} type="number" placeholder="Máx" />
-              </div>
-            </div>
-            <div>
-              <Label>Dias sem interação</Label>
-              <Select value={fInactive} onValueChange={setFInactive}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Qualquer</SelectItem>
-                  <SelectItem value="3">+ de 3 dias</SelectItem>
-                  <SelectItem value="7">+ de 7 dias</SelectItem>
-                  <SelectItem value="15">+ de 15 dias</SelectItem>
-                  <SelectItem value="30">+ de 30 dias</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="outline" className="w-full" onClick={() => {
-              setFAssignee("all"); setFOrigin("all"); setFMin(""); setFMax(""); setFInactive("any"); setFShowArchived(false);
-            }}>Limpar filtros</Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <FiltersSheet
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        filters={filters}
+        onChange={setFilters}
+        members={members}
+        origins={origins}
+        stages={stages}
+      />
 
       {/* Configuração modais */}
       <StagesDialog open={config === "stages"} onOpenChange={(v) => !v && setConfig(null)} />
