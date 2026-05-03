@@ -48,8 +48,8 @@ export default function Contacts() {
   const [toDelete, setToDelete] = useState<Contact | null>(null);
 
   const total = contacts.length;
-  const withPhone = useMemo(
-    () => contacts.filter((c) => !!c.phone_e164).length,
+  const withChannels = useMemo(
+    () => contacts.filter((c) => (c.identities ?? []).length > 0).length,
     [contacts]
   );
 
@@ -87,7 +87,7 @@ export default function Contacts() {
                 </div>
                 <h1 className="text-2xl font-bold tracking-tight">Contatos & Leads</h1>
                 <p className="text-sm text-muted-foreground">
-                  {total} contato{total === 1 ? "" : "s"} · {withPhone} com telefone · criados automaticamente pelo atendimento
+                  {total} contato{total === 1 ? "" : "s"} · {withChannels} com canais · criados automaticamente pelo atendimento
                 </p>
               </div>
             </div>
