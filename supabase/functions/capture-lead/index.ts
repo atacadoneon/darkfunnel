@@ -42,7 +42,13 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const token = url.searchParams.get("token") ?? req.headers.get("x-webhook-token");
+    // Token can come from: ?token=, header x-webhook-token, or last path segment
+    const pathToken = url.pathname.split("/").filter(Boolean).pop();
+    const queryToken = url.searchParams.get("token");
+    const headerToken = req.headers.get("x-webhook-token");
+    const token = queryToken
+      ?? headerToken
+      ?? (pathToken && pathToken !== "capture-lead" ? pathToken : null);
     if (!token) return json({ error: "missing token" }, 401);
 
     const sb = createClient(
