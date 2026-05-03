@@ -90,6 +90,12 @@ export default function Pipeline() {
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [config, setConfig] = useState<ConfigKey>(null);
+  const view = (params.get("view") as "kanban" | "list") || "kanban";
+  const setView = (v: "kanban" | "list") => {
+    const next = new URLSearchParams(params);
+    if (v === "kanban") next.delete("view"); else next.set("view", v);
+    setParams(next, { replace: true });
+  };
 
   const filters = useMemo(() => parseFiltersFromURL(params), [params]);
   const setFilters = (f: Filters) => setParams(writeFiltersToURL(params, f), { replace: true });
