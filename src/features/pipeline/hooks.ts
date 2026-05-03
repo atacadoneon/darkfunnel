@@ -74,7 +74,7 @@ export function useDeals() {
     queryFn: async (): Promise<Deal[]> => {
       const { data, error } = await supabase
         .from("deals")
-        .select("*")
+        .select("*, contact:contacts(id,display_name,phone_e164,profile_pic_url)")
         .is("deleted_at", null)
         .order("position", { ascending: true });
       if (error) throw error;
