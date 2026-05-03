@@ -37,7 +37,7 @@ export function useLeadOrigins() {
   useEffect(() => {
     if (!current) return;
     const ch = supabase
-      .channel(`origins:${current.id}`)
+      .channel(`origins:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "lead_origins" },
         () => qc.invalidateQueries({ queryKey: ["lead-origins", current.id] }))
       .subscribe();
