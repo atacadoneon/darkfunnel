@@ -1,26 +1,75 @@
 import { useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { useConversations, useMessages } from "@/features/inbox/hooks";
+import { useConversationIdsByMessageSearch } from "@/features/inbox/filterHooks";
+import {
+  InboxFilters,
+  DEFAULT_FILTERS,
+  type InboxFilters as InboxFiltersType,
+  type SortKey,
+} from "@/features/inbox/InboxFilters";
 import { ConversationList } from "@/features/inbox/ConversationList";
 import { MessageThread } from "@/features/inbox/MessageThread";
 import { Composer } from "@/features/inbox/Composer";
 import { ContactPanel } from "@/features/inbox/ContactPanel";
-import { Search } from "lucide-react";
+
+function sortConvs<T extends {
+  last_message_at: string | null;
+  unread_count: number;
+  updated_at?: string;
+  created_at?: string;
+}>(arr: T[], sort: SortKey): T[] {
+  const get = (c: T, k: "updated_at" | "created_at" | "last_message_at") =>
+    c[k] ? new Date(c[k] as string).getTime() : 0;
+  const cp = [...arr];
+  switch (sort) {
+    case "updated_desc": cp.sort((a, b) => get(b, "updated_at") - get(a, "updated_at")); break;
+    case "updated_asc":  cp.sort((a, b) => get(a, "updated_at") - get(b, "updated_at")); break;
+    case "created_desc": cp.sort((a, b) => get(b, "created_at") - get(a, "created_at")); break;
+    case "created_asc":  cp.sort((a, b) => get(a, "created_at") - get(b, "created_at")); break;
+    case "unread_desc":  cp.sort((a, b) => b.unread_count - a.unread_count); break;
+    case "unread_asc":   cp.sort((a, b) => a.unread_count - b.unread_count); break;
+    case "lastmsg_desc": cp.sort((a, b) => get(b, "last_message_at") - get(a, "last_message_at")); break;
+    case "lastmsg_asc":  cp.sort((a, b) => get(a, "last_message_at") - get(b, "last_message_at")); break;
+  }
+  return cp;
+}
 
 export default function Inbox() {
   const { data: conversations = [], isLoading } = useConversations();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [filter, setFilter] = useState("");
+  const [filters, setFilters] = useState<InboxFiltersType>(DEFAULT_FILTERS);
+
+  const { data: msgMatchIds } = useConversationIdsByMessageSearch(filters.message);
 
   const filtered = useMemo(() => {
-    if (!filter.trim()) return conversations;
-    const q = filter.toLowerCase();
-    return conversations.filter((c) => {
-      const n = (c.contacts?.display_name ?? "").toLowerCase();
-      const p = (c.contacts?.phone_e164 ?? "").toLowerCase();
-      return n.includes(q) || p.includes(q);
+    const q = filters.text.trim().toLowerCase();
+    let arr = conversations.filter((c) => {
+      if (q) {
+        const n = (c.contacts?.display_name ?? "").toLowerCase();
+        const p = (c.contacts?.phone_e164 ?? "").toLowerCase();
+        if (!n.includes(q) && !p.includes(q)) return false;
+      }
+      if (filters.channelId && c.channel_id !== filters.channelId) return false;
+      if (filters.assignee) {
+        if (filters.assignee === "unassigned") {
+          if (c.assigned_user_id) return false;
+        } else if (c.assigned_user_id !== filters.assignee) return false;
+      }
+      if (filters.status && c.status !== filters.status) return false;
+      if (filters.tagId) {
+        const tagIds = c.contacts?.contact_tags?.map((t) => t.tag_id) ?? [];
+        if (filters.tagId === "none") {
+          if (tagIds.length > 0) return false;
+        } else if (!tagIds.includes(filters.tagId)) return false;
+      }
+      if (filters.message.trim().length >= 2) {
+        if (!msgMatchIds || !msgMatchIds.has(c.id)) return false;
+      }
+      return true;
     });
-  }, [conversations, filter]);
+    arr = sortConvs(arr, filters.sort);
+    return arr;
+  }, [conversations, filters, msgMatchIds]);
 
   const selected = filtered.find((c) => c.id === selectedId) ?? null;
   const { data: messages = [] } = useMessages(selected?.id ?? null);
@@ -30,15 +79,7 @@ export default function Inbox() {
       {/* Lista */}
       <div className="w-80 border-r flex flex-col">
         <div className="p-3 border-b">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-8 h-9"
-            />
-          </div>
+          <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
         </div>
         <div className="flex-1 min-h-0">
           {isLoading ? (
