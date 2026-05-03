@@ -24,7 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, Trophy, XCircle, Trash2, User as UserIcon } from "lucide-react";
+import { Check, ChevronsUpDown, Trophy, XCircle, Archive, User as UserIcon } from "lucide-react";
 import { useContacts } from "@/features/contacts/hooks";
 import { cn } from "@/lib/utils";
 import type { Deal, Stage } from "./hooks";
@@ -112,14 +112,14 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     onOpenChange(false);
   };
 
-  const onDelete = async () => {
+  const onArchive = async () => {
     if (!deal || !current) return;
     const { error } = await supabase
       .from("deals")
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ archived_at: new Date().toISOString() })
       .eq("id", deal.id);
     if (error) return toast.error(error.message);
-    toast.success("Negócio excluído");
+    toast.success("Negócio arquivado");
     qc.invalidateQueries({ queryKey: ["deals", current.id] });
     onOpenChange(false);
   };
@@ -245,21 +245,21 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="gap-1.5 text-muted-foreground hover:text-destructive ml-auto"
+                    className="gap-1.5 text-muted-foreground ml-auto"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Excluir
+                    <Archive className="h-3.5 w-3.5" /> Arquivar
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir negócio?</AlertDialogTitle>
+                    <AlertDialogTitle>Arquivar negócio?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta ação remove o negócio do funil. O contato permanece intacto.
+                      O negócio sai do funil ativo, mas pode ser restaurado depois. O contato permanece intacto.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDelete}>Excluir</AlertDialogAction>
+                    <AlertDialogAction onClick={onArchive}>Arquivar</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
