@@ -302,39 +302,3 @@ function PlaybookDialog({ conversation, open, onOpenChange }: { conversation: Co
   );
 }
 
-function NotesDialog({ conversation, open, onOpenChange }: { conversation: ConversationRow; open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { data: notes = [] } = useConversationNotes(conversation.id);
-  const add = useAddNote();
-  const [body, setBody] = useState("");
-  const submit = async () => {
-    if (!body.trim()) return;
-    await add.mutateAsync({ conversation_id: conversation.id, body: body.trim() });
-    setBody("");
-  };
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><StickyNote className="h-4 w-4" /> Notas internas</DialogTitle>
-          <DialogDescription>Visíveis apenas para o time. Não são enviadas ao cliente.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Anote algo importante sobre essa conversa..." />
-          <Button onClick={submit} disabled={add.isPending || !body.trim()} className="w-full">
-            {add.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar nota"}
-          </Button>
-          <div className="space-y-2 max-h-72 overflow-auto border-t pt-3">
-            {notes.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma nota ainda.</p>
-            ) : notes.map((n) => (
-              <div key={n.id} className="rounded bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 p-2 text-sm">
-                <div className="whitespace-pre-wrap">{n.body}</div>
-                <div className="text-[10px] text-muted-foreground mt-1">{format(new Date(n.created_at), "dd/MM/yyyy HH:mm")}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
