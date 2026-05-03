@@ -137,13 +137,10 @@ export default function Contacts() {
             <div className="flex flex-col items-center justify-center gap-2 p-12 text-center">
               <Users className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                {search ? "Nenhum contato encontrado." : "Nenhum contato ainda."}
+                {search
+                  ? "Nenhum contato encontrado."
+                  : "Nenhum contato ainda. Eles aparecem aqui automaticamente quando uma conversa é iniciada no atendimento."}
               </p>
-              {!search && (
-                <Button size="sm" variant="outline" onClick={openNew} className="mt-2 gap-2">
-                  <Plus className="h-4 w-4" /> Adicionar primeiro contato
-                </Button>
-              )}
             </div>
           ) : (
             <ul className="divide-y divide-border/40">
