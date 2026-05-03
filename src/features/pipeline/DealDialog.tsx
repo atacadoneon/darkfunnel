@@ -31,6 +31,7 @@ import {
   User as UserIcon, Users, Lock, X,
 } from "lucide-react";
 import { useContacts } from "@/features/contacts/hooks";
+import { useChannels } from "@/features/channels/hooks";
 import {
   useDealCollaborators, useIsAdmin, useIsManagerOrAdmin, useWorkspaceMembers,
 } from "@/features/workspace/permissions";
