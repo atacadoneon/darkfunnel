@@ -211,11 +211,15 @@ export default function Pipeline() {
       {/* Tabs */}
       <div className="px-4 md:px-6 pt-4">
         <div className="inline-flex bg-muted/60 rounded-lg p-1 gap-1">
-          {(["funil", "banco", "dashboard"] as Tab[]).map((t) => (
-            <button key={t} onClick={() => setTab(t)}
-              className={cn("px-4 py-1.5 text-sm font-medium rounded-md capitalize transition-colors",
-                tab === t ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>
-              {t}
+          {([
+            { k: "funil", label: "Funil" },
+            { k: "banco", label: "Leads" },
+            { k: "dashboard", label: "Dashboard" },
+          ] as { k: Tab; label: string }[]).map((t) => (
+            <button key={t.k} onClick={() => setTab(t.k)}
+              className={cn("px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                tab === t.k ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>
+              {t.label}
             </button>
           ))}
         </div>
