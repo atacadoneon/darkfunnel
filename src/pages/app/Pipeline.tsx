@@ -89,35 +89,13 @@ export default function Pipeline() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [config, setConfig] = useState<ConfigKey>(null);
 
-  // filtros
-  const [fAssignee, setFAssignee] = useState("all");
-  const [fOrigin, setFOrigin] = useState("all");
-  const [fShowArchived, setFShowArchived] = useState(false);
-  const [fMin, setFMin] = useState(""); const [fMax, setFMax] = useState("");
-  const [fInactive, setFInactive] = useState("any");
+  const filters = useMemo(() => parseFiltersFromURL(params), [params]);
+  const setFilters = (f: Filters) => setParams(writeFiltersToURL(params, f), { replace: true });
+  const activeFilters = countActive(filters);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const filteredDeals = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return deals.filter((d) => {
-      if (q && !(d.title.toLowerCase().includes(q) || d.contact?.display_name?.toLowerCase().includes(q) || d.contact?.phone_e164?.toLowerCase().includes(q))) return false;
-      if (fAssignee !== "all") {
-        if (fAssignee === "none" && d.assigned_to) return false;
-        if (fAssignee !== "none" && d.assigned_to !== fAssignee) return false;
-      }
-      if (fOrigin !== "all" && (d as any).origin_id !== fOrigin) return false;
-      if (fMin && d.value_cents < Number(fMin) * 100) return false;
-      if (fMax && d.value_cents > Number(fMax) * 100) return false;
-      if (fInactive !== "any") {
-        const days = Number(fInactive);
-        const last = (d as any).last_interaction_at ?? d.updated_at;
-        const diff = (Date.now() - new Date(last).getTime()) / 86400000;
-        if (diff < days) return false;
-      }
-      return true;
-    });
-  }, [deals, search, fAssignee, fOrigin, fMin, fMax, fInactive]);
+  const filteredDeals = useMemo(() => applyFilters(deals, filters, search), [deals, filters, search]);
 
   const dealsByStage = useMemo(() => {
     const m: Record<string, Deal[]> = {};
