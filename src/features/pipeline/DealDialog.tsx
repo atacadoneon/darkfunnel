@@ -555,6 +555,37 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!duplicateLead} onOpenChange={(v) => { if (!v) setDuplicateLead(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Lead já existe neste canal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Já existe um Lead{duplicateLead?.phone ? ` para o número ${duplicateLead.phone}` : ""}
+              {duplicateLead?.channelName ? ` no canal "${duplicateLead.channelName}"` : ""}:{" "}
+              <strong>{duplicateLead?.title}</strong>.
+              <br />
+              Não é permitido criar dois Leads com o mesmo número no mesmo canal. Abra o Lead existente para continuar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDuplicateLead(null)}>Fechar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!duplicateLead) return;
+                const dupId = duplicateLead.id;
+                setDuplicateLead(null);
+                qc.invalidateQueries({ queryKey: ["deals", current?.id] });
+                onOpenChange(false);
+                // dispara evento global p/ Pipeline abrir o Lead existente
+                window.dispatchEvent(new CustomEvent("open-deal", { detail: { dealId: dupId } }));
+              }}
+            >
+              Abrir Lead existente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
