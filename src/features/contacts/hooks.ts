@@ -56,7 +56,7 @@ export function useContacts(search: string = "", includeArchived: boolean = fals
   useEffect(() => {
     if (!current) return;
     const ch = supabase
-      .channel(`contacts:${current.id}`)
+      .channel(`contacts:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "contacts", filter: `workspace_id=eq.${current.id}` },
