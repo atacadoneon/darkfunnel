@@ -13,7 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageCircle, Instagram, Mail } from "lucide-react";
+import { Plus, Trash2, MessageCircle, Instagram, Mail, Tag as TagIcon, X } from "lucide-react";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import { useTags } from "@/features/inbox/filterHooks";
 import {
   IDENTITY_LABELS,
   type Contact,
