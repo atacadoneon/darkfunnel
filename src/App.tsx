@@ -53,7 +53,7 @@ const App = () => (
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="inbox" element={<Inbox />} />
-                  <Route path="contacts" element={<Contacts />} />
+                  <Route path="contacts" element={<Navigate to="/app/pipeline?tab=banco" replace />} />
                   <Route path="pipeline" element={<Pipeline />} />
                   <Route path="deals" element={<Navigate to="/app/pipeline" replace />} />
                   <Route path="email" element={<Placeholder title="Email Marketing" />} />

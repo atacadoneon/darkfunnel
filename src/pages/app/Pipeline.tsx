@@ -31,6 +31,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import Contacts from "@/pages/app/Contacts";
 
 type Tab = "funil" | "banco" | "dashboard";
 
@@ -237,8 +238,8 @@ export default function Pipeline() {
       )}
 
       {tab === "banco" && (
-        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-          Banco de leads · em breve
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <Contacts />
         </div>
       )}
       {tab === "dashboard" && (
