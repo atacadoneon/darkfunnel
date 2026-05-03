@@ -1,8 +1,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
-import { Circle, Clock, MessageCircle, Bell, Pencil, MoreHorizontal, User } from "lucide-react";
+import { Circle, Clock, MessageCircle, Bell, Pencil, MoreHorizontal, User, Users } from "lucide-react";
 import { formatMoney, type Deal } from "./hooks";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -22,6 +23,7 @@ function timeAgo(iso: string): string {
 }
 
 export function DealCard({ deal, onClick, overlay }: Props) {
+  const { user } = useAuth();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id, data: { type: "deal", deal } });
 
@@ -34,6 +36,7 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const initial = (contactLabel || deal.title).trim().charAt(0).toUpperCase() || "?";
   const ago = timeAgo(deal.updated_at ?? deal.created_at);
   const hasValue = deal.value_cents > 0;
+  const notMine = !!deal.assigned_to && deal.assigned_to !== user?.id;
 
   return (
     <Card
@@ -51,6 +54,14 @@ export function DealCard({ deal, onClick, overlay }: Props) {
       <div className="flex items-start gap-2">
         <Circle className="h-4 w-4 text-primary mt-0.5 shrink-0" strokeWidth={2} />
         <h4 className="font-semibold text-sm flex-1 truncate">{deal.title}</h4>
+        {notMine && (
+          <span
+            className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-500 border border-blue-500/20 shrink-0 inline-flex items-center gap-1"
+            title="Compartilhado com você"
+          >
+            <Users className="h-2.5 w-2.5" /> shared
+          </span>
+        )}
         <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 shrink-0">
           {ago}
         </span>
