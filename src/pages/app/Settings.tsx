@@ -2,11 +2,13 @@ import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { ChannelsSection } from "@/features/channels/ChannelsSection";
-import { Settings2, Radio, LineChart, Plug, Users } from "lucide-react";
+import { TagsAdminSection, LossReasonsAdminSection } from "@/features/workspace/CatalogsAdmin";
+import { Settings2, Radio, LineChart, Plug, Users, Tags } from "lucide-react";
 
 const TABS = [
   { value: "preferences",  label: "Preferências", icon: Settings2 },
   { value: "channels",     label: "Canais",       icon: Radio },
+  { value: "catalogs",     label: "Cadastros",    icon: Tags },
   { value: "tracking",     label: "Trackeamento", icon: LineChart },
   { value: "integrations", label: "Integrações",  icon: Plug },
   { value: "users",        label: "Usuários",     icon: Users },
