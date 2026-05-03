@@ -30,8 +30,10 @@ export function DealCard({ deal, onClick, overlay }: Props) {
     transition,
   };
 
-  const initial = deal.title.trim().charAt(0).toUpperCase() || "?";
+  const contactLabel = deal.contact?.display_name || deal.contact?.phone_e164 || null;
+  const initial = (contactLabel || deal.title).trim().charAt(0).toUpperCase() || "?";
   const ago = timeAgo(deal.updated_at ?? deal.created_at);
+  const hasValue = deal.value_cents > 0;
 
   return (
     <Card
@@ -58,7 +60,18 @@ export function DealCard({ deal, onClick, overlay }: Props) {
         <span className="h-4 w-4 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-foreground">
           {initial}
         </span>
-        <span className="truncate">{deal.title}</span>
+        {contactLabel ? (
+          <span className="truncate">{contactLabel}</span>
+        ) : (
+          <span className="flex items-center gap-1 italic opacity-70">
+            <User className="h-3 w-3" /> sem contato
+          </span>
+        )}
+        {hasValue && (
+          <span className="ml-auto font-semibold text-foreground">
+            {formatMoney(deal.value_cents, deal.currency)}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-6">
