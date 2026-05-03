@@ -352,6 +352,79 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
             )}
           </div>
 
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <TagIcon className="h-3.5 w-3.5" /> Tags
+              </Label>
+              <Popover open={tagPickerOpen} onOpenChange={setTagPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs">
+                    <Plus className="h-3 w-3" /> Aplicar tag
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0" align="end">
+                  <Command>
+                    <CommandInput placeholder="Buscar tag..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        Nenhuma tag cadastrada. Peça a um admin para criar em Configurações → Cadastros.
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {allTags.map((t) => {
+                          const checked = tagIds.includes(t.id);
+                          return (
+                            <CommandItem
+                              key={t.id}
+                              value={t.name}
+                              onSelect={() =>
+                                setTagIds((arr) =>
+                                  checked ? arr.filter((x) => x !== t.id) : [...arr, t.id]
+                                )
+                              }
+                            >
+                              <span className="h-2 w-2 rounded-full mr-2" style={{ background: t.color }} />
+                              <span className="flex-1">{t.name}</span>
+                              {checked && <span className="text-xs text-primary">✓</span>}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            {tagIds.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Nenhuma tag aplicada.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {tagIds.map((id) => {
+                  const t = allTags.find((x) => x.id === id);
+                  if (!t) return null;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+                      style={{ borderColor: t.color }}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />
+                      {t.name}
+                      <button
+                        type="button"
+                        onClick={() => setTagIds((arr) => arr.filter((x) => x !== id))}
+                        className="ml-0.5 text-muted-foreground hover:text-destructive"
+                        aria-label="Remover"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancelar
