@@ -68,6 +68,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [lossOpen, setLossOpen] = useState(false);
   const [lossReasonId, setLossReasonId] = useState<string | null>(null);
   const { data: lossReasons = [] } = useLossReasons(true);
+  const [duplicateLead, setDuplicateLead] = useState<{ id: string; title: string; channelName?: string; phone?: string } | null>(null);
 
   const { data: contacts = [] } = useContacts();
   const { data: channels = [] } = useChannels();
