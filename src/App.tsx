@@ -19,6 +19,7 @@ import Settings from "@/pages/app/Settings";
 import Pipeline from "@/pages/app/Pipeline";
 import Placeholder from "@/pages/app/Placeholder";
 import Dashboard from "@/pages/app/Dashboard";
+import Contacts from "@/pages/app/Contacts";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -52,7 +53,7 @@ const App = () => (
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="inbox" element={<Inbox />} />
-                  <Route path="contacts" element={<Placeholder title="Contatos" />} />
+                  <Route path="contacts" element={<Contacts />} />
                   <Route path="pipeline" element={<Pipeline />} />
                   <Route path="deals" element={<Navigate to="/app/pipeline" replace />} />
                   <Route path="email" element={<Placeholder title="Email Marketing" />} />
