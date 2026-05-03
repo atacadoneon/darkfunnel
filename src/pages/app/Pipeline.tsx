@@ -256,8 +256,8 @@ export default function Pipeline() {
         </div>
       </div>
 
-      {/* Kanban */}
-      {tab === "funil" && (
+      {/* Funil view */}
+      {tab === "funil" && view === "kanban" && (
         <div className="flex-1 min-h-0 overflow-x-auto">
           <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
             <div className="flex gap-3 px-4 md:px-6 pb-6 h-full">
@@ -270,6 +270,14 @@ export default function Pipeline() {
             <DragOverlay>{activeDeal && <DealCard deal={activeDeal as any} overlay />}</DragOverlay>
           </DndContext>
         </div>
+      )}
+      {tab === "funil" && view === "list" && (
+        <DealsTable
+          deals={filteredDeals}
+          stages={stages}
+          onOpenDeal={onOpenDeal}
+          includeArchived={showArchived}
+        />
       )}
 
       {tab === "banco" && <div className="flex-1 min-h-0 overflow-hidden"><Contacts /></div>}
