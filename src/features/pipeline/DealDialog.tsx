@@ -121,6 +121,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         value_cents: Math.round(parseFloat(value || "0") * 100),
         notes: notes.trim() || null,
         contact_id: contactId,
+        channel_id: channelId,
         assigned_to: assignedTo ?? user.id,
       };
       if (editing && deal) {
@@ -128,6 +129,27 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         if (error) throw error;
         toast.success("Lead atualizado");
       } else {
+        // Reaproveitar Lead existente para o par (canal + contato), conforme regra Lead = Chat
+        if (channelId && contactId) {
+          const { data: existing } = await supabase
+            .from("deals")
+            .select("id,title")
+            .eq("workspace_id", current.id)
+            .eq("channel_id", channelId)
+            .eq("contact_id", contactId)
+            .is("archived_at", null)
+            .is("deleted_at", null)
+            .eq("status", "open")
+            .limit(1)
+            .maybeSingle();
+          if (existing?.id) {
+            toast.info(`Já existe um Lead para este contato neste canal (${existing.title}). Abrindo o existente.`);
+            qc.invalidateQueries({ queryKey: ["deals", current.id] });
+            onOpenChange(false);
+            setSaving(false);
+            return;
+          }
+        }
         const { error } = await supabase.from("deals").insert(payload);
         if (error) throw error;
         toast.success("Lead criado");
