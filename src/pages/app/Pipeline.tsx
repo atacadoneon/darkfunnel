@@ -29,6 +29,7 @@ import {
   StagesDialog, LossReasonsDialog, OriginsDialog, ProductsDialog, AutomationsDialog, CaptureDialog,
 } from "@/features/pipeline/PipelineConfigDialogs";
 import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } from "@/features/pipeline/PipelineFilters";
+import { DealsTable } from "@/features/pipeline/DealsTable";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
