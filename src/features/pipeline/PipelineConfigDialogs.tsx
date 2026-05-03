@@ -319,7 +319,9 @@ export function CaptureDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const [showForm, setShowForm] = useState(false);
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
 
-  const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/capture-lead?token=`;
+  // URL pública (proxy no domínio do app). Fallback para a edge function direta.
+  const PUBLIC_BASE = "https://crm.darksales.digital/api/capture/";
+  const baseUrl = PUBLIC_BASE;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
