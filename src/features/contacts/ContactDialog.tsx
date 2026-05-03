@@ -88,6 +88,17 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
       });
     }
     setDrafts(list);
+    // load tags
+    (async () => {
+      if (!contact) { setTagIds([]); setOriginalTagIds([]); return; }
+      const { data } = await supabase
+        .from("contact_tags")
+        .select("tag_id")
+        .eq("contact_id", contact.id);
+      const ids = (data ?? []).map((r: { tag_id: string }) => r.tag_id);
+      setTagIds(ids);
+      setOriginalTagIds(ids);
+    })();
   }, [open, contact]);
 
   const original = useMemo(
