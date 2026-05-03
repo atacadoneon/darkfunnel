@@ -94,6 +94,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
       setNotes(deal?.notes ?? "");
       setContactId(deal?.contact_id ?? null);
       setAssignedTo(deal?.assigned_to ?? user?.id ?? null);
+      setChannelId(((deal as any)?.channel_id) ?? null);
     }
   }, [open, deal, defaultStageId, stages, user]);
 
