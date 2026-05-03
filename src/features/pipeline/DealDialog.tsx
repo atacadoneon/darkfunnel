@@ -99,8 +99,19 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     if (!current || !user) return;
     setSaving(true);
     try {
+      // Resolver pipeline_id a partir da stage selecionada (deals.pipeline_id é NOT NULL)
+      let pipelineId: string | null = (stages.find((s) => s.id === stageId) as any)?.pipeline_id ?? null;
+      if (!pipelineId) {
+        const { data: stRow } = await supabase.from("pipeline_stages").select("pipeline_id").eq("id", stageId).maybeSingle();
+        pipelineId = (stRow as any)?.pipeline_id ?? null;
+      }
+      if (!pipelineId) {
+        const { data: defPipe } = await supabase.from("pipelines").select("id").eq("workspace_id", current.id).is("archived_at", null).order("is_default", { ascending: false }).limit(1).maybeSingle();
+        pipelineId = (defPipe as any)?.id ?? null;
+      }
       const payload = {
         workspace_id: current.id,
+        pipeline_id: pipelineId,
         stage_id: stageId,
         title: title.trim(),
         value_cents: Math.round(parseFloat(value || "0") * 100),
