@@ -29,7 +29,6 @@ import { ContactDialog } from "@/features/contacts/ContactDialog";
 import {
   MoreHorizontal,
   Phone,
-  Plus,
   Search,
   Trash2,
   Pencil,
@@ -55,10 +54,6 @@ export default function Contacts() {
     [contacts]
   );
 
-  const openNew = () => {
-    setEditing(null);
-    setDialogOpen(true);
-  };
   const openEdit = (c: Contact) => {
     setEditing(c);
     setDialogOpen(true);
@@ -89,19 +84,18 @@ export default function Contacts() {
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Banco de leads
+                  Banco unificado
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight">Contatos</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Contatos & Leads</h1>
                 <p className="text-sm text-muted-foreground">
-                  {total} contato{total === 1 ? "" : "s"} · {withPhone} com telefone
+                  {total} contato{total === 1 ? "" : "s"} · {withPhone} com telefone · criados automaticamente pelo atendimento
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={openNew} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Novo contato
-              </Button>
+            <div className="hidden items-center gap-2 md:flex">
+              <Badge variant="outline" className="text-[11px]">
+                Base unificada · Atendimento + CRM
+              </Badge>
             </div>
           </div>
 
@@ -138,13 +132,10 @@ export default function Contacts() {
             <div className="flex flex-col items-center justify-center gap-2 p-12 text-center">
               <Users className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                {search ? "Nenhum contato encontrado." : "Nenhum contato ainda."}
+                {search
+                  ? "Nenhum contato encontrado."
+                  : "Nenhum contato ainda. Eles aparecem aqui automaticamente quando uma conversa é iniciada no atendimento."}
               </p>
-              {!search && (
-                <Button size="sm" variant="outline" onClick={openNew} className="mt-2 gap-2">
-                  <Plus className="h-4 w-4" /> Adicionar primeiro contato
-                </Button>
-              )}
             </div>
           ) : (
             <ul className="divide-y divide-border/40">
