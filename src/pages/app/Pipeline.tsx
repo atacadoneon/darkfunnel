@@ -70,8 +70,6 @@ export default function Pipeline() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
   const { data: stages = [], isLoading: loadingStages } = useStages();
-  const showArchived = params.get("archived") === "1";
-  const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
   const { data: members = [] } = useWorkspaceMembers();
   const { data: origins = [] } = useLeadOrigins();
 
@@ -80,6 +78,8 @@ export default function Pipeline() {
   const [defaultStageId, setDefaultStageId] = useState<string | undefined>();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
+  const showArchived = params.get("archived") === "1";
+  const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
   const tab = (params.get("tab") as Tab) || "funil";
   const setTab = (t: Tab) => {
     const next = new URLSearchParams(params);
