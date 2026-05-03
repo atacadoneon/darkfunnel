@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import {
-  Gift, Clock, ClipboardList, StickyNote, ArrowLeftRight,
-  Sparkles, Plus, Loader2, Send, Check,
+  Gift, Clock, ClipboardList, StickyNote, Search,
+  Sparkles, Plus, Loader2, Send, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,33 +12,30 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Popover, PopoverContent, PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { useStages } from "@/features/pipeline/hooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
 import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import {
-  useAddNote, useConversationNotes,
   useScheduleMessage, useScheduledMessages, useCancelScheduled,
   usePlaybooks, useStartCadence,
-  useAssignConversation,
   useRunAIAnalysis, useAIAnalyses,
   useContactDeal,
 } from "./inboxFeatureHooks";
+import { AssigneePopover } from "./AssigneePopover";
+import { StageMovePopover } from "./StageMovePopover";
+import { ContactNotesDrawer } from "./ContactNotesDrawer";
 import type { ConversationRow } from "./hooks";
 
-type Props = { conversation: ConversationRow };
+type Props = {
+  conversation: ConversationRow;
+  onToggleSearch?: () => void;
+  searchActive?: boolean;
+};
 
 function IconBtn({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick?: () => void; active?: boolean }) {
   return (
@@ -58,11 +55,8 @@ function IconBtn({ children, label, onClick, active }: { children: React.ReactNo
   );
 }
 
-export function ConversationHeader({ conversation }: Props) {
+export function ConversationHeader({ conversation, onToggleSearch, searchActive }: Props) {
   const c = conversation.contacts;
-  const { data: members = [] } = useWorkspaceMembers();
-  const assigned = members.find((m) => m.user_id === conversation.assigned_user_id);
-  const assignedLabel = assigned?.display_name || assigned?.email || "Sem responsável";
 
   const [openSchedule, setOpenSchedule] = useState(false);
   const [openAnalysis, setOpenAnalysis] = useState(false);
@@ -70,7 +64,6 @@ export function ConversationHeader({ conversation }: Props) {
   const [openNotes, setOpenNotes] = useState(false);
   const [openDeal, setOpenDeal] = useState(false);
 
-  const assign = useAssignConversation();
   const { data: stages = [] } = useStages();
   const { data: contactDeal } = useContactDeal(conversation.contact_id);
 
@@ -86,35 +79,15 @@ export function ConversationHeader({ conversation }: Props) {
 
       <div className="ml-auto flex items-center gap-1.5">
         {/* Responsável */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1.5">
-              <span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold flex items-center justify-center">
-                {assignedLabel.charAt(0).toUpperCase()}
-              </span>
-              <span className="text-xs max-w-[110px] truncate">{assignedLabel}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Atribuir conversa</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => assign.mutate({ conversation_id: conversation.id, user_id: null })}>
-              Sem responsável
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {members.map((m) => (
-              <DropdownMenuItem key={m.user_id} onClick={() => assign.mutate({ conversation_id: conversation.id, user_id: m.user_id })}>
-                {conversation.assigned_user_id === m.user_id && <Check className="h-3 w-3 mr-2" />}
-                {m.display_name || m.email || m.user_id.slice(0, 8)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <AssigneePopover
+          conversationId={conversation.id}
+          assignedUserId={conversation.assigned_user_id}
+        />
 
-        <IconBtn label="Transferir conversa" onClick={() => {
-          const el = document.activeElement as HTMLElement | null; el?.blur?.();
-        }}>
-          <ArrowLeftRight className="h-4 w-4" />
-        </IconBtn>
+        {/* Mover etapa do lead */}
+        {contactDeal && (
+          <StageMovePopover dealId={contactDeal.id} currentStageId={contactDeal.stage_id} />
+        )}
 
         <IconBtn label="Agendar mensagem" onClick={() => setOpenSchedule(true)}>
           <Clock className="h-4 w-4" />
@@ -133,8 +106,12 @@ export function ConversationHeader({ conversation }: Props) {
           {contactDeal ? "Ver Lead" : "Novo Lead"}
         </Button>
 
-        <IconBtn label="Notas internas" onClick={() => setOpenNotes(true)}>
-          <StickyNote className="h-4 w-4" />
+        <IconBtn label="Buscar nas mensagens" onClick={onToggleSearch} active={searchActive}>
+          <Search className="h-4 w-4" />
+        </IconBtn>
+
+        <IconBtn label="Observações internas do contato" onClick={() => setOpenNotes(true)}>
+          <FileText className="h-4 w-4" />
         </IconBtn>
       </div>
 
@@ -148,7 +125,11 @@ export function ConversationHeader({ conversation }: Props) {
         <PlaybookDialog conversation={conversation} open={openPlaybook} onOpenChange={setOpenPlaybook} />
       )}
       {openNotes && (
-        <NotesDialog conversation={conversation} open={openNotes} onOpenChange={setOpenNotes} />
+        <ContactNotesDrawer
+          contactId={conversation.contact_id}
+          open={openNotes}
+          onOpenChange={setOpenNotes}
+        />
       )}
       {openDeal && contactDeal && (
         <LeadEditDialog open={openDeal} onOpenChange={setOpenDeal} dealId={contactDeal.id} />
@@ -321,39 +302,3 @@ function PlaybookDialog({ conversation, open, onOpenChange }: { conversation: Co
   );
 }
 
-function NotesDialog({ conversation, open, onOpenChange }: { conversation: ConversationRow; open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { data: notes = [] } = useConversationNotes(conversation.id);
-  const add = useAddNote();
-  const [body, setBody] = useState("");
-  const submit = async () => {
-    if (!body.trim()) return;
-    await add.mutateAsync({ conversation_id: conversation.id, body: body.trim() });
-    setBody("");
-  };
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><StickyNote className="h-4 w-4" /> Notas internas</DialogTitle>
-          <DialogDescription>Visíveis apenas para o time. Não são enviadas ao cliente.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Anote algo importante sobre essa conversa..." />
-          <Button onClick={submit} disabled={add.isPending || !body.trim()} className="w-full">
-            {add.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar nota"}
-          </Button>
-          <div className="space-y-2 max-h-72 overflow-auto border-t pt-3">
-            {notes.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Nenhuma nota ainda.</p>
-            ) : notes.map((n) => (
-              <div key={n.id} className="rounded bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 p-2 text-sm">
-                <div className="whitespace-pre-wrap">{n.body}</div>
-                <div className="text-[10px] text-muted-foreground mt-1">{format(new Date(n.created_at), "dd/MM/yyyy HH:mm")}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}

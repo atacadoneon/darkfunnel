@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useConversations, useMessages } from "@/features/inbox/hooks";
 import { useConversationIdsByMessageSearch } from "@/features/inbox/filterHooks";
 import {
@@ -12,6 +12,7 @@ import { MessageThread } from "@/features/inbox/MessageThread";
 import { Composer } from "@/features/inbox/Composer";
 import { ContactPanel } from "@/features/inbox/ContactPanel";
 import { ConversationHeader } from "@/features/inbox/ConversationHeader";
+import { MessageSearchBar } from "@/features/inbox/MessageSearchBar";
 
 function sortConvs<T extends {
   last_message_at: string | null;
@@ -75,12 +76,30 @@ export default function Inbox() {
   const selected = filtered.find((c) => c.id === selectedId) ?? null;
   const { data: messages = [] } = useMessages(selected?.id ?? null);
 
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeMatchIdx, setActiveMatchIdx] = useState(0);
+
+  useEffect(() => { setSearchOpen(false); setSearchQuery(""); setActiveMatchIdx(0); }, [selectedId]);
+
+  const matchIds = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return messages
+      .filter((m) => {
+        const body = (m.payload as { body?: string })?.body;
+        return typeof body === "string" && body.toLowerCase().includes(q);
+      })
+      .map((m) => m.id);
+  }, [messages, searchQuery]);
+
+  useEffect(() => { setActiveMatchIdx(0); }, [searchQuery]);
+
   const openCount = filtered.filter((c) => c.status === "open" || c.status === "in_progress").length;
   const unreadCount = filtered.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
   return (
     <div className="flex h-full">
-      {/* Lista */}
       <div className="w-80 border-r flex flex-col">
         <div className="p-3 border-b">
           <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 px-0.5">
@@ -103,12 +122,29 @@ export default function Inbox() {
         </div>
       </div>
 
-      {/* Thread */}
       <div className="flex-1 flex flex-col min-w-0">
         {selected ? (
           <>
-            <ConversationHeader conversation={selected} />
-            <MessageThread messages={messages} />
+            <ConversationHeader
+              conversation={selected}
+              searchActive={searchOpen}
+              onToggleSearch={() => setSearchOpen((v) => !v)}
+            />
+            {searchOpen && (
+              <MessageSearchBar
+                query={searchQuery}
+                onQueryChange={setSearchQuery}
+                matches={matchIds}
+                activeIndex={activeMatchIdx}
+                onActiveIndexChange={setActiveMatchIdx}
+                onClose={() => { setSearchOpen(false); setSearchQuery(""); }}
+              />
+            )}
+            <MessageThread
+              messages={messages}
+              searchQuery={searchOpen ? searchQuery : ""}
+              activeMatchId={searchOpen ? matchIds[activeMatchIdx] ?? null : null}
+            />
             <Composer conversation={selected} />
           </>
         ) : (

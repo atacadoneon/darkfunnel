@@ -11,6 +11,7 @@ export type WorkspaceMember = {
   role: WorkspaceRole;
   email?: string | null;
   display_name?: string | null;
+  avatar_url?: string | null;
 };
 
 export function useMyRole() {
@@ -59,7 +60,25 @@ export function useWorkspaceMembers() {
         .select("user_id, role")
         .eq("workspace_id", current!.id);
       if (error) throw error;
-      return (data ?? []) as WorkspaceMember[];
+      const rows = (data ?? []) as { user_id: string; role: WorkspaceRole }[];
+      const ids = rows.map((r) => r.user_id);
+      let profiles: Record<string, { display_name: string | null; email: string | null; avatar_url: string | null }> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id,display_name,email,avatar_url")
+          .in("id", ids);
+        for (const p of profs ?? []) {
+          profiles[p.id] = { display_name: p.display_name, email: p.email, avatar_url: p.avatar_url };
+        }
+      }
+      return rows.map((r) => ({
+        user_id: r.user_id,
+        role: r.role,
+        display_name: profiles[r.user_id]?.display_name ?? null,
+        email: profiles[r.user_id]?.email ?? null,
+        avatar_url: profiles[r.user_id]?.avatar_url ?? null,
+      }));
     },
   });
 }
