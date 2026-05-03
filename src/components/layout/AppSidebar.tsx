@@ -42,13 +42,8 @@ const sections: { label: string; items: Item[] }[] = [
     label: "Principal",
     items: [
       { title: "Dashboard", url: "/app/dashboard", icon: LayoutGrid },
-      { title: "CRM & Leads", url: "/app/pipeline", icon: Users },
-    ],
-  },
-  {
-    label: "Comunicação",
-    items: [
-      { title: "WhatsApp", url: "/app/inbox", icon: MessageCircle },
+      { title: "Funil de Vendas", url: "/app/pipeline", icon: Users },
+      { title: "Chats", url: "/app/inbox", icon: MessageCircle },
       { title: "Email Marketing", url: "/app/email", icon: Mail },
     ],
   },
