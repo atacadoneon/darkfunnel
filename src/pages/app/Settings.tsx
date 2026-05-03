@@ -59,6 +59,10 @@ export default function Settings() {
         <TabsContent value="channels" className="mt-6">
           <ChannelsSection />
         </TabsContent>
+        <TabsContent value="catalogs" className="mt-6 space-y-6">
+          <TagsAdminSection />
+          <LossReasonsAdminSection />
+        </TabsContent>
         <TabsContent value="tracking" className="mt-6">
           <Empty title="Trackeamento" desc="Pixel, UTMs, eventos de conversão e webhooks de tracking — em breve." />
         </TabsContent>
