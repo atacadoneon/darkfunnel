@@ -11,6 +11,7 @@ import { ConversationList } from "@/features/inbox/ConversationList";
 import { MessageThread } from "@/features/inbox/MessageThread";
 import { Composer } from "@/features/inbox/Composer";
 import { ContactPanel } from "@/features/inbox/ContactPanel";
+import { ConversationHeader } from "@/features/inbox/ConversationHeader";
 
 function sortConvs<T extends {
   last_message_at: string | null;
@@ -74,11 +75,19 @@ export default function Inbox() {
   const selected = filtered.find((c) => c.id === selectedId) ?? null;
   const { data: messages = [] } = useMessages(selected?.id ?? null);
 
+  const openCount = filtered.filter((c) => c.status === "open" || c.status === "in_progress").length;
+  const unreadCount = filtered.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+
   return (
     <div className="flex h-full">
       {/* Lista */}
       <div className="w-80 border-r flex flex-col">
         <div className="p-3 border-b">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 px-0.5">
+            <span><span className="font-semibold text-foreground">{openCount}</span> abertas</span>
+            <span className="opacity-50">·</span>
+            <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
+          </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
         </div>
         <div className="flex-1 min-h-0">
@@ -98,12 +107,7 @@ export default function Inbox() {
       <div className="flex-1 flex flex-col min-w-0">
         {selected ? (
           <>
-            <div className="h-14 border-b flex items-center px-4 gap-2">
-              <div className="font-semibold">
-                {selected.contacts?.display_name ?? selected.contacts?.phone_e164 ?? "Sem nome"}
-              </div>
-              <span className="text-xs text-muted-foreground">{selected.contacts?.phone_e164}</span>
-            </div>
+            <ConversationHeader conversation={selected} />
             <MessageThread messages={messages} />
             <Composer conversation={selected} />
           </>
