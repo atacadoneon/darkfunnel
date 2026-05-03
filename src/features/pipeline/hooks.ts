@@ -66,20 +66,21 @@ export function useStages() {
   return q;
 }
 
-export function useDeals() {
+export function useDeals(opts: { includeArchived?: boolean } = {}) {
   const { current } = useWorkspace();
   const qc = useQueryClient();
+  const includeArchived = !!opts.includeArchived;
 
   const q = useQuery({
-    queryKey: ["deals", current?.id],
+    queryKey: ["deals", current?.id, { includeArchived }],
     enabled: !!current,
     queryFn: async (): Promise<Deal[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("deals")
         .select("*, contact:contacts(id,display_name,phone_e164,profile_pic_url)")
-        .is("deleted_at", null)
-        .is("archived_at", null)
-        .order("position", { ascending: true });
+        .is("deleted_at", null);
+      if (!includeArchived) query = query.is("archived_at", null);
+      const { data, error } = await query.order("position", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as Deal[];
     },

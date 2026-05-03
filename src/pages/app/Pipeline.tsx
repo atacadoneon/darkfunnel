@@ -6,16 +6,13 @@ import {
 } from "@dnd-kit/core";
 import {
   Plus, KanbanSquare, Settings as SettingsIcon, Upload, ChevronDown, Search, SlidersHorizontal, Users,
-  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer,
+  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeals, useStages, type Deal } from "@/features/pipeline/hooks";
 import { StageColumn } from "@/features/pipeline/StageColumn";
 import { DealCard } from "@/features/pipeline/DealCard";
@@ -31,15 +28,48 @@ import Contacts from "@/pages/app/Contacts";
 import {
   StagesDialog, LossReasonsDialog, OriginsDialog, ProductsDialog, AutomationsDialog, CaptureDialog,
 } from "@/features/pipeline/PipelineConfigDialogs";
+import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } from "@/features/pipeline/PipelineFilters";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
+
+function parseFiltersFromURL(params: URLSearchParams): Filters {
+  const arr = (k: string) => params.get(k)?.split(",").filter(Boolean) ?? [];
+  return {
+    assignees: arr("assignees"),
+    origins: arr("origins"),
+    stages: arr("stages"),
+    status: arr("status") as any,
+    showArchived: params.get("archived") === "1",
+    minValue: params.get("min") ?? "",
+    maxValue: params.get("max") ?? "",
+    inactiveDays: params.get("inactive") ?? "any",
+    createdFrom: params.get("from") ?? "",
+    createdTo: params.get("to") ?? "",
+    sort: (params.get("sort") as any) ?? "position",
+  };
+}
+function writeFiltersToURL(prev: URLSearchParams, f: Filters): URLSearchParams {
+  const next = new URLSearchParams(prev);
+  const setOrDel = (k: string, v: string) => { if (v) next.set(k, v); else next.delete(k); };
+  setOrDel("assignees", f.assignees.join(","));
+  setOrDel("origins", f.origins.join(","));
+  setOrDel("stages", f.stages.join(","));
+  setOrDel("status", f.status.join(","));
+  setOrDel("archived", f.showArchived ? "1" : "");
+  setOrDel("min", f.minValue);
+  setOrDel("max", f.maxValue);
+  setOrDel("inactive", f.inactiveDays === "any" ? "" : f.inactiveDays);
+  setOrDel("from", f.createdFrom);
+  setOrDel("to", f.createdTo);
+  setOrDel("sort", f.sort === "position" ? "" : f.sort);
+  return next;
+}
 
 export default function Pipeline() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
   const { data: stages = [], isLoading: loadingStages } = useStages();
-  const { data: deals = [], isLoading: loadingDeals } = useDeals();
   const { data: members = [] } = useWorkspaceMembers();
   const { data: origins = [] } = useLeadOrigins();
 
@@ -48,6 +78,8 @@ export default function Pipeline() {
   const [defaultStageId, setDefaultStageId] = useState<string | undefined>();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
+  const showArchived = params.get("archived") === "1";
+  const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
   const tab = (params.get("tab") as Tab) || "funil";
   const setTab = (t: Tab) => {
     const next = new URLSearchParams(params);
@@ -58,35 +90,13 @@ export default function Pipeline() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [config, setConfig] = useState<ConfigKey>(null);
 
-  // filtros
-  const [fAssignee, setFAssignee] = useState("all");
-  const [fOrigin, setFOrigin] = useState("all");
-  const [fShowArchived, setFShowArchived] = useState(false);
-  const [fMin, setFMin] = useState(""); const [fMax, setFMax] = useState("");
-  const [fInactive, setFInactive] = useState("any");
+  const filters = useMemo(() => parseFiltersFromURL(params), [params]);
+  const setFilters = (f: Filters) => setParams(writeFiltersToURL(params, f), { replace: true });
+  const activeFilters = countActive(filters);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const filteredDeals = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return deals.filter((d) => {
-      if (q && !(d.title.toLowerCase().includes(q) || d.contact?.display_name?.toLowerCase().includes(q) || d.contact?.phone_e164?.toLowerCase().includes(q))) return false;
-      if (fAssignee !== "all") {
-        if (fAssignee === "none" && d.assigned_to) return false;
-        if (fAssignee !== "none" && d.assigned_to !== fAssignee) return false;
-      }
-      if (fOrigin !== "all" && (d as any).origin_id !== fOrigin) return false;
-      if (fMin && d.value_cents < Number(fMin) * 100) return false;
-      if (fMax && d.value_cents > Number(fMax) * 100) return false;
-      if (fInactive !== "any") {
-        const days = Number(fInactive);
-        const last = (d as any).last_interaction_at ?? d.updated_at;
-        const diff = (Date.now() - new Date(last).getTime()) / 86400000;
-        if (diff < days) return false;
-      }
-      return true;
-    });
-  }, [deals, search, fAssignee, fOrigin, fMin, fMax, fInactive]);
+  const filteredDeals = useMemo(() => applyFilters(deals, filters, search), [deals, filters, search]);
 
   const dealsByStage = useMemo(() => {
     const m: Record<string, Deal[]> = {};
@@ -110,7 +120,7 @@ export default function Pipeline() {
     if (overData?.type === "stage" && overData.stage) targetStageId = overData.stage.id;
     else if (overData?.type === "deal" && overData.deal) targetStageId = overData.deal.stage_id;
     if (targetStageId === dragged.stage_id) return;
-    qc.setQueryData<Deal[]>(["deals", current.id], (old) =>
+    qc.setQueryData<Deal[]>(["deals", current.id, { includeArchived: showArchived }], (old) =>
       (old ?? []).map((d) => (d.id === dragged.id ? { ...d, stage_id: targetStageId } : d)));
     const { error } = await supabase.from("deals").update({ stage_id: targetStageId }).eq("id", dragged.id);
     if (error) { toast.error("Falha ao mover: " + error.message); qc.invalidateQueries({ queryKey: ["deals", current.id] }); }
@@ -207,9 +217,20 @@ export default function Pipeline() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar leads..." className="pl-9 h-10 rounded-lg" />
         </div>
-        <Button variant="outline" className="h-10 gap-2" onClick={() => setFiltersOpen(true)}>
+        <Button variant="outline" className="h-10 gap-2 relative" onClick={() => setFiltersOpen(true)}>
           <SlidersHorizontal className="h-4 w-4" /> Filtros
+          {activeFilters > 0 && (
+            <Badge className="ml-1 h-5 px-1.5 rounded-full">{activeFilters}</Badge>
+          )}
         </Button>
+        {activeFilters > 0 && (
+          <Button variant="ghost" size="sm" className="h-10 gap-1 text-muted-foreground" onClick={() => setFilters(EMPTY_FILTERS)}>
+            <X className="h-3.5 w-3.5" /> Limpar
+          </Button>
+        )}
+        <div className="ml-auto text-xs text-muted-foreground">
+          {filteredDeals.length} de {deals.length} {deals.length === 1 ? "lead" : "leads"}
+        </div>
       </div>
 
       {/* Kanban */}
@@ -236,67 +257,15 @@ export default function Pipeline() {
       <DealDialog open={dialogOpen} onOpenChange={setDialogOpen} stages={stages} deal={editingDeal} defaultStageId={defaultStageId} />
 
       {/* Filtros Sheet */}
-      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent className="w-[360px] sm:w-[400px] overflow-y-auto">
-          <SheetHeader><SheetTitle>Filtros</SheetTitle></SheetHeader>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label>Responsável</Label>
-              <Select value={fAssignee} onValueChange={setFAssignee}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Responsáveis</SelectItem>
-                  <SelectItem value="none">Sem vendedor</SelectItem>
-                  {members.map((m: any) => <SelectItem key={m.user_id} value={m.user_id}>{m.display_name ?? m.email}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Origem do Lead</Label>
-              <Select value={fOrigin} onValueChange={setFOrigin}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as Origens</SelectItem>
-                  {origins.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between border rounded-md p-3">
-              <div>
-                <div className="text-sm font-medium">Ver Arquivados</div>
-                <div className="text-xs text-muted-foreground">Mostrar leads que foram arquivados</div>
-              </div>
-              <Switch checked={fShowArchived} onCheckedChange={setFShowArchived} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label>Valor mín. (R$)</Label>
-                <Input value={fMin} onChange={(e) => setFMin(e.target.value)} type="number" placeholder="Mín" />
-              </div>
-              <div>
-                <Label>Valor máx. (R$)</Label>
-                <Input value={fMax} onChange={(e) => setFMax(e.target.value)} type="number" placeholder="Máx" />
-              </div>
-            </div>
-            <div>
-              <Label>Dias sem interação</Label>
-              <Select value={fInactive} onValueChange={setFInactive}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Qualquer</SelectItem>
-                  <SelectItem value="3">+ de 3 dias</SelectItem>
-                  <SelectItem value="7">+ de 7 dias</SelectItem>
-                  <SelectItem value="15">+ de 15 dias</SelectItem>
-                  <SelectItem value="30">+ de 30 dias</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="outline" className="w-full" onClick={() => {
-              setFAssignee("all"); setFOrigin("all"); setFMin(""); setFMax(""); setFInactive("any"); setFShowArchived(false);
-            }}>Limpar filtros</Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <FiltersSheet
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        filters={filters}
+        onChange={setFilters}
+        members={members}
+        origins={origins}
+        stages={stages}
+      />
 
       {/* Configuração modais */}
       <StagesDialog open={config === "stages"} onOpenChange={(v) => !v && setConfig(null)} />
