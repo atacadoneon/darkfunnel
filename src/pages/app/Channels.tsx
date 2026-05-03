@@ -1,0 +1,157 @@
+import { useState } from "react";
+import { Plus, Pencil, Trash2, Phone, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useChannels, type ChannelRow, type ChannelStatus } from "@/features/channels/hooks";
+import { ChannelDialog } from "@/features/channels/ChannelDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const statusVariant: Record<ChannelStatus, { label: string; className: string }> = {
+  connected:    { label: "Conectado",   className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
+  qr_pending:   { label: "QR pendente", className: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30" },
+  pending:      { label: "Pendente",    className: "bg-muted text-muted-foreground border-border" },
+  disconnected: { label: "Desconectado",className: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 border-zinc-500/30" },
+  banned:       { label: "Banido",      className: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30" },
+  expired:      { label: "Expirado",    className: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30" },
+};
+
+export default function Channels() {
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+  const { data: channels = [], isLoading } = useChannels();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<ChannelRow | null>(null);
+  const [deleting, setDeleting] = useState<ChannelRow | null>(null);
+
+  const onNew = () => {
+    setEditing(null);
+    setDialogOpen(true);
+  };
+  const onEdit = (c: ChannelRow) => {
+    setEditing(c);
+    setDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting || !current) return;
+    const { error } = await supabase
+      .from("channels")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", deleting.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Canal removido");
+      qc.invalidateQueries({ queryKey: ["channels", current.id] });
+    }
+    setDeleting(null);
+  };
+
+  return (
+    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Canais</h1>
+          <p className="text-sm text-muted-foreground">
+            Conecte instâncias UAZAPI ou números do WhatsApp Cloud API.
+          </p>
+        </div>
+        <Button onClick={onNew}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo canal
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground">Carregando...</div>
+      ) : channels.length === 0 ? (
+        <Card className="p-10 text-center border-dashed">
+          <Phone className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+          <h3 className="font-semibold">Nenhum canal cadastrado</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Crie seu primeiro canal para começar a receber e enviar mensagens.
+          </p>
+          <Button onClick={onNew} className="mt-4">
+            <Plus className="h-4 w-4 mr-2" />
+            Criar canal
+          </Button>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {channels.map((c) => {
+            const s = statusVariant[c.status];
+            return (
+              <Card key={c.id} className="p-4 flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Phone className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold truncate">{c.display_name}</h3>
+                    <Badge variant="outline" className="text-xs">
+                      {c.kind === "uazapi" ? "UAZAPI" : "Cloud API"}
+                    </Badge>
+                    <Badge variant="outline" className={`text-xs ${s.className}`}>
+                      {s.label}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-0.5">
+                    {c.phone_e164 ?? "Sem telefone"} · {c.policy}
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => onEdit(c)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Card className="p-4 bg-amber-500/5 border-amber-500/20">
+        <div className="flex gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <strong>Credenciais (token UAZAPI / access_token Cloud)</strong> são armazenadas
+            cifradas (AES-256-GCM) pela Edge Function — disponível no próximo sprint.
+            Por enquanto, o canal fica em status <em>pending</em> até o backend se conectar.
+          </div>
+        </div>
+      </Card>
+
+      <ChannelDialog open={dialogOpen} onOpenChange={setDialogOpen} channel={editing} />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover canal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O canal "{deleting?.display_name}" será desativado. Conversas existentes não serão apagadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
