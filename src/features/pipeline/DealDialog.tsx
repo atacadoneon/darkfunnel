@@ -68,6 +68,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [lossOpen, setLossOpen] = useState(false);
   const [lossReasonId, setLossReasonId] = useState<string | null>(null);
   const { data: lossReasons = [] } = useLossReasons(true);
+  const [duplicateLead, setDuplicateLead] = useState<{ id: string; title: string; channelName?: string; phone?: string } | null>(null);
 
   const { data: contacts = [] } = useContacts();
   const { data: channels = [] } = useChannels();
@@ -129,23 +130,38 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         if (error) throw error;
         toast.success("Lead atualizado");
       } else {
-        // Reaproveitar Lead existente para o par (canal + contato), conforme regra Lead = Chat
+        // Regra Lead = Chat: Lead único por (canal + número de telefone)
         if (channelId && contactId) {
+          const phone = selectedContact?.phone_e164 ?? null;
+          // 1) procurar contatos com mesmo telefone no workspace
+          let contactIds: string[] = [contactId];
+          if (phone) {
+            const { data: sameNumber } = await supabase
+              .from("contacts")
+              .select("id")
+              .eq("workspace_id", current.id)
+              .eq("phone_e164", phone);
+            contactIds = Array.from(new Set([contactId, ...((sameNumber ?? []).map((r: any) => r.id))]));
+          }
           const { data: existing } = await supabase
             .from("deals")
-            .select("id,title")
+            .select("id,title,contact_id")
             .eq("workspace_id", current.id)
             .eq("channel_id", channelId)
-            .eq("contact_id", contactId)
+            .in("contact_id", contactIds)
             .is("archived_at", null)
             .is("deleted_at", null)
             .eq("status", "open")
             .limit(1)
             .maybeSingle();
           if (existing?.id) {
-            toast.info(`Já existe um Lead para este contato neste canal (${existing.title}). Abrindo o existente.`);
-            qc.invalidateQueries({ queryKey: ["deals", current.id] });
-            onOpenChange(false);
+            const ch = channels.find((c) => c.id === channelId);
+            setDuplicateLead({
+              id: existing.id,
+              title: existing.title,
+              channelName: ch?.display_name,
+              phone: phone ?? undefined,
+            });
             setSaving(false);
             return;
           }
@@ -539,6 +555,37 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!duplicateLead} onOpenChange={(v) => { if (!v) setDuplicateLead(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Lead já existe neste canal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Já existe um Lead{duplicateLead?.phone ? ` para o número ${duplicateLead.phone}` : ""}
+              {duplicateLead?.channelName ? ` no canal "${duplicateLead.channelName}"` : ""}:{" "}
+              <strong>{duplicateLead?.title}</strong>.
+              <br />
+              Não é permitido criar dois Leads com o mesmo número no mesmo canal. Abra o Lead existente para continuar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDuplicateLead(null)}>Fechar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!duplicateLead) return;
+                const dupId = duplicateLead.id;
+                setDuplicateLead(null);
+                qc.invalidateQueries({ queryKey: ["deals", current?.id] });
+                onOpenChange(false);
+                // dispara evento global p/ Pipeline abrir o Lead existente
+                window.dispatchEvent(new CustomEvent("open-deal", { detail: { dealId: dupId } }));
+              }}
+            >
+              Abrir Lead existente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

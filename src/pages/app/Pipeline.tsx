@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   DndContext, DragOverlay, PointerSensor, closestCorners, useSensor, useSensors,
@@ -118,6 +118,18 @@ export default function Pipeline() {
   const activeDeal = activeId ? deals.find((d) => d.id === activeId) ?? null : null;
   const onAddDeal = (stageId: string) => { setEditingDeal(null); setDefaultStageId(stageId); setDialogOpen(true); };
   const onOpenDeal = (deal: Deal) => { setEditingDeal(deal); setDefaultStageId(undefined); setDialogOpen(true); };
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const id = (e as CustomEvent<{ dealId: string }>).detail?.dealId;
+      if (!id) return;
+      const d = deals.find((x) => x.id === id);
+      if (d) onOpenDeal(d);
+    };
+    window.addEventListener("open-deal", handler as EventListener);
+    return () => window.removeEventListener("open-deal", handler as EventListener);
+  }, [deals]);
+
   const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
   const onDragEnd = async (e: DragEndEvent) => {
     setActiveId(null);
