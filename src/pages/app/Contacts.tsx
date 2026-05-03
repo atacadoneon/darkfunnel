@@ -235,11 +235,12 @@ export default function Contacts() {
                           <DropdownMenuItem onClick={() => openEdit(c)}>
                             <Pencil className="mr-2 h-4 w-4" /> Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setToDelete(c)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          <DropdownMenuItem onClick={() => setToArchive(c)}>
+                            {c.archived_at ? (
+                              <><ArchiveRestore className="mr-2 h-4 w-4" /> Restaurar</>
+                            ) : (
+                              <><Archive className="mr-2 h-4 w-4" /> Arquivar</>
+                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -258,22 +259,22 @@ export default function Contacts() {
         contact={editing}
       />
 
-      <AlertDialog open={!!toDelete} onOpenChange={(v) => !v && setToDelete(null)}>
+      <AlertDialog open={!!toArchive} onOpenChange={(v) => !v && setToArchive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir contato?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {toArchive?.archived_at ? "Restaurar contato?" : "Arquivar contato?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. As conversas vinculadas perderão a
-              referência.
+              {toArchive?.archived_at
+                ? "O contato voltará à sua base ativa."
+                : "O contato será ocultado das listagens. O histórico permanece intacto e pode ser restaurado a qualquer momento."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={onConfirmDelete}
-            >
-              Excluir
+            <AlertDialogAction onClick={onConfirmArchive}>
+              {toArchive?.archived_at ? "Restaurar" : "Arquivar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
