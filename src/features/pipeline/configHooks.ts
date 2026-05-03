@@ -154,7 +154,7 @@ export function useCaptureWebhooks() {
   });
   useEffect(() => {
     if (!current) return;
-    const ch = supabase.channel(`wh:${current.id}`)
+    const ch = supabase.channel(`wh:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "lead_capture_webhooks", filter: `workspace_id=eq.${current.id}` },
         () => qc.invalidateQueries({ queryKey: ["capture-webhooks", current.id] }))
       .subscribe();
