@@ -13,7 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, MessageCircle, Instagram, Mail } from "lucide-react";
+import { Plus, Trash2, MessageCircle, Instagram, Mail, Tag as TagIcon, X } from "lucide-react";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import { useTags } from "@/features/inbox/filterHooks";
 import {
   IDENTITY_LABELS,
   type Contact,
@@ -56,6 +63,10 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
   const [pic, setPic] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [saving, setSaving] = useState(false);
+  const [tagIds, setTagIds] = useState<string[]>([]);
+  const [originalTagIds, setOriginalTagIds] = useState<string[]>([]);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const { data: allTags = [] } = useTags();
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +88,17 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
       });
     }
     setDrafts(list);
+    // load tags
+    (async () => {
+      if (!contact) { setTagIds([]); setOriginalTagIds([]); return; }
+      const { data } = await supabase
+        .from("contact_tags")
+        .select("tag_id")
+        .eq("contact_id", contact.id);
+      const ids = (data ?? []).map((r: { tag_id: string }) => r.tag_id);
+      setTagIds(ids);
+      setOriginalTagIds(ids);
+    })();
   }, [open, contact]);
 
   const original = useMemo(
@@ -177,6 +199,28 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
       }
       if (toInsert.length) {
         const { error } = await supabase.from("contact_identities").insert(toInsert);
+        if (error) throw error;
+      }
+
+      // tags diff
+      const tagsToAdd = tagIds.filter((id) => !originalTagIds.includes(id));
+      const tagsToRemove = originalTagIds.filter((id) => !tagIds.includes(id));
+      if (tagsToRemove.length) {
+        const { error } = await supabase
+          .from("contact_tags")
+          .delete()
+          .eq("contact_id", contact.id)
+          .in("tag_id", tagsToRemove);
+        if (error) throw error;
+      }
+      if (tagsToAdd.length) {
+        const { error } = await supabase.from("contact_tags").insert(
+          tagsToAdd.map((tid) => ({
+            contact_id: contact.id,
+            tag_id: tid,
+            workspace_id: current.id,
+          }))
+        );
         if (error) throw error;
       }
 
@@ -305,6 +349,79 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
                   );
                 })}
               </ul>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">
+                <TagIcon className="h-3.5 w-3.5" /> Tags
+              </Label>
+              <Popover open={tagPickerOpen} onOpenChange={setTagPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs">
+                    <Plus className="h-3 w-3" /> Aplicar tag
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0" align="end">
+                  <Command>
+                    <CommandInput placeholder="Buscar tag..." />
+                    <CommandList>
+                      <CommandEmpty>
+                        Nenhuma tag cadastrada. Peça a um admin para criar em Configurações → Cadastros.
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {allTags.map((t) => {
+                          const checked = tagIds.includes(t.id);
+                          return (
+                            <CommandItem
+                              key={t.id}
+                              value={t.name}
+                              onSelect={() =>
+                                setTagIds((arr) =>
+                                  checked ? arr.filter((x) => x !== t.id) : [...arr, t.id]
+                                )
+                              }
+                            >
+                              <span className="h-2 w-2 rounded-full mr-2" style={{ background: t.color }} />
+                              <span className="flex-1">{t.name}</span>
+                              {checked && <span className="text-xs text-primary">✓</span>}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            {tagIds.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Nenhuma tag aplicada.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {tagIds.map((id) => {
+                  const t = allTags.find((x) => x.id === id);
+                  if (!t) return null;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+                      style={{ borderColor: t.color }}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />
+                      {t.name}
+                      <button
+                        type="button"
+                        onClick={() => setTagIds((arr) => arr.filter((x) => x !== id))}
+                        className="ml-0.5 text-muted-foreground hover:text-destructive"
+                        aria-label="Remover"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
             )}
           </div>
 

@@ -35,6 +35,7 @@ import {
   useDealCollaborators, useIsAdmin, useWorkspaceMembers,
 } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
+import { useLossReasons } from "@/features/workspace/CatalogsAdmin";
 import type { Deal, Stage } from "./hooks";
 
 type Props = {
@@ -61,6 +62,9 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [saving, setSaving] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [collabPickerOpen, setCollabPickerOpen] = useState(false);
+  const [lossOpen, setLossOpen] = useState(false);
+  const [lossReasonId, setLossReasonId] = useState<string | null>(null);
+  const { data: lossReasons = [] } = useLossReasons(true);
 
   const { data: contacts = [] } = useContacts();
   const { data: members = [] } = useWorkspaceMembers();
@@ -130,16 +134,31 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     }
   };
 
-  const moveTo = async (targetStageId: string, status: "won" | "lost") => {
+  const moveTo = async (
+    targetStageId: string,
+    status: "won" | "lost",
+    reasonId?: string | null,
+  ) => {
     if (!deal || !current) return;
-    const { error } = await supabase
-      .from("deals")
-      .update({ stage_id: targetStageId, status })
-      .eq("id", deal.id);
+    const patch: Record<string, unknown> = { stage_id: targetStageId, status };
+    if (status === "lost") patch.loss_reason_id = reasonId ?? null;
+    if (status === "won") patch.loss_reason_id = null;
+    const { error } = await supabase.from("deals").update(patch).eq("id", deal.id);
     if (error) return toast.error(error.message);
     toast.success(status === "won" ? "Marcado como ganho" : "Marcado como perdido");
     qc.invalidateQueries({ queryKey: ["deals", current.id] });
     onOpenChange(false);
+  };
+
+  const confirmLoss = async () => {
+    if (!lostStage) return;
+    if (lossReasons.length > 0 && !lossReasonId) {
+      toast.error("Selecione um motivo de perda");
+      return;
+    }
+    await moveTo(lostStage.id, "lost", lossReasonId);
+    setLossOpen(false);
+    setLossReasonId(null);
   };
 
   const onArchive = async () => {
@@ -384,7 +403,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
                   variant="outline"
                   size="sm"
                   className="gap-1.5 text-red-600 border-red-500/30 hover:bg-red-500/10"
-                  onClick={() => moveTo(lostStage.id, "lost")}
+                  onClick={() => setLossOpen(true)}
                 >
                   <XCircle className="h-3.5 w-3.5" /> Perder
                 </Button>
@@ -424,6 +443,44 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <Dialog open={lossOpen} onOpenChange={setLossOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Marcar como perdido</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {lossReasons.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum motivo cadastrado. Peça a um administrador para cadastrar em
+                <strong> Configurações → Cadastros</strong>.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Motivo</Label>
+                <Select value={lossReasonId ?? ""} onValueChange={setLossReasonId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um motivo" /></SelectTrigger>
+                  <SelectContent>
+                    {lossReasons.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLossOpen(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={confirmLoss}
+              disabled={lossReasons.length > 0 && !lossReasonId}
+            >
+              Confirmar perda
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
