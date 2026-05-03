@@ -50,6 +50,8 @@ const App = () => (
                   <Route index element={<Navigate to="inbox" replace />} />
                   <Route path="inbox" element={<Inbox />} />
                   <Route path="contacts" element={<Placeholder title="Contatos" />} />
+                  <Route path="pipeline" element={<Placeholder title="Pipeline" />} />
+                  <Route path="deals" element={<Placeholder title="Negócios" />} />
                   <Route path="channels" element={<Navigate to="/app/settings?tab=channels" replace />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
