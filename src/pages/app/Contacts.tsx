@@ -89,19 +89,18 @@ export default function Contacts() {
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Banco de leads
+                  Banco unificado
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight">Contatos</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Contatos & Leads</h1>
                 <p className="text-sm text-muted-foreground">
-                  {total} contato{total === 1 ? "" : "s"} · {withPhone} com telefone
+                  {total} contato{total === 1 ? "" : "s"} · {withPhone} com telefone · criados automaticamente pelo atendimento
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={openNew} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Novo contato
-              </Button>
+            <div className="hidden items-center gap-2 md:flex">
+              <Badge variant="outline" className="text-[11px]">
+                Base unificada · Atendimento + CRM
+              </Badge>
             </div>
           </div>
 
