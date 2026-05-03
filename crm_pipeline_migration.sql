@@ -13,6 +13,14 @@ create table if not exists public.pipeline_stages (
   is_lost boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+alter table public.pipeline_stages
+  add column if not exists color text not null default '#6366f1',
+  add column if not exists position int not null default 0,
+  add column if not exists is_won boolean not null default false,
+  add column if not exists is_lost boolean not null default false,
+  add column if not exists created_at timestamptz not null default now();
+
 create index if not exists pipeline_stages_ws_pos on public.pipeline_stages(workspace_id, position);
 
 create table if not exists public.deals (
@@ -32,6 +40,18 @@ create table if not exists public.deals (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
+
+alter table public.deals
+  add column if not exists value_cents bigint not null default 0,
+  add column if not exists currency text not null default 'BRL',
+  add column if not exists position int not null default 0,
+  add column if not exists assigned_to uuid references auth.users(id) on delete set null,
+  add column if not exists notes text,
+  add column if not exists expected_close_date date,
+  add column if not exists status text not null default 'open',
+  add column if not exists updated_at timestamptz not null default now(),
+  add column if not exists deleted_at timestamptz;
+
 create index if not exists deals_ws_stage on public.deals(workspace_id, stage_id, position) where deleted_at is null;
 
 -- updated_at trigger
