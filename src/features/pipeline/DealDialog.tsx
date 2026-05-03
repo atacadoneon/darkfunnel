@@ -403,7 +403,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
                   variant="outline"
                   size="sm"
                   className="gap-1.5 text-red-600 border-red-500/30 hover:bg-red-500/10"
-                  onClick={() => moveTo(lostStage.id, "lost")}
+                  onClick={() => setLossOpen(true)}
                 >
                   <XCircle className="h-3.5 w-3.5" /> Perder
                 </Button>
