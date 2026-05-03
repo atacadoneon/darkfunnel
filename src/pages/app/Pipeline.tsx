@@ -80,6 +80,7 @@ export default function Pipeline() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [defaultStageId, setDefaultStageId] = useState<string | undefined>();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const showArchived = params.get("archived") === "1";
   const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
