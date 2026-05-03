@@ -9,6 +9,7 @@ import { useStages, formatMoney } from "@/features/pipeline/hooks";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { useContactDeal } from "./inboxFeatureHooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
+import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -117,15 +118,13 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
         )}
       </div>
 
-      {openDeal && (
+      {openDeal && deal && (
+        <LeadEditDialog open={openDeal} onOpenChange={setOpenDeal} dealId={deal.id} />
+      )}
+      {openDeal && !deal && (
         <DealDialog
           open={openDeal} onOpenChange={setOpenDeal} stages={stages}
-          deal={deal ? ({
-            ...deal,
-            workspace_id: "", contact_id: conversation.contact_id,
-            position: 0, archived_at: null, deleted_at: null,
-            created_at: "", updated_at: "", expected_close_date: null,
-          } as any) : null}
+          deal={null}
           defaultStageId={stages[0]?.id}
         />
       )}

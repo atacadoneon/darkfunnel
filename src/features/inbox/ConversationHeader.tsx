@@ -27,6 +27,7 @@ import {
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { useStages } from "@/features/pipeline/hooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
+import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import {
   useAddNote, useConversationNotes,
   useScheduleMessage, useScheduledMessages, useCancelScheduled,
@@ -149,18 +150,14 @@ export function ConversationHeader({ conversation }: Props) {
       {openNotes && (
         <NotesDialog conversation={conversation} open={openNotes} onOpenChange={setOpenNotes} />
       )}
-      {openDeal && (
+      {openDeal && contactDeal && (
+        <LeadEditDialog open={openDeal} onOpenChange={setOpenDeal} dealId={contactDeal.id} />
+      )}
+      {openDeal && !contactDeal && (
         <DealDialog
           open={openDeal} onOpenChange={setOpenDeal}
           stages={stages}
-          deal={contactDeal ? ({
-            ...contactDeal,
-            workspace_id: "",
-            contact_id: conversation.contact_id,
-            position: 0, archived_at: null, deleted_at: null,
-            created_at: "", updated_at: "",
-            expected_close_date: null,
-          } as any) : null}
+          deal={null}
         />
       )}
     </div>
