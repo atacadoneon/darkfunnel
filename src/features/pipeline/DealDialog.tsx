@@ -61,6 +61,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [notes, setNotes] = useState("");
   const [contactId, setContactId] = useState<string | null>(null);
   const [assignedTo, setAssignedTo] = useState<string | null>(null);
+  const [channelId, setChannelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [collabPickerOpen, setCollabPickerOpen] = useState(false);
