@@ -31,6 +31,7 @@ import {
 import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } from "@/features/pipeline/PipelineFilters";
 import { DealsTable } from "@/features/pipeline/DealsTable";
 import { PipelineDashboard } from "@/features/pipeline/PipelineDashboard";
+import { CsvImportDialog } from "@/features/pipeline/CsvImportDialog";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
