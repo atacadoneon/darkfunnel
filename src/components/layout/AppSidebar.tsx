@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 
 type Item = { title: string; url: string; icon: any };
@@ -80,6 +81,14 @@ export function AppSidebar() {
   const { pathname } = useLocation();
   const { current } = useWorkspace();
   const { user } = useAuth();
+  const canSeeSettings = useIsManagerOrAdmin();
+
+  const visibleSections = sections
+    .map((s) => ({
+      ...s,
+      items: s.items.filter((i) => canSeeSettings || i.url !== "/app/settings"),
+    }))
+    .filter((s) => s.items.length > 0);
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
@@ -139,7 +148,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {sections.map((section) => (
+        {visibleSections.map((section) => (
           <SidebarGroup key={section.label}>
             {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
             <SidebarGroupContent>
