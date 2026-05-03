@@ -31,6 +31,7 @@ import {
   User as UserIcon, Users, Lock, X,
 } from "lucide-react";
 import { useContacts } from "@/features/contacts/hooks";
+import { useChannels } from "@/features/channels/hooks";
 import {
   useDealCollaborators, useIsAdmin, useIsManagerOrAdmin, useWorkspaceMembers,
 } from "@/features/workspace/permissions";
@@ -60,6 +61,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [notes, setNotes] = useState("");
   const [contactId, setContactId] = useState<string | null>(null);
   const [assignedTo, setAssignedTo] = useState<string | null>(null);
+  const [channelId, setChannelId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [collabPickerOpen, setCollabPickerOpen] = useState(false);
@@ -68,6 +70,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const { data: lossReasons = [] } = useLossReasons(true);
 
   const { data: contacts = [] } = useContacts();
+  const { data: channels = [] } = useChannels();
   const { data: members = [] } = useWorkspaceMembers();
   const { data: collabs = [] } = useDealCollaborators(deal?.id ?? null);
 
@@ -91,6 +94,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
       setNotes(deal?.notes ?? "");
       setContactId(deal?.contact_id ?? null);
       setAssignedTo(deal?.assigned_to ?? user?.id ?? null);
+      setChannelId(((deal as any)?.channel_id) ?? null);
     }
   }, [open, deal, defaultStageId, stages, user]);
 
@@ -117,6 +121,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         value_cents: Math.round(parseFloat(value || "0") * 100),
         notes: notes.trim() || null,
         contact_id: contactId,
+        channel_id: channelId,
         assigned_to: assignedTo ?? user.id,
       };
       if (editing && deal) {
@@ -124,6 +129,27 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         if (error) throw error;
         toast.success("Lead atualizado");
       } else {
+        // Reaproveitar Lead existente para o par (canal + contato), conforme regra Lead = Chat
+        if (channelId && contactId) {
+          const { data: existing } = await supabase
+            .from("deals")
+            .select("id,title")
+            .eq("workspace_id", current.id)
+            .eq("channel_id", channelId)
+            .eq("contact_id", contactId)
+            .is("archived_at", null)
+            .is("deleted_at", null)
+            .eq("status", "open")
+            .limit(1)
+            .maybeSingle();
+          if (existing?.id) {
+            toast.info(`Já existe um Lead para este contato neste canal (${existing.title}). Abrindo o existente.`);
+            qc.invalidateQueries({ queryKey: ["deals", current.id] });
+            onOpenChange(false);
+            setSaving(false);
+            return;
+          }
+        }
         const { error } = await supabase.from("deals").insert(payload);
         if (error) throw error;
         toast.success("Lead criado");
@@ -304,6 +330,24 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Canal</Label>
+            <Select value={channelId ?? "none"} onValueChange={(v) => setChannelId(v === "none" ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar canal..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem canal vinculado</SelectItem>
+                {channels.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.display_name} {c.phone_e164 ? `· ${c.phone_e164}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              1 Lead = 1 Chat por canal. Mesmo contato em outro canal = Lead separado.
+            </p>
           </div>
 
           <div className="space-y-1.5">
