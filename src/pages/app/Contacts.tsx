@@ -116,7 +116,7 @@ export default function Contacts() {
         <CardContent className="p-0">
           <div className="hidden grid-cols-[1fr_180px_140px_56px] gap-3 border-b border-border/40 px-4 py-3 text-[11px] uppercase tracking-wide text-muted-foreground md:grid">
             <span>Nome</span>
-            <span>Telefone</span>
+            <span>Canais</span>
             <span>Adicionado</span>
             <span className="text-right">Ações</span>
           </div>
@@ -164,20 +164,44 @@ export default function Contacts() {
                       </Avatar>
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium">{name}</div>
-                        <div className="truncate text-xs text-muted-foreground md:hidden">
-                          {c.phone_e164 ?? "—"}
+                        <div className="flex flex-wrap gap-1 pt-0.5 md:hidden">
+                          {(c.identities ?? []).slice(0, 3).map((i) => {
+                            const Icon = IDENTITY_ICON[i.kind];
+                            return (
+                              <span
+                                key={i.id}
+                                className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                              >
+                                <Icon className="h-2.5 w-2.5" />
+                                <span className="max-w-[120px] truncate">{i.value}</span>
+                              </span>
+                            );
+                          })}
+                          {(c.identities ?? []).length === 0 && c.phone_e164 && (
+                            <span className="text-[10px] text-muted-foreground">{c.phone_e164}</span>
+                          )}
                         </div>
                       </div>
                     </button>
 
-                    <div className="hidden items-center gap-1.5 text-sm md:flex">
-                      {c.phone_e164 ? (
-                        <>
-                          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="truncate">{c.phone_e164}</span>
-                        </>
+                    <div className="hidden flex-wrap items-center gap-1 md:flex">
+                      {(c.identities ?? []).length === 0 ? (
+                        <Badge variant="outline" className="text-[10px]">sem canais</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px]">sem telefone</Badge>
+                        (c.identities ?? []).map((i) => {
+                          const Icon = IDENTITY_ICON[i.kind];
+                          return (
+                            <span
+                              key={i.id}
+                              className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
+                              title={`${IDENTITY_LABELS[i.kind]}: ${i.value}`}
+                            >
+                              <Icon className="h-3 w-3 text-muted-foreground" />
+                              <span className="max-w-[140px] truncate">{i.value}</span>
+                              {i.is_primary && <span className="text-amber-500">★</span>}
+                            </span>
+                          );
+                        })
                       )}
                     </div>
 
