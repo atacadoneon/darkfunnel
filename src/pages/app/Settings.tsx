@@ -1,8 +1,9 @@
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { ChannelsSection } from "@/features/channels/ChannelsSection";
 import { TagsAdminSection, LossReasonsAdminSection } from "@/features/workspace/CatalogsAdmin";
+import { useIsManagerOrAdmin, useMyRole } from "@/features/workspace/permissions";
 import { Settings2, Radio, LineChart, Plug, Users, Tags } from "lucide-react";
 
 const TABS = [
@@ -26,6 +27,10 @@ function Empty({ title, desc }: { title: string; desc: string }) {
 export default function Settings() {
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "preferences";
+  const allowed = useIsManagerOrAdmin();
+  const { isLoading } = useMyRole();
+  if (isLoading) return null;
+  if (!allowed) return <Navigate to="/app/dashboard" replace />;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
