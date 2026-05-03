@@ -42,19 +42,38 @@ export function MessageThread({ messages }: { messages: MessageRow[] }) {
   }, [messages.length]);
 
   return (
-    <div ref={ref} className="flex-1 overflow-y-auto p-4 space-y-2 bg-muted/20">
-      {messages.map((m) => {
+    <div
+      ref={ref}
+      className="flex-1 overflow-y-auto p-4 space-y-1 bg-[#efeae2] dark:bg-[#0b141a]"
+    >
+      {messages.map((m, idx) => {
         const out = m.direction === "out";
+        const prev = messages[idx - 1];
+        const grouped = prev && prev.direction === m.direction;
         return (
-          <div key={m.id} className={cn("flex", out ? "justify-end" : "justify-start")}>
+          <div
+            key={m.id}
+            className={cn(
+              "flex",
+              out ? "justify-end" : "justify-start",
+              grouped ? "mt-0.5" : "mt-2"
+            )}
+          >
             <div
               className={cn(
-                "max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm",
-                out ? "bg-primary text-primary-foreground" : "bg-card border"
+                "relative max-w-[75%] rounded-lg px-2.5 py-1.5 text-sm shadow-sm",
+                out
+                  ? "bg-[#d9fdd3] text-[#111b21] dark:bg-[#005c4b] dark:text-white"
+                  : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-white"
               )}
             >
-              <div>{renderBody(m)}</div>
-              <div className={cn("mt-1 flex items-center justify-end gap-1 text-[10px]", out ? "opacity-80" : "text-muted-foreground")}>
+              <div className="pr-14">{renderBody(m)}</div>
+              <div
+                className={cn(
+                  "float-right -mb-0.5 ml-2 mt-1 flex items-center gap-1 text-[10px]",
+                  out ? "text-[#667781] dark:text-white/60" : "text-[#667781] dark:text-white/50"
+                )}
+              >
                 <span>{format(new Date(m.created_at), "HH:mm")}</span>
                 {out && <StatusIcon status={m.status} />}
               </div>
@@ -63,7 +82,9 @@ export function MessageThread({ messages }: { messages: MessageRow[] }) {
         );
       })}
       {messages.length === 0 && (
-        <div className="text-center text-sm text-muted-foreground py-8">Sem mensagens nesta conversa.</div>
+        <div className="text-center text-sm text-muted-foreground py-8">
+          Sem mensagens nesta conversa.
+        </div>
       )}
     </div>
   );
