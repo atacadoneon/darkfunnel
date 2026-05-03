@@ -104,6 +104,10 @@ export default function Contacts() {
                 Base unificada · Atendimento + CRM
               </Badge>
             </div>
+            <div className="flex items-center gap-2 rounded-md border px-3 py-2">
+              <Switch id="show-arch" checked={showArchived} onCheckedChange={setShowArchived} />
+              <Label htmlFor="show-arch" className="text-xs cursor-pointer whitespace-nowrap">Arquivados</Label>
+            </div>
           </div>
 
           <div className="mt-4 flex items-center gap-2">
