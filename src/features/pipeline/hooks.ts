@@ -77,6 +77,7 @@ export function useDeals() {
         .from("deals")
         .select("*, contact:contacts(id,display_name,phone_e164,profile_pic_url)")
         .is("deleted_at", null)
+        .is("archived_at", null)
         .order("position", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as Deal[];
