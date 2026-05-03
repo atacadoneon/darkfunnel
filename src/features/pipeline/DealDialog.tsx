@@ -62,6 +62,9 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [saving, setSaving] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [collabPickerOpen, setCollabPickerOpen] = useState(false);
+  const [lossOpen, setLossOpen] = useState(false);
+  const [lossReasonId, setLossReasonId] = useState<string | null>(null);
+  const { data: lossReasons = [] } = useLossReasons(true);
 
   const { data: contacts = [] } = useContacts();
   const { data: members = [] } = useWorkspaceMembers();
