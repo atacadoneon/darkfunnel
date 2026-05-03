@@ -6,7 +6,7 @@ import {
 } from "@dnd-kit/core";
 import {
   Plus, KanbanSquare, Settings as SettingsIcon, Upload, ChevronDown, Search, SlidersHorizontal, Users,
-  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer, X,
+  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer, X, List,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +29,7 @@ import {
   StagesDialog, LossReasonsDialog, OriginsDialog, ProductsDialog, AutomationsDialog, CaptureDialog,
 } from "@/features/pipeline/PipelineConfigDialogs";
 import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } from "@/features/pipeline/PipelineFilters";
+import { DealsTable } from "@/features/pipeline/DealsTable";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
@@ -89,6 +90,12 @@ export default function Pipeline() {
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [config, setConfig] = useState<ConfigKey>(null);
+  const view = (params.get("view") as "kanban" | "list") || "kanban";
+  const setView = (v: "kanban" | "list") => {
+    const next = new URLSearchParams(params);
+    if (v === "kanban") next.delete("view"); else next.set("view", v);
+    setParams(next, { replace: true });
+  };
 
   const filters = useMemo(() => parseFiltersFromURL(params), [params]);
   const setFilters = (f: Filters) => setParams(writeFiltersToURL(params, f), { replace: true });
@@ -228,13 +235,29 @@ export default function Pipeline() {
             <X className="h-3.5 w-3.5" /> Limpar
           </Button>
         )}
-        <div className="ml-auto text-xs text-muted-foreground">
-          {filteredDeals.length} de {deals.length} {deals.length === 1 ? "lead" : "leads"}
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            {filteredDeals.length} de {deals.length} {deals.length === 1 ? "lead" : "leads"}
+          </span>
+          {tab === "funil" && (
+            <div className="inline-flex bg-muted/60 rounded-md p-0.5 gap-0.5">
+              <button onClick={() => setView("kanban")}
+                className={cn("px-2.5 py-1 rounded-sm transition-colors flex items-center gap-1 text-xs",
+                  view === "kanban" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                <KanbanSquare className="h-3.5 w-3.5" /> Kanban
+              </button>
+              <button onClick={() => setView("list")}
+                className={cn("px-2.5 py-1 rounded-sm transition-colors flex items-center gap-1 text-xs",
+                  view === "list" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                <List className="h-3.5 w-3.5" /> Lista
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Kanban */}
-      {tab === "funil" && (
+      {/* Funil view */}
+      {tab === "funil" && view === "kanban" && (
         <div className="flex-1 min-h-0 overflow-x-auto">
           <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
             <div className="flex gap-3 px-4 md:px-6 pb-6 h-full">
@@ -247,6 +270,14 @@ export default function Pipeline() {
             <DragOverlay>{activeDeal && <DealCard deal={activeDeal as any} overlay />}</DragOverlay>
           </DndContext>
         </div>
+      )}
+      {tab === "funil" && view === "list" && (
+        <DealsTable
+          deals={filteredDeals}
+          stages={stages}
+          onOpenDeal={onOpenDeal}
+          includeArchived={showArchived}
+        />
       )}
 
       {tab === "banco" && <div className="flex-1 min-h-0 overflow-hidden"><Contacts /></div>}
