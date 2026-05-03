@@ -29,6 +29,7 @@ export type Deal = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  contact?: { id: string; display_name: string | null; phone_e164: string | null; profile_pic_url: string | null } | null;
 };
 
 export function useStages() {
@@ -74,7 +75,7 @@ export function useDeals() {
     queryFn: async (): Promise<Deal[]> => {
       const { data, error } = await supabase
         .from("deals")
-        .select("*")
+        .select("*, contact:contacts(id,display_name,phone_e164,profile_pic_url)")
         .is("deleted_at", null)
         .order("position", { ascending: true });
       if (error) throw error;
