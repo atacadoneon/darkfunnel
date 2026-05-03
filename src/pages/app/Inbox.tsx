@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useConversations, useMessages } from "@/features/inbox/hooks";
 import { useConversationIdsByMessageSearch } from "@/features/inbox/filterHooks";
 import {
@@ -40,6 +41,17 @@ export default function Inbox() {
   const { data: conversations = [], isLoading } = useConversations();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filters, setFilters] = useState<InboxFiltersType>(DEFAULT_FILTERS);
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const c = params.get("conversation");
+    if (c && c !== selectedId) {
+      setSelectedId(c);
+      const next = new URLSearchParams(params);
+      next.delete("conversation");
+      setParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const { data: msgMatchIds } = useConversationIdsByMessageSearch(filters.message);
 

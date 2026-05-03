@@ -73,8 +73,22 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
         {(c?.display_name ?? c?.phone_e164 ?? "?").charAt(0).toUpperCase()}
       </div>
       <div className="min-w-0">
-        <div className="font-semibold truncate">{c?.display_name ?? "Sem nome"}</div>
-        <div className="text-xs text-muted-foreground truncate">{c?.phone_e164}</div>
+        {contactDeal ? (
+          <button
+            type="button"
+            onClick={() => setOpenDeal(true)}
+            className="font-semibold truncate text-left hover:text-primary hover:underline underline-offset-2 transition-colors"
+            title="Abrir Lead"
+          >
+            {c?.display_name ?? "Sem nome"}
+          </button>
+        ) : (
+          <div className="font-semibold truncate">{c?.display_name ?? "Sem nome"}</div>
+        )}
+        <div className="text-xs text-muted-foreground truncate">
+          {c?.phone_e164}
+          {contactDeal && <span className="ml-1.5 text-primary/70">· Lead vinculado</span>}
+        </div>
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
