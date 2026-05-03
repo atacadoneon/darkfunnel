@@ -24,11 +24,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
-import { useContacts, type Contact } from "@/features/contacts/hooks";
-import { ContactDialog } from "@/features/contacts/ContactDialog";
+import { useContacts, type Contact, IDENTITY_LABELS } from "@/features/contacts/hooks";
+import { ContactDialog, IDENTITY_ICON } from "@/features/contacts/ContactDialog";
 import {
   MoreHorizontal,
-  Phone,
   Search,
   Trash2,
   Pencil,
