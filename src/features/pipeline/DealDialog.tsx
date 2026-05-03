@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,10 +9,24 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Check, ChevronsUpDown, Trophy, XCircle, Trash2, User as UserIcon } from "lucide-react";
+import { useContacts } from "@/features/contacts/hooks";
+import { cn } from "@/lib/utils";
 import type { Deal, Stage } from "./hooks";
 
 type Props = {
@@ -32,7 +46,18 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [value, setValue] = useState("");
   const [stageId, setStageId] = useState("");
   const [notes, setNotes] = useState("");
+  const [contactId, setContactId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+
+  const { data: contacts = [] } = useContacts();
+
+  const wonStage = useMemo(() => stages.find((s) => s.is_won), [stages]);
+  const lostStage = useMemo(() => stages.find((s) => s.is_lost), [stages]);
+  const selectedContact = useMemo(
+    () => contacts.find((c) => c.id === contactId) ?? null,
+    [contacts, contactId]
+  );
 
   useEffect(() => {
     if (open) {
@@ -40,6 +65,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
       setValue(deal ? (deal.value_cents / 100).toFixed(2) : "");
       setStageId(deal?.stage_id ?? defaultStageId ?? stages[0]?.id ?? "");
       setNotes(deal?.notes ?? "");
+      setContactId(deal?.contact_id ?? null);
     }
   }, [open, deal, defaultStageId, stages]);
 
@@ -54,6 +80,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         title: title.trim(),
         value_cents: Math.round(parseFloat(value || "0") * 100),
         notes: notes.trim() || null,
+        contact_id: contactId,
       };
       if (editing && deal) {
         const { error } = await supabase.from("deals").update(payload).eq("id", deal.id);
@@ -73,6 +100,30 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     }
   };
 
+  const moveTo = async (targetStageId: string, status: "won" | "lost") => {
+    if (!deal || !current) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({ stage_id: targetStageId, status })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    toast.success(status === "won" ? "Marcado como ganho" : "Marcado como perdido");
+    qc.invalidateQueries({ queryKey: ["deals", current.id] });
+    onOpenChange(false);
+  };
+
+  const onDelete = async () => {
+    if (!deal || !current) return;
+    const { error } = await supabase
+      .from("deals")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", deal.id);
+    if (error) return toast.error(error.message);
+    toast.success("Negócio excluído");
+    qc.invalidateQueries({ queryKey: ["deals", current.id] });
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -84,6 +135,64 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
             <Label htmlFor="t">Título</Label>
             <Input id="t" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Pacote anual — Empresa X" />
           </div>
+
+          <div className="space-y-1.5">
+            <Label>Contato</Label>
+            <Popover open={contactOpen} onOpenChange={setContactOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                    {selectedContact
+                      ? selectedContact.display_name || selectedContact.phone_e164 || "Sem nome"
+                      : "Vincular contato (opcional)"}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar contato..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum contato encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {contactId && (
+                        <CommandItem
+                          value="__none__"
+                          onSelect={() => { setContactId(null); setContactOpen(false); }}
+                        >
+                          <XCircle className="mr-2 h-4 w-4 text-muted-foreground" />
+                          Remover vínculo
+                        </CommandItem>
+                      )}
+                      {contacts.map((c) => {
+                        const label = c.display_name || c.phone_e164 || "Sem nome";
+                        return (
+                          <CommandItem
+                            key={c.id}
+                            value={`${label} ${c.phone_e164 ?? ""}`}
+                            onSelect={() => { setContactId(c.id); setContactOpen(false); }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", contactId === c.id ? "opacity-100" : "opacity-0")} />
+                            <span className="truncate">{label}</span>
+                            {c.phone_e164 && (
+                              <span className="ml-auto text-xs text-muted-foreground">{c.phone_e164}</span>
+                            )}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="v">Valor (R$)</Label>
@@ -105,6 +214,58 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
             <Label htmlFor="n">Notas</Label>
             <Textarea id="n" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
+
+          {editing && (
+            <div className="flex flex-wrap gap-2 pt-2 border-t">
+              {wonStage && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                  onClick={() => moveTo(wonStage.id, "won")}
+                >
+                  <Trophy className="h-3.5 w-3.5" /> Ganhar
+                </Button>
+              )}
+              {lostStage && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-red-600 border-red-500/30 hover:bg-red-500/10"
+                  onClick={() => moveTo(lostStage.id, "lost")}
+                >
+                  <XCircle className="h-3.5 w-3.5" /> Perder
+                </Button>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-muted-foreground hover:text-destructive ml-auto"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Excluir
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir negócio?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação remove o negócio do funil. O contato permanece intacto.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete}>Excluir</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={saving || !title.trim() || !stageId}>
