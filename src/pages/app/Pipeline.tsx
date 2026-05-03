@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   DndContext,
   DragOverlay,
@@ -31,6 +32,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import Contacts from "@/pages/app/Contacts";
 
 type Tab = "funil" | "banco" | "dashboard";
 
@@ -44,7 +46,14 @@ export default function Pipeline() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [defaultStageId, setDefaultStageId] = useState<string | undefined>();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("funil");
+  const [params, setParams] = useSearchParams();
+  const tab = (params.get("tab") as Tab) || "funil";
+  const setTab = (t: Tab) => {
+    const next = new URLSearchParams(params);
+    if (t === "funil") next.delete("tab");
+    else next.set("tab", t);
+    setParams(next, { replace: true });
+  };
   const [search, setSearch] = useState("");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -237,8 +246,8 @@ export default function Pipeline() {
       )}
 
       {tab === "banco" && (
-        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-          Banco de leads · em breve
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <Contacts />
         </div>
       )}
       {tab === "dashboard" && (
