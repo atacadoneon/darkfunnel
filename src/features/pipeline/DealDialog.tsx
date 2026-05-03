@@ -20,12 +20,20 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, Trophy, XCircle, Archive, User as UserIcon } from "lucide-react";
+import {
+  Check, ChevronsUpDown, Trophy, XCircle, Archive,
+  User as UserIcon, Users, Lock, X,
+} from "lucide-react";
 import { useContacts } from "@/features/contacts/hooks";
+import {
+  useDealCollaborators, useIsAdmin, useWorkspaceMembers,
+} from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import type { Deal, Stage } from "./hooks";
 
@@ -39,6 +47,8 @@ type Props = {
 
 export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }: Props) {
   const { current } = useWorkspace();
+  const { user } = useAuth();
+  const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const editing = !!deal;
 
@@ -47,10 +57,14 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const [stageId, setStageId] = useState("");
   const [notes, setNotes] = useState("");
   const [contactId, setContactId] = useState<string | null>(null);
+  const [assignedTo, setAssignedTo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [collabPickerOpen, setCollabPickerOpen] = useState(false);
 
   const { data: contacts = [] } = useContacts();
+  const { data: members = [] } = useWorkspaceMembers();
+  const { data: collabs = [] } = useDealCollaborators(deal?.id ?? null);
 
   const wonStage = useMemo(() => stages.find((s) => s.is_won), [stages]);
   const lostStage = useMemo(() => stages.find((s) => s.is_lost), [stages]);
@@ -59,6 +73,9 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     [contacts, contactId]
   );
 
+  const isOwner = !!deal && deal.assigned_to === user?.id;
+  const canManageCollabs = isAdmin || isOwner || !editing;
+
   useEffect(() => {
     if (open) {
       setTitle(deal?.title ?? "");
@@ -66,12 +83,13 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
       setStageId(deal?.stage_id ?? defaultStageId ?? stages[0]?.id ?? "");
       setNotes(deal?.notes ?? "");
       setContactId(deal?.contact_id ?? null);
+      setAssignedTo(deal?.assigned_to ?? user?.id ?? null);
     }
-  }, [open, deal, defaultStageId, stages]);
+  }, [open, deal, defaultStageId, stages, user]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!current) return;
+    if (!current || !user) return;
     setSaving(true);
     try {
       const payload = {
@@ -81,6 +99,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         value_cents: Math.round(parseFloat(value || "0") * 100),
         notes: notes.trim() || null,
         contact_id: contactId,
+        assigned_to: assignedTo ?? user.id,
       };
       if (editing && deal) {
         const { error } = await supabase.from("deals").update(payload).eq("id", deal.id);
@@ -91,7 +110,18 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         if (error) throw error;
         toast.success("Negócio criado");
       }
+
+      // garantir owner_id no contato vinculado (se ainda nulo)
+      if (contactId) {
+        await supabase
+          .from("contacts")
+          .update({ owner_id: assignedTo ?? user.id })
+          .eq("id", contactId)
+          .is("owner_id", null);
+      }
+
       qc.invalidateQueries({ queryKey: ["deals", current.id] });
+      qc.invalidateQueries({ queryKey: ["contacts", current.id] });
       onOpenChange(false);
     } catch (err) {
       toast.error((err as Error).message);
@@ -124,9 +154,41 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     onOpenChange(false);
   };
 
+  const addCollaborator = async (uid: string) => {
+    if (!deal || !current) return;
+    const { error } = await supabase.from("deal_collaborators").insert({
+      deal_id: deal.id,
+      user_id: uid,
+      workspace_id: current.id,
+    });
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["deal-collabs", deal.id] });
+    setCollabPickerOpen(false);
+  };
+
+  const removeCollaborator = async (uid: string) => {
+    if (!deal) return;
+    const { error } = await supabase
+      .from("deal_collaborators")
+      .delete()
+      .eq("deal_id", deal.id)
+      .eq("user_id", uid);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["deal-collabs", deal.id] });
+  };
+
+  const memberLabel = (uid: string) => {
+    const m = members.find((x) => x.user_id === uid);
+    return m?.display_name || m?.email || uid.slice(0, 8);
+  };
+
+  const availableToInvite = members.filter(
+    (m) => m.user_id !== assignedTo && !collabs.includes(m.user_id)
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? "Editar negócio" : "Novo negócio"}</DialogTitle>
         </DialogHeader>
@@ -210,6 +272,94 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
               </Select>
             </div>
           </div>
+
+          <div className="space-y-1.5">
+            <Label>Vendedor responsável</Label>
+            {isAdmin ? (
+              <Select value={assignedTo ?? user?.id ?? ""} onValueChange={setAssignedTo}>
+                <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                <SelectContent>
+                  {members.map((m) => (
+                    <SelectItem key={m.user_id} value={m.user_id}>
+                      {m.display_name || m.email || m.user_id.slice(0, 8)}
+                      {m.user_id === user?.id && " (você)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="truncate">{memberLabel(assignedTo ?? user?.id ?? "")}</span>
+                <Badge variant="outline" className="ml-auto text-[10px]">Somente admin altera</Badge>
+              </div>
+            )}
+          </div>
+
+          {editing && (
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" /> Colaboradores convidados
+                </Label>
+                {canManageCollabs && availableToInvite.length > 0 && (
+                  <Popover open={collabPickerOpen} onOpenChange={setCollabPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs">
+                        Convidar
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-0" align="end">
+                      <Command>
+                        <CommandInput placeholder="Buscar membro..." />
+                        <CommandList>
+                          <CommandEmpty>Sem membros disponíveis.</CommandEmpty>
+                          <CommandGroup>
+                            {availableToInvite.map((m) => (
+                              <CommandItem
+                                key={m.user_id}
+                                value={m.display_name || m.email || m.user_id}
+                                onSelect={() => addCollaborator(m.user_id)}
+                              >
+                                {m.display_name || m.email || m.user_id.slice(0, 8)}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+              {collabs.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Apenas o vendedor responsável vê este negócio. Convide colegas para compartilhar.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {collabs.map((uid) => (
+                    <span
+                      key={uid}
+                      className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
+                    >
+                      {memberLabel(uid)}
+                      {canManageCollabs && (
+                        <button
+                          type="button"
+                          onClick={() => removeCollaborator(uid)}
+                          className="ml-0.5 text-muted-foreground hover:text-destructive"
+                          aria-label="Remover"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="n">Notas</Label>
             <Textarea id="n" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
