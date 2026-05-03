@@ -79,35 +79,15 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
 
       <div className="ml-auto flex items-center gap-1.5">
         {/* Responsável */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1.5">
-              <span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold flex items-center justify-center">
-                {assignedLabel.charAt(0).toUpperCase()}
-              </span>
-              <span className="text-xs max-w-[110px] truncate">{assignedLabel}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Atribuir conversa</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => assign.mutate({ conversation_id: conversation.id, user_id: null })}>
-              Sem responsável
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {members.map((m) => (
-              <DropdownMenuItem key={m.user_id} onClick={() => assign.mutate({ conversation_id: conversation.id, user_id: m.user_id })}>
-                {conversation.assigned_user_id === m.user_id && <Check className="h-3 w-3 mr-2" />}
-                {m.display_name || m.email || m.user_id.slice(0, 8)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <AssigneePopover
+          conversationId={conversation.id}
+          assignedUserId={conversation.assigned_user_id}
+        />
 
-        <IconBtn label="Transferir conversa" onClick={() => {
-          const el = document.activeElement as HTMLElement | null; el?.blur?.();
-        }}>
-          <ArrowLeftRight className="h-4 w-4" />
-        </IconBtn>
+        {/* Mover etapa do lead */}
+        {contactDeal && (
+          <StageMovePopover dealId={contactDeal.id} currentStageId={contactDeal.stage_id} />
+        )}
 
         <IconBtn label="Agendar mensagem" onClick={() => setOpenSchedule(true)}>
           <Clock className="h-4 w-4" />
@@ -126,8 +106,12 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
           {contactDeal ? "Ver Lead" : "Novo Lead"}
         </Button>
 
-        <IconBtn label="Notas internas" onClick={() => setOpenNotes(true)}>
-          <StickyNote className="h-4 w-4" />
+        <IconBtn label="Buscar nas mensagens" onClick={onToggleSearch} active={searchActive}>
+          <Search className="h-4 w-4" />
+        </IconBtn>
+
+        <IconBtn label="Observações internas do contato" onClick={() => setOpenNotes(true)}>
+          <FileText className="h-4 w-4" />
         </IconBtn>
       </div>
 
@@ -141,7 +125,11 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
         <PlaybookDialog conversation={conversation} open={openPlaybook} onOpenChange={setOpenPlaybook} />
       )}
       {openNotes && (
-        <NotesDialog conversation={conversation} open={openNotes} onOpenChange={setOpenNotes} />
+        <ContactNotesDrawer
+          contactId={conversation.contact_id}
+          open={openNotes}
+          onOpenChange={setOpenNotes}
+        />
       )}
       {openDeal && contactDeal && (
         <LeadEditDialog open={openDeal} onOpenChange={setOpenDeal} dealId={contactDeal.id} />
