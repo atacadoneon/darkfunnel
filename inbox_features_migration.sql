@@ -3,6 +3,24 @@
 -- conversation_notes | scheduled_messages | playbooks | cadences
 -- ============================================================
 
+-- Helper de permissão por workspace, usado nas policies abaixo.
+-- Evita depender de public.has_role(), que pode não existir no seu banco.
+create or replace function public.is_ws_admin_or_manager(_ws uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.workspace_members wm
+    where wm.workspace_id = _ws
+      and wm.user_id = auth.uid()
+      and wm.role in ('owner', 'admin', 'manager')
+  );
+$$;
+
 -- 1) NOTAS INTERNAS (visíveis só para o time)
 create table if not exists public.conversation_notes (
   id uuid primary key default gen_random_uuid(),
@@ -98,8 +116,8 @@ create policy "ws read playbooks" on public.playbooks for select to authenticate
   using (exists (select 1 from public.workspace_members m where m.workspace_id = playbooks.workspace_id and m.user_id=auth.uid()));
 drop policy if exists "ws write playbooks" on public.playbooks;
 create policy "ws write playbooks" on public.playbooks for all to authenticated
-  using (public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager'))
-  with check (public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager'));
+  using (public.is_ws_admin_or_manager(playbooks.workspace_id))
+  with check (public.is_ws_admin_or_manager(playbooks.workspace_id));
 
 drop policy if exists "ws read steps" on public.playbook_steps;
 create policy "ws read steps" on public.playbook_steps for select to authenticated
@@ -108,8 +126,16 @@ create policy "ws read steps" on public.playbook_steps for select to authenticat
     where p.id = playbook_steps.playbook_id));
 drop policy if exists "ws write steps" on public.playbook_steps;
 create policy "ws write steps" on public.playbook_steps for all to authenticated
-  using (public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager'))
-  with check (public.has_role(auth.uid(),'admin') or public.has_role(auth.uid(),'manager'));
+  using (exists (
+    select 1 from public.playbooks p
+    where p.id = playbook_steps.playbook_id
+      and public.is_ws_admin_or_manager(p.workspace_id)
+  ))
+  with check (exists (
+    select 1 from public.playbooks p
+    where p.id = playbook_steps.playbook_id
+      and public.is_ws_admin_or_manager(p.workspace_id)
+  ));
 
 -- 4) CADÊNCIAS (execução de playbook em uma conversa)
 create table if not exists public.cadence_runs (
@@ -166,8 +192,7 @@ begin
 
   -- só admin, manager, ou dono atual podem reatribuir
   if not (
-    public.has_role(auth.uid(),'admin') or
-    public.has_role(auth.uid(),'manager') or
+    public.is_ws_admin_or_manager(v_ws) or
     v_owner = auth.uid() or v_owner is null
   ) then
     raise exception 'forbidden';
