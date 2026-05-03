@@ -443,6 +443,44 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <Dialog open={lossOpen} onOpenChange={setLossOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Marcar como perdido</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {lossReasons.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum motivo cadastrado. Peça a um administrador para cadastrar em
+                <strong> Configurações → Cadastros</strong>.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Motivo</Label>
+                <Select value={lossReasonId ?? ""} onValueChange={setLossReasonId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um motivo" /></SelectTrigger>
+                  <SelectContent>
+                    {lossReasons.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLossOpen(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={confirmLoss}
+              disabled={lossReasons.length > 0 && !lossReasonId}
+            >
+              Confirmar perda
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
