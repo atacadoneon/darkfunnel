@@ -31,6 +31,7 @@ import {
 import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } from "@/features/pipeline/PipelineFilters";
 import { DealsTable } from "@/features/pipeline/DealsTable";
 import { PipelineDashboard } from "@/features/pipeline/PipelineDashboard";
+import { CsvImportDialog } from "@/features/pipeline/CsvImportDialog";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
@@ -79,6 +80,7 @@ export default function Pipeline() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [defaultStageId, setDefaultStageId] = useState<string | undefined>();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const showArchived = params.get("archived") === "1";
   const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
@@ -200,7 +202,7 @@ export default function Pipeline() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button variant="outline" className="gap-1"><Upload className="h-4 w-4" /> Importar</Button>
+              <Button variant="outline" className="gap-1" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Importar</Button>
             </div>
           </div>
         </Card>
@@ -306,6 +308,7 @@ export default function Pipeline() {
       <ProductsDialog open={config === "products"} onOpenChange={(v) => !v && setConfig(null)} />
       <CaptureDialog open={config === "capture"} onOpenChange={(v) => !v && setConfig(null)} />
       <AutomationsDialog open={config === "automations"} onOpenChange={(v) => !v && setConfig(null)} />
+      <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
