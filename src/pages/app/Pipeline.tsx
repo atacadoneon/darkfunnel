@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   DndContext, DragOverlay, PointerSensor, closestCorners, useSensor, useSensors,
@@ -6,16 +6,13 @@ import {
 } from "@dnd-kit/core";
 import {
   Plus, KanbanSquare, Settings as SettingsIcon, Upload, ChevronDown, Search, SlidersHorizontal, Users,
-  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer,
+  Tag as TagIcon, Layers, Megaphone, Package, Webhook, Timer, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeals, useStages, type Deal } from "@/features/pipeline/hooks";
 import { StageColumn } from "@/features/pipeline/StageColumn";
 import { DealCard } from "@/features/pipeline/DealCard";
@@ -31,9 +28,43 @@ import Contacts from "@/pages/app/Contacts";
 import {
   StagesDialog, LossReasonsDialog, OriginsDialog, ProductsDialog, AutomationsDialog, CaptureDialog,
 } from "@/features/pipeline/PipelineConfigDialogs";
+import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } from "@/features/pipeline/PipelineFilters";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
+
+function parseFiltersFromURL(params: URLSearchParams): Filters {
+  const arr = (k: string) => params.get(k)?.split(",").filter(Boolean) ?? [];
+  return {
+    assignees: arr("assignees"),
+    origins: arr("origins"),
+    stages: arr("stages"),
+    status: arr("status") as any,
+    showArchived: params.get("archived") === "1",
+    minValue: params.get("min") ?? "",
+    maxValue: params.get("max") ?? "",
+    inactiveDays: params.get("inactive") ?? "any",
+    createdFrom: params.get("from") ?? "",
+    createdTo: params.get("to") ?? "",
+    sort: (params.get("sort") as any) ?? "position",
+  };
+}
+function writeFiltersToURL(prev: URLSearchParams, f: Filters): URLSearchParams {
+  const next = new URLSearchParams(prev);
+  const setOrDel = (k: string, v: string) => { if (v) next.set(k, v); else next.delete(k); };
+  setOrDel("assignees", f.assignees.join(","));
+  setOrDel("origins", f.origins.join(","));
+  setOrDel("stages", f.stages.join(","));
+  setOrDel("status", f.status.join(","));
+  setOrDel("archived", f.showArchived ? "1" : "");
+  setOrDel("min", f.minValue);
+  setOrDel("max", f.maxValue);
+  setOrDel("inactive", f.inactiveDays === "any" ? "" : f.inactiveDays);
+  setOrDel("from", f.createdFrom);
+  setOrDel("to", f.createdTo);
+  setOrDel("sort", f.sort === "position" ? "" : f.sort);
+  return next;
+}
 
 export default function Pipeline() {
   const { current } = useWorkspace();
