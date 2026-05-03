@@ -70,7 +70,8 @@ export default function Pipeline() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
   const { data: stages = [], isLoading: loadingStages } = useStages();
-  const { data: deals = [], isLoading: loadingDeals } = useDeals();
+  const showArchived = params.get("archived") === "1";
+  const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
   const { data: members = [] } = useWorkspaceMembers();
   const { data: origins = [] } = useLeadOrigins();
 
