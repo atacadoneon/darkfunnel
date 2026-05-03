@@ -1,8 +1,9 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
-import { Circle, Clock, MessageCircle, Bell, Pencil, MoreHorizontal, User } from "lucide-react";
+import { Circle, Clock, MessageCircle, Bell, Pencil, MoreHorizontal, User, Users } from "lucide-react";
 import { formatMoney, type Deal } from "./hooks";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 
 type Props = {
