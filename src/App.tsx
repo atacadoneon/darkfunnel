@@ -16,6 +16,7 @@ import ResetPassword from "@/pages/auth/ResetPassword";
 import AppLayout from "@/layouts/AppLayout";
 import Inbox from "@/pages/app/Inbox";
 import Settings from "@/pages/app/Settings";
+import Pipeline from "@/pages/app/Pipeline";
 import Placeholder from "@/pages/app/Placeholder";
 import NotFound from "@/pages/NotFound";
 
@@ -50,8 +51,8 @@ const App = () => (
                   <Route index element={<Navigate to="inbox" replace />} />
                   <Route path="inbox" element={<Inbox />} />
                   <Route path="contacts" element={<Placeholder title="Contatos" />} />
-                  <Route path="pipeline" element={<Placeholder title="Pipeline" />} />
-                  <Route path="deals" element={<Placeholder title="Negócios" />} />
+                  <Route path="pipeline" element={<Pipeline />} />
+                  <Route path="deals" element={<Navigate to="/app/pipeline" replace />} />
                   <Route path="channels" element={<Navigate to="/app/settings?tab=channels" replace />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
