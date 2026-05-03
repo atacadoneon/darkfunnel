@@ -134,16 +134,31 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
     }
   };
 
-  const moveTo = async (targetStageId: string, status: "won" | "lost") => {
+  const moveTo = async (
+    targetStageId: string,
+    status: "won" | "lost",
+    reasonId?: string | null,
+  ) => {
     if (!deal || !current) return;
-    const { error } = await supabase
-      .from("deals")
-      .update({ stage_id: targetStageId, status })
-      .eq("id", deal.id);
+    const patch: Record<string, unknown> = { stage_id: targetStageId, status };
+    if (status === "lost") patch.loss_reason_id = reasonId ?? null;
+    if (status === "won") patch.loss_reason_id = null;
+    const { error } = await supabase.from("deals").update(patch).eq("id", deal.id);
     if (error) return toast.error(error.message);
     toast.success(status === "won" ? "Marcado como ganho" : "Marcado como perdido");
     qc.invalidateQueries({ queryKey: ["deals", current.id] });
     onOpenChange(false);
+  };
+
+  const confirmLoss = async () => {
+    if (!lostStage) return;
+    if (lossReasons.length > 0 && !lossReasonId) {
+      toast.error("Selecione um motivo de perda");
+      return;
+    }
+    await moveTo(lostStage.id, "lost", lossReasonId);
+    setLossOpen(false);
+    setLossReasonId(null);
   };
 
   const onArchive = async () => {
