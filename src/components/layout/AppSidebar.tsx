@@ -42,6 +42,7 @@ const sections: { label: string; items: Item[] }[] = [
     items: [
       { title: "Dashboard", url: "/app/dashboard", icon: LayoutGrid },
       { title: "CRM & Leads", url: "/app/pipeline", icon: Users },
+      { title: "Contatos", url: "/app/contacts", icon: UserCheck },
     ],
   },
   {
