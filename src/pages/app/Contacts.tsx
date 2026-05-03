@@ -29,7 +29,6 @@ import { ContactDialog } from "@/features/contacts/ContactDialog";
 import {
   MoreHorizontal,
   Phone,
-  Plus,
   Search,
   Trash2,
   Pencil,
@@ -55,10 +54,6 @@ export default function Contacts() {
     [contacts]
   );
 
-  const openNew = () => {
-    setEditing(null);
-    setDialogOpen(true);
-  };
   const openEdit = (c: Contact) => {
     setEditing(c);
     setDialogOpen(true);
