@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import {
-  Gift, Clock, ClipboardList, StickyNote, ArrowLeftRight,
-  Sparkles, Plus, Loader2, Send, Check,
+  Gift, Clock, ClipboardList, StickyNote, Search,
+  Sparkles, Plus, Loader2, Send, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,33 +12,30 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Popover, PopoverContent, PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { useStages } from "@/features/pipeline/hooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
 import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import {
-  useAddNote, useConversationNotes,
   useScheduleMessage, useScheduledMessages, useCancelScheduled,
   usePlaybooks, useStartCadence,
-  useAssignConversation,
   useRunAIAnalysis, useAIAnalyses,
   useContactDeal,
 } from "./inboxFeatureHooks";
+import { AssigneePopover } from "./AssigneePopover";
+import { StageMovePopover } from "./StageMovePopover";
+import { ContactNotesDrawer } from "./ContactNotesDrawer";
 import type { ConversationRow } from "./hooks";
 
-type Props = { conversation: ConversationRow };
+type Props = {
+  conversation: ConversationRow;
+  onToggleSearch?: () => void;
+  searchActive?: boolean;
+};
 
 function IconBtn({ children, label, onClick, active }: { children: React.ReactNode; label: string; onClick?: () => void; active?: boolean }) {
   return (
@@ -58,11 +55,8 @@ function IconBtn({ children, label, onClick, active }: { children: React.ReactNo
   );
 }
 
-export function ConversationHeader({ conversation }: Props) {
+export function ConversationHeader({ conversation, onToggleSearch, searchActive }: Props) {
   const c = conversation.contacts;
-  const { data: members = [] } = useWorkspaceMembers();
-  const assigned = members.find((m) => m.user_id === conversation.assigned_user_id);
-  const assignedLabel = assigned?.display_name || assigned?.email || "Sem responsável";
 
   const [openSchedule, setOpenSchedule] = useState(false);
   const [openAnalysis, setOpenAnalysis] = useState(false);
@@ -70,7 +64,6 @@ export function ConversationHeader({ conversation }: Props) {
   const [openNotes, setOpenNotes] = useState(false);
   const [openDeal, setOpenDeal] = useState(false);
 
-  const assign = useAssignConversation();
   const { data: stages = [] } = useStages();
   const { data: contactDeal } = useContactDeal(conversation.contact_id);
 
