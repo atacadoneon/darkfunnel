@@ -229,8 +229,24 @@ export default function Pipeline() {
             <X className="h-3.5 w-3.5" /> Limpar
           </Button>
         )}
-        <div className="ml-auto text-xs text-muted-foreground">
-          {filteredDeals.length} de {deals.length} {deals.length === 1 ? "lead" : "leads"}
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            {filteredDeals.length} de {deals.length} {deals.length === 1 ? "lead" : "leads"}
+          </span>
+          {tab === "funil" && (
+            <div className="inline-flex bg-muted/60 rounded-md p-0.5 gap-0.5">
+              <button onClick={() => setView("kanban")}
+                className={cn("px-2.5 py-1 rounded-sm transition-colors flex items-center gap-1 text-xs",
+                  view === "kanban" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                <KanbanSquare className="h-3.5 w-3.5" /> Kanban
+              </button>
+              <button onClick={() => setView("list")}
+                className={cn("px-2.5 py-1 rounded-sm transition-colors flex items-center gap-1 text-xs",
+                  view === "list" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                <List className="h-3.5 w-3.5" /> Lista
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
