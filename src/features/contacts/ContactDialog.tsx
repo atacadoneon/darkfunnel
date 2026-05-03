@@ -202,6 +202,28 @@ export function ContactDialog({ open, onOpenChange, contact }: Props) {
         if (error) throw error;
       }
 
+      // tags diff
+      const tagsToAdd = tagIds.filter((id) => !originalTagIds.includes(id));
+      const tagsToRemove = originalTagIds.filter((id) => !tagIds.includes(id));
+      if (tagsToRemove.length) {
+        const { error } = await supabase
+          .from("contact_tags")
+          .delete()
+          .eq("contact_id", contact.id)
+          .in("tag_id", tagsToRemove);
+        if (error) throw error;
+      }
+      if (tagsToAdd.length) {
+        const { error } = await supabase.from("contact_tags").insert(
+          tagsToAdd.map((tid) => ({
+            contact_id: contact.id,
+            tag_id: tid,
+            workspace_id: current.id,
+          }))
+        );
+        if (error) throw error;
+      }
+
       toast.success("Contato atualizado");
       qc.invalidateQueries({ queryKey: ["contacts", current.id] });
       onOpenChange(false);
