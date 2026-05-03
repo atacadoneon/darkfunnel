@@ -333,6 +333,24 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
           </div>
 
           <div className="space-y-1.5">
+            <Label>Canal</Label>
+            <Select value={channelId ?? "none"} onValueChange={(v) => setChannelId(v === "none" ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar canal..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem canal vinculado</SelectItem>
+                {channels.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.display_name} {c.phone_e164 ? `· ${c.phone_e164}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              1 Lead = 1 Chat por canal. Mesmo contato em outro canal = Lead separado.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
             <Label>Vendedor responsável</Label>
             {canReassign ? (
               <Select value={assignedTo ?? user?.id ?? ""} onValueChange={setAssignedTo}>
