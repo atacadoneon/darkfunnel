@@ -45,7 +45,14 @@ const persister = createSyncStoragePersister({
 
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{
+      persister,
+      maxAge: 1000 * 60 * 60 * 24, // 24h
+      buster: "v1",
+    }}
+  >
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
@@ -92,7 +99,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;
