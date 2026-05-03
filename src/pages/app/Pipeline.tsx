@@ -202,7 +202,7 @@ export default function Pipeline() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button variant="outline" className="gap-1"><Upload className="h-4 w-4" /> Importar</Button>
+              <Button variant="outline" className="gap-1" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Importar</Button>
             </div>
           </div>
         </Card>
