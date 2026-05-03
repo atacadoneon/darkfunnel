@@ -1,5 +1,8 @@
 import { useState, useRef, type KeyboardEvent } from "react";
-import { Send } from "lucide-react";
+import { Send, Calendar, Clock } from "lucide-react";
+import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
+import { useScheduledMessages } from "./inboxFeatureHooks";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +20,9 @@ export function Composer({ conversation }: Props) {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const { data: pendings = [] } = useScheduledMessages(conversation.id);
 
   const isCloud = conversation.channels?.kind === "whatsapp_cloud";
   const windowExpired =
@@ -69,6 +74,16 @@ export function Composer({ conversation }: Props) {
           Janela 24h da Cloud API expirou — apenas templates HSM são permitidos.
         </div>
       )}
+      {pendings.length > 0 && (
+        <button
+          onClick={() => setScheduleOpen(true)}
+          className="mb-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Clock className="h-3 w-3" />
+          <Badge variant="secondary" className="h-5 px-1.5">{pendings.length}</Badge>
+          mensagem(ns) agendada(s) — gerenciar
+        </button>
+      )}
       <div className="flex items-end gap-2">
         <Textarea
           ref={ref}
@@ -80,10 +95,26 @@ export function Composer({ conversation }: Props) {
           rows={1}
           className="resize-none min-h-[40px] max-h-32"
         />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setScheduleOpen(true)}
+          disabled={windowExpired}
+          title="Agendar"
+        >
+          <Calendar className="h-4 w-4" />
+        </Button>
         <Button onClick={() => void send()} disabled={sending || !text.trim() || windowExpired} size="icon">
           <Send className="h-4 w-4" />
         </Button>
       </div>
+
+      <ScheduleMessageDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        conversation={conversation}
+        initialBody={text}
+      />
     </div>
   );
 }

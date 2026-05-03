@@ -1,42 +1,48 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
-import { Circle, Clock, MessageCircle, Bell, Pencil, MoreHorizontal, User, Users } from "lucide-react";
+import { Globe, MessageCircle, Bell, Pencil, MoreHorizontal, User, ExternalLink } from "lucide-react";
 import { formatMoney, type Deal } from "./hooks";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  deal: Deal;
+  deal: Deal & { last_interaction_at?: string | null; has_proposal?: boolean; origin_id?: string | null };
   onClick?: () => void;
   overlay?: boolean;
 };
 
-function timeAgo(iso: string): string {
+function timeAgo(iso?: string | null): string {
+  if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / 86400000);
   if (days >= 1) return `${days}d`;
   const h = Math.floor(diff / 3600000);
   if (h >= 1) return `${h}h`;
-  const m = Math.max(1, Math.floor(diff / 60000));
-  return `${m}m`;
+  return `${Math.max(1, Math.floor(diff / 60000))}m`;
+}
+
+function colorFromName(name: string): string {
+  const palette = ["#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#6366f1","#a855f7","#ec4899"];
+  let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
 }
 
 export function DealCard({ deal, onClick, overlay }: Props) {
   const { user } = useAuth();
+  const { data: members = [] } = useWorkspaceMembers();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id, data: { type: "deal", deal } });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const contactLabel = deal.contact?.display_name || deal.contact?.phone_e164 || null;
-  const initial = (contactLabel || deal.title).trim().charAt(0).toUpperCase() || "?";
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const contactLabel = deal.contact?.display_name || deal.contact?.phone_e164 || deal.title;
   const ago = timeAgo(deal.updated_at ?? deal.created_at);
-  const hasValue = deal.value_cents > 0;
-  const notMine = !!deal.assigned_to && deal.assigned_to !== user?.id;
+  const lastAgo = timeAgo(deal.last_interaction_at ?? deal.updated_at);
+
+  const assignee = members.find((m: any) => m.user_id === deal.assigned_to);
+  const assigneeName = assignee?.display_name ?? assignee?.email ?? null;
+  const assigneeInitial = (assigneeName ?? "?").charAt(0).toUpperCase();
 
   return (
     <Card
@@ -46,76 +52,56 @@ export function DealCard({ deal, onClick, overlay }: Props) {
       {...attributes}
       {...listeners}
       className={cn(
-        "p-3 cursor-pointer hover:border-primary/50 transition-colors space-y-2 bg-card/60",
+        "p-3 cursor-pointer hover:border-primary/50 transition-colors space-y-2 bg-card",
         isDragging && "opacity-40",
         overlay && "shadow-lg ring-2 ring-primary"
       )}
     >
       <div className="flex items-start gap-2">
-        <Circle className="h-4 w-4 text-primary mt-0.5 shrink-0" strokeWidth={2} />
-        <h4 className="font-semibold text-sm flex-1 truncate">{deal.title}</h4>
-        {notMine && (
-          <span
-            className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-500 border border-blue-500/20 shrink-0 inline-flex items-center gap-1"
-            title="Compartilhado com você"
-          >
-            <Users className="h-2.5 w-2.5" /> shared
-          </span>
-        )}
-        <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 shrink-0">
-          {ago}
-        </span>
+        <h4 className="font-semibold text-sm flex-1 truncate">{contactLabel}</h4>
+        <div className="flex items-center gap-1 shrink-0">
+          <button className="text-muted-foreground hover:text-foreground" title="Abrir conversa">
+            <MessageCircle className="h-3.5 w-3.5" />
+          </button>
+          <button className="text-muted-foreground hover:text-foreground" title="Detalhes">
+            <ExternalLink className="h-3.5 w-3.5" />
+          </button>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{ago}</span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-6">
-        <span className="h-4 w-4 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-foreground">
-          {initial}
-        </span>
-        {contactLabel ? (
-          <span className="truncate">{contactLabel}</span>
-        ) : (
-          <span className="flex items-center gap-1 italic opacity-70">
-            <User className="h-3 w-3" /> sem contato
-          </span>
-        )}
-        {hasValue && (
-          <span className="ml-auto font-semibold text-foreground">
-            {formatMoney(deal.value_cents, deal.currency)}
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-6">
-        <Clock className="h-3 w-3" />
-        Última interação {ago}
-      </div>
-
-      {!deal.assigned_to && (
-        <div className="pl-6">
-          <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-500 border border-amber-500/20">
-            Sem vendedor
-          </span>
+      {assigneeName ? (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="h-4 w-4 rounded-full text-[10px] font-bold text-white flex items-center justify-center shrink-0"
+            style={{ background: colorFromName(assigneeName) }}>{assigneeInitial}</span>
+          <span className="truncate">{assigneeName}</span>
+        </div>
+      ) : (
+        <div className="text-[11px]">
+          <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">Sem vendedor</span>
         </div>
       )}
 
-      <div
-        className="flex items-center gap-1 pt-1 border-t border-border/40 -mx-1 px-1"
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-emerald-500" aria-label="Mensagem">
-          <MessageCircle className="h-4 w-4" />
-        </button>
-        <button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground" aria-label="Notificar">
-          <Bell className="h-4 w-4" />
-        </button>
-        <button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground" aria-label="Editar">
-          <Pencil className="h-4 w-4" />
-        </button>
-        <button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground ml-auto" aria-label="Mais">
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+        Última interação {lastAgo || "—"}
       </div>
+
+      <div className="flex items-center gap-1.5 text-xs">
+        <User className="h-3 w-3 text-muted-foreground" />
+        <span className="text-muted-foreground truncate">{contactLabel}</span>
+        {deal.value_cents > 0 && (
+          <span className="ml-auto font-semibold text-foreground text-xs">{formatMoney(deal.value_cents, deal.currency)}</span>
+        )}
+      </div>
+
+      {deal.has_proposal && (
+        <div>
+          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 border border-blue-500/20 tracking-wide">
+            Proposta enviada
+          </span>
+        </div>
+      )}
     </Card>
   );
 }

@@ -2,3 +2,6 @@ project_id = "sbyslxhjjfcqlxaehidw"
 
 [functions.analyze-conversation]
 verify_jwt = true
+
+[functions.process-scheduled-messages]
+verify_jwt = false
