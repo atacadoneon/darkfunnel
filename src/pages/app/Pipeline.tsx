@@ -30,6 +30,7 @@ import {
 } from "@/features/pipeline/PipelineConfigDialogs";
 import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } from "@/features/pipeline/PipelineFilters";
 import { DealsTable } from "@/features/pipeline/DealsTable";
+import { PipelineDashboard } from "@/features/pipeline/PipelineDashboard";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
@@ -282,7 +283,7 @@ export default function Pipeline() {
 
       {tab === "banco" && <div className="flex-1 min-h-0 overflow-hidden"><Contacts /></div>}
       {tab === "dashboard" && (
-        <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Dashboard do funil · em breve</div>
+        <PipelineDashboard deals={deals} stages={stages} members={members} origins={origins} />
       )}
 
       <DealDialog open={dialogOpen} onOpenChange={setDialogOpen} stages={stages} deal={editingDeal} defaultStageId={defaultStageId} />
