@@ -48,11 +48,19 @@ const App = () => (
                     </RequireAuth>
                   }
                 >
-                  <Route index element={<Navigate to="inbox" replace />} />
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<Placeholder title="Dashboard" />} />
                   <Route path="inbox" element={<Inbox />} />
                   <Route path="contacts" element={<Placeholder title="Contatos" />} />
                   <Route path="pipeline" element={<Pipeline />} />
                   <Route path="deals" element={<Navigate to="/app/pipeline" replace />} />
+                  <Route path="email" element={<Placeholder title="Email Marketing" />} />
+                  <Route path="goals" element={<Placeholder title="Metas" />} />
+                  <Route path="tasks" element={<Placeholder title="Tarefas" />} />
+                  <Route path="meetings" element={<Placeholder title="Reuniões" />} />
+                  <Route path="quiz" element={<Placeholder title="Quiz" />} />
+                  <Route path="cadence" element={<Placeholder title="Fluxo de Cadência" />} />
+                  <Route path="automations" element={<Placeholder title="Automações" />} />
                   <Route path="channels" element={<Navigate to="/app/settings?tab=channels" replace />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
