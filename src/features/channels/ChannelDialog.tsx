@@ -214,18 +214,17 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const connect = async (id: string) => {
     setQr(null);
     setConnectError(null);
-    const { data, error } = await supabase.functions.invoke("uazapi-instance", {
-      body: { channel_id: id, action: "connect" },
-    });
-    const detail = data?.detail ? `: ${typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)}` : "";
-    if (error || data?.error) {
-      const message = `${data?.error ?? error?.message ?? "Erro ao gerar QR Code"}${detail}`;
-      setConnectError(message);
-      toast.error(message);
+    const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "connect" });
+    if (!r.ok) {
+      setConnectError({ ...r.err, title: r.err.title + " (connect)" });
+      toast.error(`Conectar QR falhou: ${r.err.message}`);
       return;
     }
+    const data = r.data;
     if (data?.qr) setQr(data.qr);
-    if (!data?.qr && data?.status !== "connected") setConnectError("A UAZAPI não retornou um QR Code. Clique em Atualizar QR para tentar novamente.");
+    if (!data?.qr && data?.status !== "connected") {
+      setConnectError({ title: "QR não retornado", message: "A UAZAPI não retornou um QR Code. Clique em Atualizar QR para tentar novamente.", body: data });
+    }
     if (data?.status) setConnStatus(data.status);
     startPoll(id);
   };
