@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -10,21 +9,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Smartphone, BadgeCheck, ArrowLeft, Loader2, RefreshCw, CheckCircle2, Pencil } from "lucide-react";
+import { Smartphone, BadgeCheck, ArrowLeft, Loader2, RefreshCw, CheckCircle2, Pencil, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { ChannelKind, ChannelRow } from "./hooks";
+import { cn } from "@/lib/utils";
+import type { ChannelKind, ChannelRow, ChannelVisibility } from "./hooks";
+import { ChannelStepInfo, type Step1Value } from "./ChannelStepInfo";
+import { ChannelStepRotation } from "./ChannelStepRotation";
+import { useChannelMembers, setChannelMembers } from "./configHooks";
 
 type Props = {
   open: boolean;
@@ -32,101 +28,113 @@ type Props = {
   channel?: ChannelRow | null;
 };
 
+type Step = "type" | "info" | "rotation" | "uaz_connect";
+
+const STEPS: { key: Step; label: string }[] = [
+  { key: "info", label: "Informações" },
+  { key: "rotation", label: "Rodízio" },
+  { key: "uaz_connect", label: "Conectar QR" },
+];
+
 export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const { current } = useWorkspace();
   const qc = useQueryClient();
   const editing = !!channel;
 
-  const [step, setStep] = useState<"type" | "form" | "uaz_connect">(
-    editing ? (channel?.kind === "uazapi" ? "uaz_connect" : "form") : "type",
-  );
+  const [step, setStep] = useState<Step>("type");
   const [kind, setKind] = useState<ChannelKind>("uazapi");
-  const [displayName, setDisplayName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [policy, setPolicy] = useState<ChannelRow["policy"]>("support");
-  const [saving, setSaving] = useState(false);
+  const [info, setInfo] = useState<Step1Value>({
+    display_name: "",
+    sector_id: null,
+    visibility: "all",
+    selected_user_ids: [],
+  });
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [savingInfo, setSavingInfo] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [savingName, setSavingName] = useState(false);
 
-  // QR / status
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  // QR
   const [qr, setQr] = useState<string | null>(null);
   const [connStatus, setConnStatus] = useState<string>("pending");
   const [connectError, setConnectError] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
 
+  const { data: existingMembers = [] } = useChannelMembers(activeChannelId);
+
   useEffect(() => {
-    if (open) {
-      const isUaz = (channel?.kind ?? "uazapi") === "uazapi";
-      setStep(editing ? (isUaz ? "uaz_connect" : "form") : "type");
-      setKind((channel?.kind ?? "uazapi") as ChannelKind);
-      setDisplayName(channel?.display_name ?? "");
-      setPhone(channel?.phone_e164 ?? "");
-      setPolicy((channel?.policy ?? "support") as ChannelRow["policy"]);
-      setQr(null);
-      setConnectError(null);
-      setConnStatus(channel?.status ?? "pending");
-      setActiveChannelId(channel?.id ?? null);
-      if (editing && isUaz && channel?.id) {
-        void connect(channel.id);
-      }
-    } else {
-      stopPoll();
-    }
+    if (!open) { stopPoll(); return; }
+    const isUaz = (channel?.kind ?? "uazapi") === "uazapi";
+    setKind((channel?.kind ?? "uazapi") as ChannelKind);
+    setInfo({
+      display_name: channel?.display_name ?? "",
+      sector_id: channel?.sector_id ?? null,
+      visibility: (channel?.visibility ?? "all") as ChannelVisibility,
+      selected_user_ids: [],
+    });
+    setActiveChannelId(channel?.id ?? null);
+    setQr(null);
+    setConnectError(null);
+    setConnStatus(channel?.status ?? "pending");
+    setStep(editing ? "info" : "type");
+    if (editing && isUaz && channel?.id) void connect(channel.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, channel, editing]);
+
+  // hidrata seleção de usuários quando carrega membros do canal
+  useEffect(() => {
+    if (existingMembers.length && info.visibility === "selected" && info.selected_user_ids.length === 0) {
+      setInfo((p) => ({ ...p, selected_user_ids: existingMembers }));
+    }
+  }, [existingMembers]); // eslint-disable-line
 
   const stopPoll = () => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     setPolling(false);
   };
 
-  const pickType = (k: ChannelKind) => { setKind(k); setStep("form"); };
+  const pickType = (k: ChannelKind) => { setKind(k); setStep("info"); };
 
-  // Cria canal + (se uazapi) credenciais
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!current) return;
-    setSaving(true);
+  const saveInfo = async (): Promise<string | null> => {
+    if (!current) return null;
+    if (!info.display_name.trim()) { toast.error("Informe o nome do canal"); return null; }
+    if (info.visibility === "sector" && !info.sector_id) { toast.error("Selecione um setor"); return null; }
+    setSavingInfo(true);
     try {
-      let channelId = channel?.id;
       const payload = {
         workspace_id: current.id,
         kind,
-        display_name: displayName.trim(),
-        phone_e164: phone.trim() || null,
-        policy,
+        display_name: info.display_name.trim(),
+        sector_id: info.sector_id,
+        visibility: info.visibility,
       };
+      let id = activeChannelId;
       if (editing && channel) {
         const { error } = await supabase.from("channels").update(payload).eq("id", channel.id);
         if (error) throw error;
-        toast.success("Canal atualizado");
+        id = channel.id;
+      } else if (id) {
+        const { error } = await supabase.from("channels").update(payload).eq("id", id);
+        if (error) throw error;
       } else {
         const { data, error } = await supabase.from("channels").insert(payload).select("id").single();
         if (error) throw error;
-        channelId = data.id;
-        toast.success("Canal criado");
+        id = data.id;
       }
+      if (info.visibility === "selected") {
+        await setChannelMembers(id!, info.selected_user_ids);
+      }
+      setActiveChannelId(id);
       qc.invalidateQueries({ queryKey: ["channels", current.id] });
-
-      if (kind === "uazapi" && channelId && !editing) {
-        const { error } = await supabase.functions.invoke("uazapi-instance", {
-          body: { channel_id: channelId, action: "init" },
-        });
-        if (error) throw new Error(error.message);
-        toast.success("Instância criada");
-        setActiveChannelId(channelId);
-        setStep("uaz_connect");
-        await connect(channelId);
-        return;
-      }
-      onOpenChange(false);
-    } catch (err) {
-      toast.error((err as Error).message);
+      qc.invalidateQueries({ queryKey: ["channel-members", id] });
+      return id;
+    } catch (e) {
+      toast.error((e as Error).message);
+      return null;
     } finally {
-      setSaving(false);
+      setSavingInfo(false);
     }
   };
 
@@ -173,10 +181,41 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     qc.invalidateQueries({ queryKey: ["channels", current?.id] });
   };
 
+  const goNext = async () => {
+    if (step === "info") {
+      const id = await saveInfo();
+      if (!id) return;
+      setStep("rotation");
+    } else if (step === "rotation") {
+      if (kind === "uazapi") {
+        if (!editing && activeChannelId) {
+          // primeira vez: inicializa instância UAZAPI
+          const { error } = await supabase.functions.invoke("uazapi-instance", {
+            body: { channel_id: activeChannelId, action: "init" },
+          });
+          if (error) { toast.error(error.message); return; }
+        }
+        setStep("uaz_connect");
+        if (activeChannelId) await connect(activeChannelId);
+      } else {
+        toast.success("Canal salvo");
+        onOpenChange(false);
+      }
+    }
+  };
+
+  const goBack = () => {
+    if (step === "rotation") setStep("info");
+    else if (step === "uaz_connect") setStep("rotation");
+    else if (step === "info" && !editing) setStep("type");
+  };
+
+  const stepIndex = STEPS.findIndex((s) => s.key === step);
+
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) stopPoll(); onOpenChange(v); }}>
-      <DialogContent className="max-w-lg">
-        {step === "type" && !editing && (
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        {step === "type" && !editing ? (
           <>
             <DialogHeader>
               <DialogTitle>Escolha o tipo de canal</DialogTitle>
@@ -203,170 +242,178 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
               </Card>
             </div>
           </>
-        )}
-
-        {step === "form" && (
+        ) : (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                {!editing && (
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 -ml-1" onClick={() => setStep("type")}>
+                {step !== "info" || !editing ? (
+                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 -ml-1" onClick={goBack}>
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
-                )}
+                ) : null}
                 {editing ? "Editar canal" : "Novo WhatsApp Business"}
               </DialogTitle>
-              <DialogDescription>
-                {kind === "uazapi"
-                  ? "Dê um nome ao canal. Em seguida você escaneará o QR Code para conectar o WhatsApp."
-                  : "Cadastre o canal."}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="dn">Nome de exibição</Label>
-                <Input id="dn" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Atendimento Principal" />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Política</Label>
-                <Select value={policy} onValueChange={(v) => setPolicy(v as ChannelRow["policy"])}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="support">Suporte</SelectItem>
-                    <SelectItem value="sales">Vendas</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="transactional">Transacional</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {editing && kind === "uazapi" && (
-                <Button type="button" variant="outline" className="w-full" onClick={() => { setActiveChannelId(channel!.id); setStep("uaz_connect"); void connect(channel!.id); }}>
-                  <RefreshCw className="h-4 w-4 mr-2" /> Reconectar / Ver QR Code
-                </Button>
-              )}
-
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                <Button type="submit" disabled={saving || !displayName.trim()}>
-                  {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Conectando...</> : editing ? "Salvar" : "Criar e conectar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </>
-        )}
-
-        {step === "uaz_connect" && (
-          <>
-            <DialogHeader>
-              <DialogTitle>Conectar WhatsApp</DialogTitle>
-              <DialogDescription>
-                Abra o WhatsApp no celular → Aparelhos conectados → Conectar aparelho. Aponte para o QR abaixo.
-              </DialogDescription>
+              <DialogDescription>Configure seu canal em 3 passos.</DialogDescription>
             </DialogHeader>
 
-            {(displayName || phone) && (
-              <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Canal</span>
-                  {editingName ? (
-                    <div className="flex items-center gap-2 flex-1 max-w-[260px]">
-                      <Input
-                        autoFocus
-                        value={nameDraft}
-                        onChange={(e) => setNameDraft(e.target.value)}
-                        className="h-8"
-                      />
-                      <Button
-                        size="sm"
-                        disabled={savingName || !nameDraft.trim() || !activeChannelId}
-                        onClick={async () => {
-                          if (!activeChannelId) return;
-                          setSavingName(true);
-                          const { error } = await supabase
-                            .from("channels")
-                            .update({ display_name: nameDraft.trim() })
-                            .eq("id", activeChannelId);
-                          setSavingName(false);
-                          if (error) { toast.error(error.message); return; }
-                          setDisplayName(nameDraft.trim());
-                          setEditingName(false);
-                          qc.invalidateQueries({ queryKey: ["channels", current?.id] });
-                          toast.success("Nome atualizado");
-                        }}
-                      >
-                        {savingName ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingName(false)}>
-                        Cancelar
-                      </Button>
+            {/* Stepper */}
+            <div className="flex items-center gap-2 py-3">
+              {STEPS.map((s, i) => {
+                const done = i < stepIndex;
+                const active = i === stepIndex;
+                return (
+                  <div key={s.key} className="flex items-center gap-2 flex-1">
+                    <div className={cn(
+                      "h-7 w-7 rounded-full flex items-center justify-center text-xs font-semibold border shrink-0",
+                      active && "bg-primary text-primary-foreground border-primary",
+                      done && "bg-emerald-500 text-white border-emerald-500",
+                      !active && !done && "bg-muted text-muted-foreground border-border",
+                    )}>
+                      {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{displayName}</span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => { setNameDraft(displayName); setEditingName(true); }}
-                        aria-label="Editar nome"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                {phone && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Número</span>
-                    <span className="font-medium">{phone}</span>
+                    <span className={cn("text-xs font-medium", active ? "text-foreground" : "text-muted-foreground")}>{s.label}</span>
+                    {i < STEPS.length - 1 && <div className={cn("h-px flex-1", done ? "bg-emerald-500" : "bg-border")} />}
                   </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex flex-col items-center gap-4 py-2">
-              {connStatus === "connected" ? (
-                <div className="flex flex-col items-center gap-2 py-8">
-                  <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-                  <p className="font-semibold">Conectado!</p>
-                </div>
-              ) : qr ? (
-                <div className="bg-white p-4 rounded-lg">
-                  {qr.startsWith("data:") || qr.startsWith("http")
-                    ? <img src={qr} alt="QR Code" width={240} height={240} />
-                    : <QRCodeSVG value={qr} size={240} />}
-                </div>
-              ) : connectError ? (
-                <div className="text-center text-sm text-destructive py-10 max-w-sm">
-                  {connectError}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-muted-foreground py-12">
-                  <Loader2 className="h-5 w-5 animate-spin" /> Gerando QR Code...
-                </div>
-              )}
-              <div className="text-xs text-muted-foreground flex items-center gap-2">
-                Status: <span className="font-medium">{connStatus}</span>
-                {polling && <Loader2 className="h-3 w-3 animate-spin" />}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => activeChannelId && connect(activeChannelId)}>
-                  <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
-                </Button>
-                {connStatus === "connected" && (
-                  <Button variant="outline" size="sm" onClick={disconnect}>Desconectar</Button>
-                )}
-              </div>
+                );
+              })}
             </div>
 
-            <DialogFooter>
-              <Button onClick={() => { stopPoll(); onOpenChange(false); }}>Fechar</Button>
+            <div className="py-2">
+              {step === "info" && <ChannelStepInfo value={info} onChange={setInfo} />}
+              {step === "rotation" && <ChannelStepRotation channelId={activeChannelId} />}
+              {step === "uaz_connect" && (
+                <UazConnect
+                  displayName={info.display_name}
+                  phone={channel?.phone_e164 ?? null}
+                  qr={qr}
+                  connStatus={connStatus}
+                  connectError={connectError}
+                  polling={polling}
+                  editingName={editingName}
+                  nameDraft={nameDraft}
+                  savingName={savingName}
+                  onStartEdit={() => { setNameDraft(info.display_name); setEditingName(true); }}
+                  onCancelEdit={() => setEditingName(false)}
+                  onSaveName={async () => {
+                    if (!activeChannelId || !nameDraft.trim()) return;
+                    setSavingName(true);
+                    const { error } = await supabase.from("channels").update({ display_name: nameDraft.trim() }).eq("id", activeChannelId);
+                    setSavingName(false);
+                    if (error) { toast.error(error.message); return; }
+                    setInfo((p) => ({ ...p, display_name: nameDraft.trim() }));
+                    setEditingName(false);
+                    qc.invalidateQueries({ queryKey: ["channels", current?.id] });
+                    toast.success("Nome atualizado");
+                  }}
+                  setNameDraft={setNameDraft}
+                  onRefreshQr={() => activeChannelId && connect(activeChannelId)}
+                  onDisconnect={disconnect}
+                />
+              )}
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                {step === "uaz_connect" ? "Fechar" : "Cancelar"}
+              </Button>
+              {step !== "uaz_connect" && (
+                <Button onClick={goNext} disabled={savingInfo}>
+                  {savingInfo ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : (
+                    step === "rotation" && kind === "uazapi" ? "Avançar para QR" :
+                    step === "rotation" ? "Concluir" : "Avançar"
+                  )}
+                </Button>
+              )}
             </DialogFooter>
           </>
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function UazConnect(props: {
+  displayName: string;
+  phone: string | null;
+  qr: string | null;
+  connStatus: string;
+  connectError: string | null;
+  polling: boolean;
+  editingName: boolean;
+  nameDraft: string;
+  savingName: boolean;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onSaveName: () => void;
+  setNameDraft: (v: string) => void;
+  onRefreshQr: () => void;
+  onDisconnect: () => void;
+}) {
+  const { displayName, phone, qr, connStatus, connectError, polling, editingName, nameDraft, savingName } = props;
+  return (
+    <div className="space-y-4">
+      {(displayName || phone) && (
+        <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Canal</span>
+            {editingName ? (
+              <div className="flex items-center gap-2 flex-1 max-w-[260px]">
+                <Input autoFocus value={nameDraft} onChange={(e) => props.setNameDraft(e.target.value)} className="h-8" />
+                <Button size="sm" disabled={savingName || !nameDraft.trim()} onClick={props.onSaveName}>
+                  {savingName ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={props.onCancelEdit}>Cancelar</Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{displayName}</span>
+                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={props.onStartEdit} aria-label="Editar nome">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+          {phone && (
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Número</span>
+              <span className="font-medium">{phone}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-col items-center gap-4 py-2">
+        {connStatus === "connected" ? (
+          <div className="flex flex-col items-center gap-2 py-8">
+            <CheckCircle2 className="h-16 w-16 text-emerald-500" />
+            <p className="font-semibold">Conectado!</p>
+          </div>
+        ) : qr ? (
+          <div className="bg-white p-4 rounded-lg">
+            {qr.startsWith("data:") || qr.startsWith("http")
+              ? <img src={qr} alt="QR Code" width={240} height={240} />
+              : <QRCodeSVG value={qr} size={240} />}
+          </div>
+        ) : connectError ? (
+          <div className="text-center text-sm text-destructive py-10 max-w-sm">{connectError}</div>
+        ) : (
+          <div className="flex items-center gap-2 text-muted-foreground py-12">
+            <Loader2 className="h-5 w-5 animate-spin" /> Gerando QR Code...
+          </div>
+        )}
+        <div className="text-xs text-muted-foreground flex items-center gap-2">
+          Status: <span className="font-medium">{connStatus}</span>
+          {polling && <Loader2 className="h-3 w-3 animate-spin" />}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={props.onRefreshQr}>
+            <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
+          </Button>
+          {connStatus === "connected" && (
+            <Button variant="outline" size="sm" onClick={props.onDisconnect}>Desconectar</Button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
