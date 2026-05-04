@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { ChannelsSection } from "@/features/channels/ChannelsSection";
 import { TagsAdminSection, LossReasonsAdminSection } from "@/features/workspace/CatalogsAdmin";
+import { UsersSection } from "@/features/workspace/UsersSection";
 import { useIsManagerOrAdmin, useMyRole } from "@/features/workspace/permissions";
 import { Settings2, Radio, LineChart, Plug, Users, Tags } from "lucide-react";
 
@@ -75,7 +76,7 @@ export default function Settings() {
           <Empty title="Integrações" desc="Conecte ferramentas externas (CRM, e-commerce, automações) — em breve." />
         </TabsContent>
         <TabsContent value="users" className="mt-6">
-          <Empty title="Usuários" desc="Convide membros, gerencie papéis e permissões — em breve." />
+          <UsersSection />
         </TabsContent>
       </Tabs>
     </div>
