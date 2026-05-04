@@ -215,7 +215,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     setQr(null);
     setConnectError(null);
     const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "connect" });
-    if (!r.ok) {
+    if (r.ok === false) {
       setConnectError({ ...r.err, title: r.err.title + " (connect)" });
       toast.error(`Conectar QR falhou: ${r.err.message}`);
       return;
