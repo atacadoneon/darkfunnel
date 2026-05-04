@@ -275,7 +275,9 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                 </div>
               ) : qr ? (
                 <div className="bg-white p-4 rounded-lg">
-                  <QRCodeSVG value={qr.startsWith("data:") ? qr : qr} size={240} />
+                  {qr.startsWith("data:") || qr.startsWith("http")
+                    ? <img src={qr} alt="QR Code" width={240} height={240} />
+                    : <QRCodeSVG value={qr} size={240} />}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground py-12">
