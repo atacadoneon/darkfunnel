@@ -31,8 +31,8 @@ function CreateWorkspacePrompt() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <Card className="w-full max-w-sm p-6 space-y-4">
         <div>
-          <h1 className="text-xl font-semibold">Criar workspace</h1>
-          <p className="text-sm text-muted-foreground">Você ainda não pertence a nenhum workspace.</p>
+          <h1 className="text-xl font-semibold">Criar conta</h1>
+          <p className="text-sm text-muted-foreground">Você ainda não pertence a nenhuma conta.</p>
         </div>
         <form onSubmit={onSubmit} className="space-y-3">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Minha Empresa" />
@@ -49,7 +49,7 @@ export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center text-muted-foreground">Carregando workspace...</div>;
+    return <div className="flex h-screen items-center justify-center text-muted-foreground">Carregando...</div>;
   }
   if (workspaces.length === 0) return <CreateWorkspacePrompt />;
   if (!current) return <Navigate to="/app" replace />;

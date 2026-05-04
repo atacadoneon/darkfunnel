@@ -54,7 +54,7 @@ export default function Signup() {
             <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="ws">Nome do workspace</Label>
+            <Label htmlFor="ws">Nome da empresa</Label>
             <Input id="ws" required value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} placeholder="Minha Empresa" />
           </div>
           <div className="space-y-1.5">

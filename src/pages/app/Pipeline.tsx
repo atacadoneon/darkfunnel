@@ -164,7 +164,7 @@ export default function Pipeline() {
     );
   }
 
-  const wsName = current?.name ?? "Workspace";
+  const wsName = current?.name ?? "Conta";
   const totalLeads = deals.length;
 
   return (

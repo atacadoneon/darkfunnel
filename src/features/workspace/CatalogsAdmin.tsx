@@ -55,7 +55,7 @@ export function TagsAdminSection() {
       <div>
         <h3 className="font-semibold">Tags</h3>
         <p className="text-xs text-muted-foreground">
-          Cadastro prévio de tags do workspace. Ao editar contatos, somente estas tags poderão ser aplicadas.
+          Cadastro prévio de tags. Ao editar contatos, somente estas tags poderão ser aplicadas.
         </p>
       </div>
 

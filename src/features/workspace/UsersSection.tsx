@@ -219,7 +219,7 @@ function SectorsCard() {
                   </div>
                 </label>
               ))}
-              {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum membro no workspace.</div>}
+              {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum membro cadastrado.</div>}
             </div>
           </ScrollArea>
           <DialogFooter>
@@ -235,15 +235,100 @@ function SectorsCard() {
 }
 
 // ============= USUÁRIOS SECTION =============
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { WorkspaceRole } from "@/features/workspace/permissions";
+
+function AddUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<WorkspaceRole>("member");
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => { setEmail(""); setRole("member"); };
+
+  const handleAdd = async () => {
+    if (!current || !email.trim()) return;
+    setSaving(true);
+    try {
+      const target = email.trim().toLowerCase();
+      const { data: profile, error: pErr } = await supabase
+        .from("profiles")
+        .select("id,email")
+        .ilike("email", target)
+        .maybeSingle();
+      if (pErr) throw pErr;
+      if (!profile) {
+        toast.error("Nenhum usuário com esse email. Peça para se cadastrar primeiro.");
+        return;
+      }
+      const { error } = await supabase
+        .from("workspace_members")
+        .insert({ workspace_id: current.id, user_id: profile.id, role });
+      if (error) {
+        if (error.code === "23505") toast.error("Esse usuário já faz parte.");
+        else throw error;
+        return;
+      }
+      toast.success("Usuário adicionado");
+      qc.invalidateQueries({ queryKey: ["ws-members", current.id] });
+      reset();
+      onOpenChange(false);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Adicionar usuário</DialogTitle>
+          <DialogDescription>O usuário precisa já ter uma conta cadastrada.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Email</label>
+            <Input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@empresa.com" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Permissão</label>
+            <Select value={role} onValueChange={(v) => setRole(v as WorkspaceRole)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="member">Membro</SelectItem>
+                <SelectItem value="manager">Gestor</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleAdd} disabled={saving || !email.trim()}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function MembersCard() {
   const { data: members = [], isLoading } = useWorkspaceMembers();
+  const [addOpen, setAddOpen] = useState(false);
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold flex items-center gap-2"><UsersIcon className="h-4 w-4" /> Usuários do workspace</h3>
-          <p className="text-sm text-muted-foreground">Membros que têm acesso a este workspace.</p>
+          <h3 className="font-semibold flex items-center gap-2"><UsersIcon className="h-4 w-4" /> Usuários</h3>
+          <p className="text-sm text-muted-foreground">Membros que têm acesso ao sistema.</p>
         </div>
+        <Button size="sm" onClick={() => setAddOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" /> Adicionar usuário
+        </Button>
       </div>
 
       {isLoading ? (
@@ -264,6 +349,8 @@ function MembersCard() {
           ))}
         </div>
       )}
+
+      <AddUserDialog open={addOpen} onOpenChange={setAddOpen} />
     </Card>
   );
 }
