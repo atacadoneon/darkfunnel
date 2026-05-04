@@ -59,11 +59,62 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [savingName, setSavingName] = useState(false);
 
   // QR
+  type ConnectErr = { title: string; status?: number; message: string; body?: unknown; url?: string };
   const [qr, setQr] = useState<string | null>(null);
   const [connStatus, setConnStatus] = useState<string>("pending");
-  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectError, setConnectError] = useState<ConnectErr | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
+
+  // Invoca edge function via fetch direto para capturar HTTP status + body bruto em caso de erro.
+  const invokeEdge = async (fn: string, body: unknown): Promise<{ ok: true; data: any } | { ok: false; err: ConnectErr }> => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${fn}`;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? (import.meta.env.VITE_SUPABASE_ANON_KEY as string);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+        },
+        body: JSON.stringify(body),
+      });
+      const text = await res.text();
+      let parsed: any = text;
+      try { parsed = JSON.parse(text); } catch { /* keep text */ }
+      if (!res.ok) {
+        return {
+          ok: false,
+          err: {
+            title: `HTTP ${res.status} ${res.statusText}`,
+            status: res.status,
+            message: (parsed && typeof parsed === "object" && parsed.error) || (typeof parsed === "string" ? parsed : "Erro na Edge Function"),
+            body: parsed,
+            url,
+          },
+        };
+      }
+      if (parsed && typeof parsed === "object" && parsed.error) {
+        return {
+          ok: false,
+          err: { title: "Erro retornado pela função", status: res.status, message: String(parsed.error), body: parsed, url },
+        };
+      }
+      return { ok: true, data: parsed };
+    } catch (e) {
+      return {
+        ok: false,
+        err: {
+          title: "Falha de rede ao chamar Edge Function",
+          message: (e as Error).message,
+          body: { hint: "Possível CORS, função não publicada (404), ou bloqueio de rede. Verifique se a função foi publicada (Publish → Update)." },
+          url,
+        },
+      };
+    }
+  };
 
   const { data: existingMembers = [] } = useChannelMembers(activeChannelId);
 
@@ -163,18 +214,17 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const connect = async (id: string) => {
     setQr(null);
     setConnectError(null);
-    const { data, error } = await supabase.functions.invoke("uazapi-instance", {
-      body: { channel_id: id, action: "connect" },
-    });
-    const detail = data?.detail ? `: ${typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)}` : "";
-    if (error || data?.error) {
-      const message = `${data?.error ?? error?.message ?? "Erro ao gerar QR Code"}${detail}`;
-      setConnectError(message);
-      toast.error(message);
+    const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "connect" });
+    if (r.ok === false) {
+      setConnectError({ ...r.err, title: r.err.title + " (connect)" });
+      toast.error(`Conectar QR falhou: ${r.err.message}`);
       return;
     }
+    const data = r.data;
     if (data?.qr) setQr(data.qr);
-    if (!data?.qr && data?.status !== "connected") setConnectError("A UAZAPI não retornou um QR Code. Clique em Atualizar QR para tentar novamente.");
+    if (!data?.qr && data?.status !== "connected") {
+      setConnectError({ title: "QR não retornado", message: "A UAZAPI não retornou um QR Code. Clique em Atualizar QR para tentar novamente.", body: data });
+    }
     if (data?.status) setConnStatus(data.status);
     startPoll(id);
   };
@@ -230,19 +280,15 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     setInitializing(true);
     setConnectError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
-        body: { channel_id: id, action: "init" },
-      });
-      const detail = data?.detail ? `: ${typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)}` : "";
-      if (error || data?.error) {
-        const message = `Falha ao inicializar instância: ${data?.error ?? error?.message ?? "erro desconhecido"}${detail}`;
-        setConnectError(message);
-        toast.error(message);
+      const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init" });
+      if (r.ok === false) {
+        setConnectError({ ...r.err, title: r.err.title + " (init)" });
+        toast.error(`Falha ao inicializar instância: ${r.err.message}`);
         return;
       }
       await connect(id);
     } catch (e) {
-      setConnectError((e as Error).message);
+      setConnectError({ title: "Erro inesperado", message: (e as Error).message });
       toast.error((e as Error).message);
     } finally {
       setInitializing(false);
@@ -401,7 +447,7 @@ function UazConnect(props: {
   phone: string | null;
   qr: string | null;
   connStatus: string;
-  connectError: string | null;
+  connectError: { title: string; status?: number; message: string; body?: unknown; url?: string } | null;
   polling: boolean;
   editingName: boolean;
   nameDraft: string;
@@ -471,7 +517,46 @@ function UazConnect(props: {
                   : <QRCodeSVG value={qr} size={240} />}
               </div>
             ) : connectError ? (
-              <div className="text-center text-sm text-destructive py-10 max-w-sm">{connectError}</div>
+              <div className="w-full max-w-md rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-left space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-sm font-semibold text-destructive">{connectError.title}</div>
+                  {connectError.status !== undefined && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-destructive/15 text-destructive shrink-0">
+                      {connectError.status}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-foreground break-words">{connectError.message}</div>
+                {connectError.url && (
+                  <div className="text-[10px] font-mono text-muted-foreground break-all">{connectError.url}</div>
+                )}
+                {connectError.body !== undefined && connectError.body !== null && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+                      Ver corpo da resposta
+                    </summary>
+                    <pre className="mt-2 max-h-48 overflow-auto rounded bg-muted/60 p-2 text-[11px] font-mono whitespace-pre-wrap break-all">
+{typeof connectError.body === "string" ? connectError.body : JSON.stringify(connectError.body, null, 2)}
+                    </pre>
+                    <button
+                      type="button"
+                      className="mt-1 text-[11px] text-muted-foreground hover:text-foreground underline"
+                      onClick={() => {
+                        const txt = [
+                          connectError.title,
+                          connectError.status !== undefined ? `HTTP ${connectError.status}` : "",
+                          connectError.url ?? "",
+                          connectError.message,
+                          typeof connectError.body === "string" ? connectError.body : JSON.stringify(connectError.body, null, 2),
+                        ].filter(Boolean).join("\n");
+                        navigator.clipboard.writeText(txt).then(() => toast.success("Erro copiado"));
+                      }}
+                    >
+                      Copiar diagnóstico
+                    </button>
+                  </details>
+                )}
+              </div>
             ) : (
               <div className="flex items-center gap-2 text-muted-foreground py-10">
                 <Loader2 className="h-5 w-5 animate-spin" /> {initializing ? "Inicializando instância UAZAPI..." : "Gerando QR Code..."}
