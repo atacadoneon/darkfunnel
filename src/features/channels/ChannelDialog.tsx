@@ -436,7 +436,7 @@ function UazConnect(props: {
           <div className="text-center text-sm text-destructive py-10 max-w-sm">{connectError}</div>
         ) : (
           <div className="flex items-center gap-2 text-muted-foreground py-12">
-            <Loader2 className="h-5 w-5 animate-spin" /> Gerando QR Code...
+            <Loader2 className="h-5 w-5 animate-spin" /> {initializing ? "Inicializando instância UAZAPI..." : "Gerando QR Code..."}
           </div>
         )}
         <div className="text-xs text-muted-foreground flex items-center gap-2">
