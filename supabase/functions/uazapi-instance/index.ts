@@ -14,8 +14,6 @@ const json = (b: unknown, s = 200) =>
 type Body = {
   channel_id: string;
   action: "init" | "connect" | "status" | "disconnect" | "delete";
-  host?: string;          // só no init
-  admin_token?: string;   // só no init
   phone?: string;         // opcional p/ pairing code
 };
 
@@ -75,9 +73,9 @@ Deno.serve(async (req) => {
 
   try {
     if (body.action === "init") {
-      const host = (body.host || creds?.host || "").trim();
-      const adminToken = (body.admin_token || creds?.admin_token || "").trim();
-      if (!host || !adminToken) return json({ error: "host e admin_token são obrigatórios" }, 400);
+      const host = (Deno.env.get("UAZAPI_HOST") || "").trim();
+      const adminToken = (Deno.env.get("UAZAPI_ADMIN_TOKEN") || "").trim();
+      if (!host || !adminToken) return json({ error: "UAZAPI_HOST/UAZAPI_ADMIN_TOKEN não configurados" }, 500);
 
       // Tenta /instance/init (uazapi V2)
       const r = await uaz(host, "/instance/init", {

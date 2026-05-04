@@ -42,8 +42,6 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [policy, setPolicy] = useState<ChannelRow["policy"]>("support");
-  const [host, setHost] = useState("");
-  const [adminToken, setAdminToken] = useState("");
   const [saving, setSaving] = useState(false);
 
   // QR / status
@@ -60,8 +58,6 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
       setDisplayName(channel?.display_name ?? "");
       setPhone(channel?.phone_e164 ?? "");
       setPolicy((channel?.policy ?? "support") as ChannelRow["policy"]);
-      setHost("");
-      setAdminToken("");
       setQr(null);
       setConnStatus(channel?.status ?? "pending");
       setActiveChannelId(channel?.id ?? null);
@@ -103,15 +99,12 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
       }
       qc.invalidateQueries({ queryKey: ["channels", current.id] });
 
-      if (kind === "uazapi" && channelId && (host.trim() || adminToken.trim() || !editing)) {
-        // init na uazapi
-        if (host.trim() && adminToken.trim()) {
-          const { error } = await supabase.functions.invoke("uazapi-instance", {
-            body: { channel_id: channelId, action: "init", host: host.trim(), admin_token: adminToken.trim() },
-          });
-          if (error) throw new Error(error.message);
-          toast.success("Instância criada na uazapi");
-        }
+      if (kind === "uazapi" && channelId && !editing) {
+        const { error } = await supabase.functions.invoke("uazapi-instance", {
+          body: { channel_id: channelId, action: "init" },
+        });
+        if (error) throw new Error(error.message);
+        toast.success("Instância criada");
         setActiveChannelId(channelId);
         setStep("uaz_connect");
         await connect(channelId);
@@ -205,7 +198,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
               </DialogTitle>
               <DialogDescription>
                 {kind === "uazapi"
-                  ? "Informe o servidor uazapi e o admin token. Em seguida você escaneará o QR Code."
+                  ? "Dê um nome ao canal. Em seguida você escaneará o QR Code para conectar o WhatsApp."
                   : "Cadastre o canal."}
               </DialogDescription>
             </DialogHeader>
@@ -214,20 +207,6 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                 <Label htmlFor="dn">Nome de exibição</Label>
                 <Input id="dn" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Atendimento Principal" />
               </div>
-
-              {kind === "uazapi" && !editing && (
-                <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="host">URL do servidor uazapi</Label>
-                    <Input id="host" required value={host} onChange={(e) => setHost(e.target.value)} placeholder="https://seu-host.uazapi.com" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="atk">Admin Token</Label>
-                    <Input id="atk" required type="password" value={adminToken} onChange={(e) => setAdminToken(e.target.value)} placeholder="••••••••••••" />
-                    <p className="text-xs text-muted-foreground">Encontrado no painel admin do seu servidor uazapi.</p>
-                  </div>
-                </>
-              )}
 
               <div className="space-y-1.5">
                 <Label>Política</Label>
