@@ -37,7 +37,9 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const qc = useQueryClient();
   const editing = !!channel;
 
-  const [step, setStep] = useState<"type" | "form" | "uaz_connect">(editing ? "form" : "type");
+  const [step, setStep] = useState<"type" | "form" | "uaz_connect">(
+    editing ? (channel?.kind === "uazapi" ? "uaz_connect" : "form") : "type",
+  );
   const [kind, setKind] = useState<ChannelKind>("uazapi");
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -54,7 +56,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
 
   useEffect(() => {
     if (open) {
-      setStep(editing ? "form" : "type");
+      const isUaz = (channel?.kind ?? "uazapi") === "uazapi";
+      setStep(editing ? (isUaz ? "uaz_connect" : "form") : "type");
       setKind((channel?.kind ?? "uazapi") as ChannelKind);
       setDisplayName(channel?.display_name ?? "");
       setPhone(channel?.phone_e164 ?? "");
@@ -63,9 +66,13 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
       setConnectError(null);
       setConnStatus(channel?.status ?? "pending");
       setActiveChannelId(channel?.id ?? null);
+      if (editing && isUaz && channel?.id) {
+        void connect(channel.id);
+      }
     } else {
       stopPoll();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, channel, editing]);
 
   const stopPoll = () => {
