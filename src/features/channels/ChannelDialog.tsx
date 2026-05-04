@@ -48,6 +48,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [connStatus, setConnStatus] = useState<string>("pending");
+  const [connectError, setConnectError] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
 
@@ -59,6 +60,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
       setPhone(channel?.phone_e164 ?? "");
       setPolicy((channel?.policy ?? "support") as ChannelRow["policy"]);
       setQr(null);
+      setConnectError(null);
       setConnStatus(channel?.status ?? "pending");
       setActiveChannelId(channel?.id ?? null);
     } else {
@@ -120,11 +122,19 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
 
   const connect = async (id: string) => {
     setQr(null);
+    setConnectError(null);
     const { data, error } = await supabase.functions.invoke("uazapi-instance", {
       body: { channel_id: id, action: "connect" },
     });
-    if (error) { toast.error(error.message); return; }
+    const detail = data?.detail ? `: ${typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)}` : "";
+    if (error || data?.error) {
+      const message = `${data?.error ?? error?.message ?? "Erro ao gerar QR Code"}${detail}`;
+      setConnectError(message);
+      toast.error(message);
+      return;
+    }
     if (data?.qr) setQr(data.qr);
+    if (!data?.qr && data?.status !== "connected") setConnectError("A UAZAPI não retornou um QR Code. Clique em Atualizar QR para tentar novamente.");
     if (data?.status) setConnStatus(data.status);
     startPoll(id);
   };
@@ -257,6 +267,10 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                   {qr.startsWith("data:") || qr.startsWith("http")
                     ? <img src={qr} alt="QR Code" width={240} height={240} />
                     : <QRCodeSVG value={qr} size={240} />}
+                </div>
+              ) : connectError ? (
+                <div className="text-center text-sm text-destructive py-10 max-w-sm">
+                  {connectError}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground py-12">

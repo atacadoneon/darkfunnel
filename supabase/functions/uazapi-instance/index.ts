@@ -17,6 +17,39 @@ type Body = {
   phone?: string;         // opcional p/ pairing code
 };
 
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" ? value as Record<string, unknown> : {};
+
+const instanceFrom = (data: unknown) => {
+  const root = asRecord(data);
+  return asRecord(root.instance ?? asRecord(root.data).instance ?? root.data ?? data);
+};
+
+function normalizeQr(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const qr = value.trim();
+  if (!qr) return null;
+  if (qr.startsWith("data:") || qr.startsWith("http")) return qr;
+  const compact = qr.replace(/\s/g, "");
+  if (compact.startsWith("iVBORw0KGgo")) return `data:image/png;base64,${compact}`;
+  if (compact.startsWith("/9j/")) return `data:image/jpeg;base64,${compact}`;
+  if (compact.startsWith("PHN2Zy")) return `data:image/svg+xml;base64,${compact}`;
+  return qr;
+}
+
+function extractQr(data: unknown): string | null {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  return normalizeQr(inst.qrcode ?? inst.qrCode ?? inst.qr ?? root.qrcode ?? root.qrCode ?? root.qr);
+}
+
+function extractPaircode(data: unknown): string | null {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  const paircode = inst.paircode ?? inst.pairCode ?? root.paircode ?? root.pairCode;
+  return typeof paircode === "string" && paircode.trim() ? paircode.trim() : null;
+}
+
 async function uaz(host: string, path: string, init: RequestInit & { token?: string; admintoken?: string }) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (init.token) headers["token"] = init.token;
@@ -25,14 +58,20 @@ async function uaz(host: string, path: string, init: RequestInit & { token?: str
   const text = await res.text();
   let data: unknown = text;
   try { data = JSON.parse(text); } catch { /* keep text */ }
-  return { ok: res.ok, status: res.status, data: data as any };
+  return { ok: res.ok, status: res.status, data };
 }
 
-function mapStatus(connStatus: string | undefined): string {
-  switch ((connStatus || "").toLowerCase()) {
+function mapStatus(connStatus: unknown): string {
+  if (connStatus && typeof connStatus === "object") {
+    const status = asRecord(connStatus);
+    if (status.connected || status.loggedIn) return "connected";
+  }
+  switch (String(connStatus || "").toLowerCase()) {
     case "connected": return "connected";
+    case "open": return "connected";
     case "connecting": return "qr_pending";
     case "disconnected": return "disconnected";
+    case "close": return "disconnected";
     default: return "pending";
   }
 }
@@ -77,17 +116,17 @@ Deno.serve(async (req) => {
       const adminToken = (Deno.env.get("UAZAPI_ADMIN_TOKEN") || "").trim();
       if (!host || !adminToken) return json({ error: "UAZAPI_HOST/UAZAPI_ADMIN_TOKEN não configurados" }, 500);
 
-      // Tenta /instance/init (uazapi V2)
-      const r = await uaz(host, "/instance/init", {
+      // uazapiGO V2: cria instância via endpoint administrativo
+      const r = await uaz(host, "/instance/create", {
         method: "POST",
         admintoken: adminToken,
         body: JSON.stringify({ name: channel.display_name, systemName: channel.display_name }),
       });
       if (!r.ok) return json({ error: "uazapi init failed", detail: r.data }, 502);
 
-      const inst = r.data?.instance ?? r.data;
-      const instance_token = inst?.token ?? r.data?.token;
-      const instance_id = inst?.id ?? inst?.instanceId ?? r.data?.id ?? null;
+      const inst = instanceFrom(r.data);
+      const instance_token = inst?.token ?? asRecord(r.data)?.token;
+      const instance_id = inst?.id ?? inst?.instanceId ?? asRecord(r.data)?.id ?? null;
       if (!instance_token) return json({ error: "uazapi: token não retornado", detail: r.data }, 502);
 
       await admin.from("channel_credentials").upsert({
@@ -122,9 +161,10 @@ Deno.serve(async (req) => {
         body: JSON.stringify(body.phone ? { phone: body.phone } : {}),
       });
       if (!r.ok) return json({ error: "uazapi connect failed", detail: r.data }, 502);
-      const qr = r.data?.instance?.qrcode ?? r.data?.qrcode ?? r.data?.qr ?? null;
-      const paircode = r.data?.instance?.paircode ?? r.data?.paircode ?? null;
-      const status = mapStatus(r.data?.instance?.status ?? r.data?.status);
+      const qr = extractQr(r.data);
+      const paircode = extractPaircode(r.data);
+      const inst = instanceFrom(r.data);
+      const status = mapStatus(inst.status ?? asRecord(r.data)?.status);
       await admin.from("channel_credentials").update({ last_qr: qr, last_qr_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: status === "connected" ? "connected" : "qr_pending" }).eq("id", body.channel_id);
       return json({ ok: true, qr, paircode, status });
@@ -133,8 +173,8 @@ Deno.serve(async (req) => {
     if (body.action === "status") {
       const r = await uaz(creds.host, "/instance/status", { method: "GET", token: creds.instance_token });
       if (!r.ok) return json({ error: "uazapi status failed", detail: r.data }, 502);
-      const inst = r.data?.instance ?? r.data;
-      const status = mapStatus(inst?.status);
+      const inst = instanceFrom(r.data);
+      const status = mapStatus(inst?.status ?? asRecord(r.data)?.status);
       const phone = inst?.owner ?? inst?.wid ?? null;
       const update: Record<string, unknown> = { status };
       if (phone) update.phone_e164 = phone.replace(/[^\d+]/g, "").replace(/^/, (s: string) => s.startsWith("+") ? s : "+" + s);
