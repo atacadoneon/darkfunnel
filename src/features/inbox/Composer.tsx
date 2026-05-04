@@ -25,6 +25,7 @@ export function Composer({ conversation }: Props) {
   const { data: pendings = [] } = useScheduledMessages(conversation.id);
 
   const isCloud = conversation.channels?.kind === "whatsapp_cloud";
+  const isUazapi = conversation.channels?.kind === "uazapi";
   const windowExpired =
     isCloud && conversation.window_expires_at
       ? new Date(conversation.window_expires_at) < new Date()
@@ -40,16 +41,23 @@ export function Composer({ conversation }: Props) {
     const body = text.trim();
     setText("");
     try {
-      const { error } = await supabase.rpc("enqueue_outbound", {
-        p_workspace: current.id,
-        p_contact: conversation.contact_id,
-        p_channel: conversation.channel_id,
-        p_message_type: "text",
-        p_payload: { body },
-        p_context: "manual",
-        p_conversation: conversation.id,
-      });
-      if (error) throw error;
+      if (isUazapi) {
+        const { error } = await supabase.functions.invoke("uazapi-send", {
+          body: { conversation_id: conversation.id, text: body },
+        });
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.rpc("enqueue_outbound", {
+          p_workspace: current.id,
+          p_contact: conversation.contact_id,
+          p_channel: conversation.channel_id,
+          p_message_type: "text",
+          p_payload: { body },
+          p_context: "manual",
+          p_conversation: conversation.id,
+        });
+        if (error) throw error;
+      }
       qc.invalidateQueries({ queryKey: ["messages", conversation.id] });
     } catch (err) {
       toast.error((err as Error).message);
