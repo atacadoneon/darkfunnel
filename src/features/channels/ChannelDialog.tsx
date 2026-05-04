@@ -181,26 +181,53 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     qc.invalidateQueries({ queryKey: ["channels", current?.id] });
   };
 
+  const [advancing, setAdvancing] = useState(false);
+  const [initializing, setInitializing] = useState(false);
+
   const goNext = async () => {
     if (step === "info") {
+      setAdvancing(true);
       const id = await saveInfo();
+      setAdvancing(false);
       if (!id) return;
       setStep("rotation");
     } else if (step === "rotation") {
       if (kind === "uazapi") {
-        if (!editing && activeChannelId) {
-          // primeira vez: inicializa instância UAZAPI
-          const { error } = await supabase.functions.invoke("uazapi-instance", {
-            body: { channel_id: activeChannelId, action: "init" },
-          });
-          if (error) { toast.error(error.message); return; }
-        }
         setStep("uaz_connect");
-        if (activeChannelId) await connect(activeChannelId);
+        if (activeChannelId) void initAndConnect(activeChannelId);
       } else {
         toast.success("Canal salvo");
         onOpenChange(false);
       }
+    }
+  };
+
+  const initAndConnect = async (id: string) => {
+    setInitializing(true);
+    setConnectError(null);
+    try {
+      // Verifica se já existe credencial (canal previamente inicializado)
+      const { data: creds } = await supabase
+        .from("channel_credentials")
+        .select("channel_id")
+        .eq("channel_id", id)
+        .maybeSingle();
+      if (!creds) {
+        const { error } = await supabase.functions.invoke("uazapi-instance", {
+          body: { channel_id: id, action: "init" },
+        });
+        if (error) {
+          setConnectError(`Falha ao inicializar instância: ${error.message}`);
+          toast.error(error.message);
+          return;
+        }
+      }
+      await connect(id);
+    } catch (e) {
+      setConnectError((e as Error).message);
+      toast.error((e as Error).message);
+    } finally {
+      setInitializing(false);
     }
   };
 
@@ -306,7 +333,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                     toast.success("Nome atualizado");
                   }}
                   setNameDraft={setNameDraft}
-                  onRefreshQr={() => activeChannelId && connect(activeChannelId)}
+                  onRefreshQr={() => activeChannelId && initAndConnect(activeChannelId)}
+                  initializing={initializing}
                   onDisconnect={disconnect}
                 />
               )}
@@ -325,8 +353,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                   </Button>
                 )}
                 {step !== "uaz_connect" && (
-                  <Button onClick={goNext} disabled={savingInfo}>
-                    {savingInfo ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : (
+                  <Button onClick={goNext} disabled={savingInfo || advancing}>
+                    {savingInfo || advancing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{step === "rotation" ? "Inicializando..." : "Salvando..."}</> : (
                       step === "rotation" && kind === "uazapi" ? "Avançar para QR" :
                       step === "rotation" ? "Concluir" : "Avançar"
                     )}
@@ -357,8 +385,9 @@ function UazConnect(props: {
   setNameDraft: (v: string) => void;
   onRefreshQr: () => void;
   onDisconnect: () => void;
+  initializing?: boolean;
 }) {
-  const { displayName, phone, qr, connStatus, connectError, polling, editingName, nameDraft, savingName } = props;
+  const { displayName, phone, qr, connStatus, connectError, polling, editingName, nameDraft, savingName, initializing } = props;
   return (
     <div className="space-y-4">
       {(displayName || phone) && (
@@ -407,7 +436,7 @@ function UazConnect(props: {
           <div className="text-center text-sm text-destructive py-10 max-w-sm">{connectError}</div>
         ) : (
           <div className="flex items-center gap-2 text-muted-foreground py-12">
-            <Loader2 className="h-5 w-5 animate-spin" /> Gerando QR Code...
+            <Loader2 className="h-5 w-5 animate-spin" /> {initializing ? "Inicializando instância UAZAPI..." : "Gerando QR Code..."}
           </div>
         )}
         <div className="text-xs text-muted-foreground flex items-center gap-2">
