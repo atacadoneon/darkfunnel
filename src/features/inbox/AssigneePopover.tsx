@@ -76,7 +76,7 @@ export function AssigneePopover({
           </div>
         </div>
         <div className="px-2 pt-2 pb-1 text-[10px] uppercase font-semibold text-muted-foreground tracking-wide">
-          Membros da equipe
+          Usuários da equipe
         </div>
         <div className="max-h-72 overflow-y-auto pb-2">
           <button
@@ -115,7 +115,7 @@ export function AssigneePopover({
             );
           })}
           {filtered.length === 0 && (
-            <div className="px-3 py-4 text-center text-xs text-muted-foreground">Nenhum membro encontrado</div>
+            <div className="px-3 py-4 text-center text-xs text-muted-foreground">Nenhum usuário encontrado</div>
           )}
         </div>
       </PopoverContent>
