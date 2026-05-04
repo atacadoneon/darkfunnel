@@ -225,21 +225,15 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     setInitializing(true);
     setConnectError(null);
     try {
-      // Verifica se já existe credencial (canal previamente inicializado)
-      const { data: creds } = await supabase
-        .from("channel_credentials")
-        .select("channel_id")
-        .eq("channel_id", id)
-        .maybeSingle();
-      if (!creds) {
-        const { error } = await supabase.functions.invoke("uazapi-instance", {
-          body: { channel_id: id, action: "init" },
-        });
-        if (error) {
-          setConnectError(`Falha ao inicializar instância: ${error.message}`);
-          toast.error(error.message);
-          return;
-        }
+      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
+        body: { channel_id: id, action: "init" },
+      });
+      const detail = data?.detail ? `: ${typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)}` : "";
+      if (error || data?.error) {
+        const message = `Falha ao inicializar instância: ${data?.error ?? error?.message ?? "erro desconhecido"}${detail}`;
+        setConnectError(message);
+        toast.error(message);
+        return;
       }
       await connect(id);
     } catch (e) {
