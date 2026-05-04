@@ -15,6 +15,7 @@ type Body = {
   channel_id: string;
   action: "init" | "connect" | "status" | "disconnect" | "delete";
   phone?: string;         // opcional p/ pairing code
+  force?: boolean;        // recria a instância quando credenciais antigas falharem
 };
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -48,6 +49,29 @@ function extractPaircode(data: unknown): string | null {
   const inst = instanceFrom(data);
   const paircode = inst.paircode ?? inst.pairCode ?? root.paircode ?? root.pairCode;
   return typeof paircode === "string" && paircode.trim() ? paircode.trim() : null;
+}
+
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function statusFrom(data: unknown): string {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  return mapStatus(inst.status ?? root.status ?? root);
+}
+
+function phoneFrom(data: unknown): string | null {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  const status = asRecord(root.status);
+  const jid = asRecord(status.jid ?? root.jid);
+  const raw = firstString(inst.owner, inst.wid, jid.user, root.owner, root.wid);
+  const digits = raw?.replace(/\D/g, "") ?? "";
+  return digits ? `+${digits}` : null;
 }
 
 async function uaz(host: string, path: string, init: RequestInit & { token?: string; admintoken?: string }) {
