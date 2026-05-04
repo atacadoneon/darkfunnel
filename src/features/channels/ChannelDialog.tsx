@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import type { ChannelKind, ChannelRow, ChannelVisibility } from "./hooks";
 import { ChannelStepInfo, type Step1Value } from "./ChannelStepInfo";
 import { ChannelStepRotation } from "./ChannelStepRotation";
+import { ChannelStepIntegrations } from "./ChannelStepIntegrations";
+import { ChannelProfilePrivacy } from "./ChannelProfilePrivacy";
 import { useChannelMembers, setChannelMembers } from "./configHooks";
 
 type Props = {
@@ -28,11 +30,12 @@ type Props = {
   channel?: ChannelRow | null;
 };
 
-type Step = "type" | "info" | "rotation" | "uaz_connect";
+type Step = "type" | "info" | "rotation" | "integrations" | "uaz_connect";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "info", label: "Informações" },
   { key: "rotation", label: "Rodízio" },
+  { key: "integrations", label: "Integrações" },
   { key: "uaz_connect", label: "Conectar QR" },
 ];
 
@@ -212,12 +215,14 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
       setStep("rotation");
     } else if (step === "rotation") {
       if (kind === "uazapi") {
-        setStep("uaz_connect");
-        if (activeChannelId) void initAndConnect(activeChannelId);
+        setStep("integrations");
       } else {
         toast.success("Canal salvo");
         onOpenChange(false);
       }
+    } else if (step === "integrations") {
+      setStep("uaz_connect");
+      if (activeChannelId) void initAndConnect(activeChannelId);
     }
   };
 
@@ -246,7 +251,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
 
   const goBack = () => {
     if (step === "rotation") setStep("info");
-    else if (step === "uaz_connect") setStep("rotation");
+    else if (step === "integrations") setStep("rotation");
+    else if (step === "uaz_connect") setStep("integrations");
     else if (step === "info" && !editing) setStep("type");
   };
 
@@ -293,7 +299,11 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                 ) : null}
                 {editing ? "Editar canal" : "Novo WhatsApp Business"}
               </DialogTitle>
-              <DialogDescription>Configure seu canal em 3 passos.</DialogDescription>
+              <DialogDescription>
+                {kind === "uazapi"
+                  ? `Conexão via API não-oficial UAZAPI · passo ${stepIndex + 1} de ${STEPS.length}`
+                  : `Configure seu canal em ${STEPS.length} passos.`}
+              </DialogDescription>
             </DialogHeader>
 
             {/* Stepper */}
@@ -321,8 +331,10 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
             <div className="py-2">
               {step === "info" && <ChannelStepInfo value={info} onChange={setInfo} />}
               {step === "rotation" && <ChannelStepRotation channelId={activeChannelId} />}
+              {step === "integrations" && <ChannelStepIntegrations channelId={activeChannelId} />}
               {step === "uaz_connect" && (
                 <UazConnect
+                  channelId={activeChannelId}
                   displayName={info.display_name}
                   phone={channel?.phone_e164 ?? null}
                   qr={qr}
@@ -360,15 +372,16 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                 </Button>
               </div>
               <div className="flex gap-2">
-                {(step === "rotation" || step === "uaz_connect" || (step === "info" && !editing)) && (
+                {(step === "rotation" || step === "integrations" || step === "uaz_connect" || (step === "info" && !editing)) && (
                   <Button type="button" variant="outline" onClick={goBack}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
                   </Button>
                 )}
                 {step !== "uaz_connect" && (
                   <Button onClick={goNext} disabled={savingInfo || advancing}>
-                    {savingInfo || advancing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{step === "rotation" ? "Inicializando..." : "Salvando..."}</> : (
-                      step === "rotation" && kind === "uazapi" ? "Avançar para QR" :
+                    {savingInfo || advancing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{step === "integrations" ? "Inicializando..." : "Salvando..."}</> : (
+                      step === "integrations" ? "Avançar para QR" :
+                      step === "rotation" && kind === "uazapi" ? "Avançar" :
                       step === "rotation" ? "Concluir" : "Avançar"
                     )}
                   </Button>
@@ -383,6 +396,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
 }
 
 function UazConnect(props: {
+  channelId: string | null;
   displayName: string;
   phone: string | null;
   qr: string | null;
@@ -400,69 +414,95 @@ function UazConnect(props: {
   onDisconnect: () => void;
   initializing?: boolean;
 }) {
-  const { displayName, phone, qr, connStatus, connectError, polling, editingName, nameDraft, savingName, initializing } = props;
+  const { channelId, phone, qr, connStatus, connectError, polling, initializing } = props;
+  const connected = connStatus === "connected";
+  const [instance, setInstance] = useState<{ instance_id: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!channelId) return;
+    supabase.from("channel_credentials").select("instance_id").eq("channel_id", channelId).maybeSingle()
+      .then(({ data }) => setInstance({ instance_id: (data?.instance_id as string | null) ?? null }));
+  }, [channelId, connStatus]);
+
   return (
     <div className="space-y-4">
-      {(displayName || phone) && (
-        <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-muted-foreground">Canal</span>
-            {editingName ? (
-              <div className="flex items-center gap-2 flex-1 max-w-[260px]">
-                <Input autoFocus value={nameDraft} onChange={(e) => props.setNameDraft(e.target.value)} className="h-8" />
-                <Button size="sm" disabled={savingName || !nameDraft.trim()} onClick={props.onSaveName}>
-                  {savingName ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={props.onCancelEdit}>Cancelar</Button>
+      <div className="rounded-xl border p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Smartphone className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <div className="font-semibold text-sm">Conexão via QR Code</div>
+              <p className="text-xs text-muted-foreground">Escaneie o QR Code com o WhatsApp do celular</p>
+            </div>
+          </div>
+          <span className={cn(
+            "text-xs font-medium px-2.5 py-1 rounded-full border inline-flex items-center gap-1",
+            connected ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                       : "bg-muted text-muted-foreground border-border",
+          )}>
+            {connected ? "Conectado" : connStatus === "qr_pending" ? "Aguardando QR" : "Desconectado"}
+          </span>
+        </div>
+
+        {connected ? (
+          <div className="rounded-lg border bg-emerald-500/5 border-emerald-500/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" /> WhatsApp Conectado
+                </div>
+                {phone && <div className="text-sm font-medium mt-0.5">{phone}</div>}
               </div>
+              <Button size="sm" variant="outline" onClick={props.onDisconnect}>Desconectar</Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-muted-foreground">
+              <div>Instância: <span className="font-medium text-foreground">{instance?.instance_id ?? "—"}</span></div>
+              <div>Provider: <span className="font-medium text-foreground">UAZAPI</span></div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-2">
+            {qr ? (
+              <div className="bg-white p-4 rounded-lg">
+                {qr.startsWith("data:") || qr.startsWith("http")
+                  ? <img src={qr} alt="QR Code" width={240} height={240} />
+                  : <QRCodeSVG value={qr} size={240} />}
+              </div>
+            ) : connectError ? (
+              <div className="text-center text-sm text-destructive py-10 max-w-sm">{connectError}</div>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{displayName}</span>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={props.onStartEdit} aria-label="Editar nome">
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+              <div className="flex items-center gap-2 text-muted-foreground py-10">
+                <Loader2 className="h-5 w-5 animate-spin" /> {initializing ? "Inicializando instância UAZAPI..." : "Gerando QR Code..."}
               </div>
             )}
-          </div>
-          {phone && (
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Número</span>
-              <span className="font-medium">{phone}</span>
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              Status: <span className="font-medium">{connStatus}</span>
+              {polling && <Loader2 className="h-3 w-3 animate-spin" />}
             </div>
-          )}
-        </div>
-      )}
-
-      <div className="flex flex-col items-center gap-4 py-2">
-        {connStatus === "connected" ? (
-          <div className="flex flex-col items-center gap-2 py-8">
-            <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-            <p className="font-semibold">Conectado!</p>
-          </div>
-        ) : qr ? (
-          <div className="bg-white p-4 rounded-lg">
-            {qr.startsWith("data:") || qr.startsWith("http")
-              ? <img src={qr} alt="QR Code" width={240} height={240} />
-              : <QRCodeSVG value={qr} size={240} />}
-          </div>
-        ) : connectError ? (
-          <div className="text-center text-sm text-destructive py-10 max-w-sm">{connectError}</div>
-        ) : (
-          <div className="flex items-center gap-2 text-muted-foreground py-12">
-            <Loader2 className="h-5 w-5 animate-spin" /> {initializing ? "Inicializando instância UAZAPI..." : "Gerando QR Code..."}
+            <Button variant="outline" size="sm" onClick={props.onRefreshQr}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
+            </Button>
           </div>
         )}
-        <div className="text-xs text-muted-foreground flex items-center gap-2">
-          Status: <span className="font-medium">{connStatus}</span>
-          {polling && <Loader2 className="h-3 w-3 animate-spin" />}
+      </div>
+
+      <ChannelProfilePrivacy channelId={channelId} disabled={!connected} />
+
+      <div className="rounded-xl border p-4">
+        <div className="flex items-center gap-2 font-semibold text-sm mb-2">
+          <CheckCircle2 className="h-4 w-4 text-primary" /> Resumo da configuração
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={props.onRefreshQr}>
-            <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
-          </Button>
-          {connStatus === "connected" && (
-            <Button variant="outline" size="sm" onClick={props.onDisconnect}>Desconectar</Button>
-          )}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <div className="text-xs text-muted-foreground">Canal</div>
+            <div className="font-medium">{props.displayName || "—"}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Status</div>
+            <div className="font-medium">{connected ? "Conectado" : "Pendente"}</div>
+          </div>
         </div>
       </div>
     </div>

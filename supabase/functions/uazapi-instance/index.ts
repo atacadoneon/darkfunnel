@@ -14,9 +14,18 @@ const json = (b: unknown, s = 200) =>
 
 type Body = {
   channel_id: string;
-  action: "init" | "connect" | "status" | "disconnect" | "delete";
-  phone?: string;         // opcional p/ pairing code
-  force?: boolean;        // recria a instância quando credenciais antigas falharem
+  action:
+    | "init" | "connect" | "status" | "disconnect" | "delete"
+    | "set_profile_name" | "set_profile_picture"
+    | "get_privacy" | "set_privacy"
+    | "save_n8n" | "generate_api_key";
+  phone?: string;
+  force?: boolean;
+  // payloads
+  profile_name?: string;
+  profile_picture_url?: string;
+  privacy?: Record<string, string>;
+  n8n?: { enabled: boolean; url?: string | null; secret?: string | null };
 };
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -243,6 +252,54 @@ Deno.serve(async (req) => {
       await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
       return json({ ok: true });
+    }
+
+    if (body.action === "set_profile_name") {
+      const name = (body.profile_name ?? "").trim();
+      if (!name) return json({ error: "profile_name vazio" }, 400);
+      const r = await uaz(creds.host, "/profile/name", { method: "POST", token: creds.instance_token, body: JSON.stringify({ name }) });
+      if (!r.ok) return json({ error: "uazapi profile name failed", detail: r.data }, 502);
+      return json({ ok: true });
+    }
+
+    if (body.action === "set_profile_picture") {
+      const u = (body.profile_picture_url ?? "").trim();
+      if (!u) return json({ error: "profile_picture_url vazio" }, 400);
+      const r = await uaz(creds.host, "/profile/picture", { method: "POST", token: creds.instance_token, body: JSON.stringify({ url: u, image: u }) });
+      if (!r.ok) return json({ error: "uazapi profile picture failed", detail: r.data }, 502);
+      return json({ ok: true });
+    }
+
+    if (body.action === "get_privacy") {
+      const r = await uaz(creds.host, "/profile/privacy", { method: "GET", token: creds.instance_token });
+      if (!r.ok) return json({ error: "uazapi privacy get failed", detail: r.data }, 502);
+      return json({ ok: true, privacy: r.data });
+    }
+
+    if (body.action === "set_privacy") {
+      if (!body.privacy) return json({ error: "privacy vazio" }, 400);
+      const r = await uaz(creds.host, "/profile/privacy", { method: "POST", token: creds.instance_token, body: JSON.stringify(body.privacy) });
+      if (!r.ok) return json({ error: "uazapi privacy set failed", detail: r.data }, 502);
+      return json({ ok: true });
+    }
+
+    if (body.action === "save_n8n") {
+      const n = body.n8n ?? { enabled: false };
+      await admin.from("channel_credentials").update({
+        n8n_enabled: !!n.enabled,
+        n8n_webhook_url: n.url ?? null,
+        n8n_webhook_secret: n.secret ?? null,
+        updated_at: new Date().toISOString(),
+      }).eq("channel_id", body.channel_id);
+      return json({ ok: true });
+    }
+
+    if (body.action === "generate_api_key") {
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      const key = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+      await admin.from("channel_credentials").update({ send_api_key: key, updated_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
+      return json({ ok: true, api_key: key });
     }
 
     return json({ error: "invalid action" }, 400);
