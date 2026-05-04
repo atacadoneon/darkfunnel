@@ -385,8 +385,9 @@ function UazConnect(props: {
   setNameDraft: (v: string) => void;
   onRefreshQr: () => void;
   onDisconnect: () => void;
+  initializing?: boolean;
 }) {
-  const { displayName, phone, qr, connStatus, connectError, polling, editingName, nameDraft, savingName } = props;
+  const { displayName, phone, qr, connStatus, connectError, polling, editingName, nameDraft, savingName, initializing } = props;
   return (
     <div className="space-y-4">
       {(displayName || phone) && (
