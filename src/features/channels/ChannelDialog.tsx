@@ -312,18 +312,27 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
               )}
             </div>
 
-            <DialogFooter className="gap-2">
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                {step === "uaz_connect" ? "Fechar" : "Cancelar"}
-              </Button>
-              {step !== "uaz_connect" && (
-                <Button onClick={goNext} disabled={savingInfo}>
-                  {savingInfo ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : (
-                    step === "rotation" && kind === "uazapi" ? "Avançar para QR" :
-                    step === "rotation" ? "Concluir" : "Avançar"
-                  )}
+            <DialogFooter className="gap-2 sm:justify-between">
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                  {step === "uaz_connect" ? "Fechar" : "Cancelar"}
                 </Button>
-              )}
+              </div>
+              <div className="flex gap-2">
+                {(step === "rotation" || step === "uaz_connect" || (step === "info" && !editing)) && (
+                  <Button type="button" variant="outline" onClick={goBack}>
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+                  </Button>
+                )}
+                {step !== "uaz_connect" && (
+                  <Button onClick={goNext} disabled={savingInfo}>
+                    {savingInfo ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : (
+                      step === "rotation" && kind === "uazapi" ? "Avançar para QR" :
+                      step === "rotation" ? "Concluir" : "Avançar"
+                    )}
+                  </Button>
+                )}
+              </div>
             </DialogFooter>
           </>
         )}
