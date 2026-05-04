@@ -372,15 +372,16 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                 </Button>
               </div>
               <div className="flex gap-2">
-                {(step === "rotation" || step === "uaz_connect" || (step === "info" && !editing)) && (
+                {(step === "rotation" || step === "integrations" || step === "uaz_connect" || (step === "info" && !editing)) && (
                   <Button type="button" variant="outline" onClick={goBack}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
                   </Button>
                 )}
                 {step !== "uaz_connect" && (
                   <Button onClick={goNext} disabled={savingInfo || advancing}>
-                    {savingInfo || advancing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{step === "rotation" ? "Inicializando..." : "Salvando..."}</> : (
-                      step === "rotation" && kind === "uazapi" ? "Avançar para QR" :
+                    {savingInfo || advancing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{step === "integrations" ? "Inicializando..." : "Salvando..."}</> : (
+                      step === "integrations" ? "Avançar para QR" :
+                      step === "rotation" && kind === "uazapi" ? "Avançar" :
                       step === "rotation" ? "Concluir" : "Avançar"
                     )}
                   </Button>
