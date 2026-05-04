@@ -99,14 +99,27 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
 
   const saveInfo = async (): Promise<string | null> => {
     if (!current) return null;
-    if (!info.display_name.trim()) { toast.error("Informe o nome do canal"); return null; }
+    const name = info.display_name.trim();
+    if (!name) { toast.error("Informe o nome do canal"); return null; }
     if (info.visibility === "sector" && !info.sector_id) { toast.error("Selecione um setor"); return null; }
     setSavingInfo(true);
     try {
+      // Verifica duplicidade de nome no workspace
+      const { data: dup } = await supabase
+        .from("channels")
+        .select("id")
+        .eq("workspace_id", current.id)
+        .ilike("display_name", name)
+        .maybeSingle();
+      if (dup && dup.id !== (editing ? channel?.id : activeChannelId)) {
+        toast.error("Já existe um canal com esse nome");
+        return null;
+      }
+
       const payload = {
         workspace_id: current.id,
         kind,
-        display_name: info.display_name.trim(),
+        display_name: name,
         sector_id: info.sector_id,
         visibility: info.visibility,
       };
@@ -120,7 +133,13 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
         if (error) throw error;
       } else {
         const { data, error } = await supabase.from("channels").insert(payload).select("id").single();
-        if (error) throw error;
+        if (error) {
+          if ((error as { code?: string }).code === "23505") {
+            toast.error("Já existe um canal com esse nome ou telefone");
+            return null;
+          }
+          throw error;
+        }
         id = data.id;
       }
       if (info.visibility === "selected") {
