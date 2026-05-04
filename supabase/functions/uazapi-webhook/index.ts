@@ -1,5 +1,5 @@
 // Webhook público que a uazapi chama com eventos.
-// redeploy: 2026-05-04T02:52Z
+// redeploy: 2026-05-04T17:25Z (force publish)
 // URL: /functions/v1/uazapi-webhook?secret=XXX&channel=YYY
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
