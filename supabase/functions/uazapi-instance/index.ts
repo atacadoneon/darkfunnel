@@ -109,7 +109,8 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("DARKFUNNEL_SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!url || !anon || !service) return json({ error: "Configuração do banco incompleta na função" }, 500);
 
   const userClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
   const admin = createClient(url, service, { auth: { persistSession: false } });
