@@ -517,7 +517,46 @@ function UazConnect(props: {
                   : <QRCodeSVG value={qr} size={240} />}
               </div>
             ) : connectError ? (
-              <div className="text-center text-sm text-destructive py-10 max-w-sm">{connectError}</div>
+              <div className="w-full max-w-md rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-left space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-sm font-semibold text-destructive">{connectError.title}</div>
+                  {connectError.status !== undefined && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-destructive/15 text-destructive shrink-0">
+                      {connectError.status}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-foreground break-words">{connectError.message}</div>
+                {connectError.url && (
+                  <div className="text-[10px] font-mono text-muted-foreground break-all">{connectError.url}</div>
+                )}
+                {connectError.body !== undefined && connectError.body !== null && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+                      Ver corpo da resposta
+                    </summary>
+                    <pre className="mt-2 max-h-48 overflow-auto rounded bg-muted/60 p-2 text-[11px] font-mono whitespace-pre-wrap break-all">
+{typeof connectError.body === "string" ? connectError.body : JSON.stringify(connectError.body, null, 2)}
+                    </pre>
+                    <button
+                      type="button"
+                      className="mt-1 text-[11px] text-muted-foreground hover:text-foreground underline"
+                      onClick={() => {
+                        const txt = [
+                          connectError.title,
+                          connectError.status !== undefined ? `HTTP ${connectError.status}` : "",
+                          connectError.url ?? "",
+                          connectError.message,
+                          typeof connectError.body === "string" ? connectError.body : JSON.stringify(connectError.body, null, 2),
+                        ].filter(Boolean).join("\n");
+                        navigator.clipboard.writeText(txt).then(() => toast.success("Erro copiado"));
+                      }}
+                    >
+                      Copiar diagnóstico
+                    </button>
+                  </details>
+                )}
+              </div>
             ) : (
               <div className="flex items-center gap-2 text-muted-foreground py-10">
                 <Loader2 className="h-5 w-5 animate-spin" /> {initializing ? "Inicializando instância UAZAPI..." : "Gerando QR Code..."}
