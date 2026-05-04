@@ -263,6 +263,23 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
               </DialogDescription>
             </DialogHeader>
 
+            {(displayName || phone) && (
+              <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm space-y-1">
+                {displayName && (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Canal</span>
+                    <span className="font-medium">{displayName}</span>
+                  </div>
+                )}
+                {phone && (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Número</span>
+                    <span className="font-medium">{phone}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col items-center gap-4 py-2">
               {connStatus === "connected" ? (
                 <div className="flex flex-col items-center gap-2 py-8">
