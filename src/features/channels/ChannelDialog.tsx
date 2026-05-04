@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import type { ChannelKind, ChannelRow, ChannelVisibility } from "./hooks";
 import { ChannelStepInfo, type Step1Value } from "./ChannelStepInfo";
 import { ChannelStepRotation } from "./ChannelStepRotation";
+import { ChannelStepIntegrations } from "./ChannelStepIntegrations";
+import { ChannelProfilePrivacy } from "./ChannelProfilePrivacy";
 import { useChannelMembers, setChannelMembers } from "./configHooks";
 
 type Props = {
@@ -28,11 +30,12 @@ type Props = {
   channel?: ChannelRow | null;
 };
 
-type Step = "type" | "info" | "rotation" | "uaz_connect";
+type Step = "type" | "info" | "rotation" | "integrations" | "uaz_connect";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "info", label: "Informações" },
   { key: "rotation", label: "Rodízio" },
+  { key: "integrations", label: "Integrações" },
   { key: "uaz_connect", label: "Conectar QR" },
 ];
 
