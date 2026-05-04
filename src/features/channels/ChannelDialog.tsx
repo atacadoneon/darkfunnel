@@ -181,26 +181,53 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     qc.invalidateQueries({ queryKey: ["channels", current?.id] });
   };
 
+  const [advancing, setAdvancing] = useState(false);
+  const [initializing, setInitializing] = useState(false);
+
   const goNext = async () => {
     if (step === "info") {
+      setAdvancing(true);
       const id = await saveInfo();
+      setAdvancing(false);
       if (!id) return;
       setStep("rotation");
     } else if (step === "rotation") {
       if (kind === "uazapi") {
-        if (!editing && activeChannelId) {
-          // primeira vez: inicializa instância UAZAPI
-          const { error } = await supabase.functions.invoke("uazapi-instance", {
-            body: { channel_id: activeChannelId, action: "init" },
-          });
-          if (error) { toast.error(error.message); return; }
-        }
         setStep("uaz_connect");
-        if (activeChannelId) await connect(activeChannelId);
+        if (activeChannelId) void initAndConnect(activeChannelId);
       } else {
         toast.success("Canal salvo");
         onOpenChange(false);
       }
+    }
+  };
+
+  const initAndConnect = async (id: string) => {
+    setInitializing(true);
+    setConnectError(null);
+    try {
+      // Verifica se já existe credencial (canal previamente inicializado)
+      const { data: creds } = await supabase
+        .from("channel_credentials")
+        .select("channel_id")
+        .eq("channel_id", id)
+        .maybeSingle();
+      if (!creds) {
+        const { error } = await supabase.functions.invoke("uazapi-instance", {
+          body: { channel_id: id, action: "init" },
+        });
+        if (error) {
+          setConnectError(`Falha ao inicializar instância: ${error.message}`);
+          toast.error(error.message);
+          return;
+        }
+      }
+      await connect(id);
+    } catch (e) {
+      setConnectError((e as Error).message);
+      toast.error((e as Error).message);
+    } finally {
+      setInitializing(false);
     }
   };
 
