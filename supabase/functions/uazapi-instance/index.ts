@@ -1,6 +1,6 @@
 // Gerencia instâncias uazapi: init, connect (QR), status, disconnect
 // Requer JWT (usuário logado). Valida que user é membro do workspace do canal.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
