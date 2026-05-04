@@ -109,7 +109,7 @@ export function ChannelStepInfo({
             <RadioGroupItem value="sector" className="mt-0.5" />
             <div>
               <div className="font-medium text-sm">Somente o setor selecionado</div>
-              <div className="text-xs text-muted-foreground">Apenas membros do setor escolhido acima.</div>
+              <div className="text-xs text-muted-foreground">Apenas usuários do setor escolhido acima.</div>
             </div>
           </label>
           <label className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:border-primary transition-colors">
@@ -144,7 +144,7 @@ export function ChannelStepInfo({
                     </div>
                   </label>
                 ))}
-                {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum membro cadastrado.</div>}
+                {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum usuário cadastrado.</div>}
               </div>
             </ScrollArea>
           </div>

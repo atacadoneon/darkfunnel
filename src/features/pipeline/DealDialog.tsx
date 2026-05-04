@@ -404,9 +404,9 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
                     </PopoverTrigger>
                     <PopoverContent className="w-64 p-0" align="end">
                       <Command>
-                        <CommandInput placeholder="Buscar membro..." />
+                        <CommandInput placeholder="Buscar usuário..." />
                         <CommandList>
-                          <CommandEmpty>Sem membros disponíveis.</CommandEmpty>
+                          <CommandEmpty>Sem usuários disponíveis.</CommandEmpty>
                           <CommandGroup>
                             {availableToInvite.map((m) => (
                               <CommandItem
