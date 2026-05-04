@@ -140,6 +140,15 @@ Deno.serve(async (req) => {
       const adminToken = (Deno.env.get("UAZAPI_ADMIN_TOKEN") || "").trim();
       if (!host || !adminToken) return json({ error: "UAZAPI_HOST/UAZAPI_ADMIN_TOKEN não configurados" }, 500);
 
+      if (creds?.instance_token && !body.force) {
+        return json({ ok: true, instance_id: creds.instance_id ?? null, reused: true });
+      }
+
+      if (creds?.instance_token && body.force) {
+        await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token });
+        await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
+      }
+
       // uazapiGO V2: cria instância via endpoint administrativo
       const r = await uaz(host, "/instance/create", {
         method: "POST",
@@ -163,17 +172,20 @@ Deno.serve(async (req) => {
       // Configura webhook automaticamente
       const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
       const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
-      await uaz(host, "/webhook", {
+      const webhookResult = await uaz(host, "/webhook", {
         method: "POST",
         token: instance_token,
         body: JSON.stringify({
           url: webhook,
           enabled: true,
-          events: { messages: true, messages_update: true, connection: true, contacts: true, presence: false },
+          events: ["messages", "messages_update", "connection", "contacts"],
+          excludeMessages: ["isGroupYes"],
+          addUrlEvents: false,
+          addUrlTypesMessages: false,
         }),
       });
 
-      return json({ ok: true, instance_id });
+      return json({ ok: true, instance_id, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
     }
 
     if (!creds) return json({ error: "instância não inicializada" }, 400);
