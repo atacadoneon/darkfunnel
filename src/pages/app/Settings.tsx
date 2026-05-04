@@ -38,7 +38,7 @@ export default function Settings() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
         <p className="text-sm text-muted-foreground">
-          Gerencie preferências, canais, trackeamento, integrações e usuários do workspace.
+          Gerencie preferências, canais, trackeamento, integrações e usuários.
         </p>
       </div>
 
@@ -60,7 +60,7 @@ export default function Settings() {
         </TabsList>
 
         <TabsContent value="preferences" className="mt-6">
-          <Empty title="Preferências" desc="Idioma, fuso horário, notificações e tema do workspace — em breve." />
+          <Empty title="Preferências" desc="Idioma, fuso horário, notificações e tema — em breve." />
         </TabsContent>
         <TabsContent value="channels" className="mt-6">
           <ChannelsSection />

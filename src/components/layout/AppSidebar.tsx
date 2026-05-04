@@ -90,7 +90,7 @@ export function AppSidebar() {
     user?.email?.split("@")[0] ??
     "Usuário";
 
-  const wsName = current?.name ?? "Workspace";
+  const wsName = current?.name ?? "Conta";
 
   return (
     <Sidebar collapsible="icon">

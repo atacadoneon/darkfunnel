@@ -219,7 +219,7 @@ function SectorsCard() {
                   </div>
                 </label>
               ))}
-              {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum membro no workspace.</div>}
+              {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum membro cadastrado.</div>}
             </div>
           </ScrollArea>
           <DialogFooter>

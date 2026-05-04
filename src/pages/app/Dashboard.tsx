@@ -279,7 +279,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 text-[13px] md:p-4">
-      {/* Workspace card / filters */}
+      {/* Header / filters */}
       <Card>
         <CardContent className="p-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -292,7 +292,7 @@ export default function Dashboard() {
                 Dashboard Comercial
               </div>
               <h1 className="truncate text-lg font-bold leading-tight">
-                {current?.name ?? "Workspace"}
+                {current?.name ?? "Conta"}
               </h1>
               <p className="text-[11px] text-muted-foreground">
                 {fmt(range.from)} - {fmt(range.to)}

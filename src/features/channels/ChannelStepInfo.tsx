@@ -101,7 +101,7 @@ export function ChannelStepInfo({
           <label className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:border-primary transition-colors">
             <RadioGroupItem value="all" className="mt-0.5" />
             <div>
-              <div className="font-medium text-sm">Todos os usuários do workspace</div>
+              <div className="font-medium text-sm">Todos os usuários</div>
               <div className="text-xs text-muted-foreground">Qualquer pessoa da equipe pode ver e atender.</div>
             </div>
           </label>
@@ -144,7 +144,7 @@ export function ChannelStepInfo({
                     </div>
                   </label>
                 ))}
-                {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum membro no workspace.</div>}
+                {members.length === 0 && <div className="text-xs text-muted-foreground p-2">Nenhum membro cadastrado.</div>}
               </div>
             </ScrollArea>
           </div>
