@@ -299,7 +299,11 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                 ) : null}
                 {editing ? "Editar canal" : "Novo WhatsApp Business"}
               </DialogTitle>
-              <DialogDescription>Configure seu canal em 3 passos.</DialogDescription>
+              <DialogDescription>
+                {kind === "uazapi"
+                  ? `Conexão via API não-oficial UAZAPI · passo ${stepIndex + 1} de ${STEPS.length}`
+                  : `Configure seu canal em ${STEPS.length} passos.`}
+              </DialogDescription>
             </DialogHeader>
 
             {/* Stepper */}
