@@ -75,15 +75,29 @@ function phoneFrom(data: unknown): string | null {
   return digits ? `+${digits}` : null;
 }
 
+function normalizeHost(raw: string): string {
+  let h = (raw || "").trim().replace(/\/$/, "");
+  if (!h) return "";
+  if (!/^https?:\/\//i.test(h)) h = `https://${h}`;
+  return h;
+}
+
 async function uaz(host: string, path: string, init: RequestInit & { token?: string; admintoken?: string }) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (init.token) headers["token"] = init.token;
   if (init.admintoken) headers["admintoken"] = init.admintoken;
-  const res = await fetch(`${host.replace(/\/$/, "")}${path}`, { ...init, headers });
-  const text = await res.text();
-  let data: unknown = text;
-  try { data = JSON.parse(text); } catch { /* keep text */ }
-  return { ok: res.ok, status: res.status, data };
+  const base = normalizeHost(host);
+  if (!base) throw new Error("UAZAPI_HOST vazio ou inválido");
+  const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  try {
+    const res = await fetch(url, { ...init, headers });
+    const text = await res.text();
+    let data: unknown = text;
+    try { data = JSON.parse(text); } catch { /* keep text */ }
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    throw new Error(`Falha ao chamar UAZAPI (${url}): ${(e as Error).message}`);
+  }
 }
 
 function mapStatus(connStatus: unknown): string {
