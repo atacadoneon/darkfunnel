@@ -352,8 +352,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                   </Button>
                 )}
                 {step !== "uaz_connect" && (
-                  <Button onClick={goNext} disabled={savingInfo}>
-                    {savingInfo ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : (
+                  <Button onClick={goNext} disabled={savingInfo || advancing}>
+                    {savingInfo || advancing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{step === "rotation" ? "Inicializando..." : "Salvando..."}</> : (
                       step === "rotation" && kind === "uazapi" ? "Avançar para QR" :
                       step === "rotation" ? "Concluir" : "Avançar"
                     )}
