@@ -14,9 +14,18 @@ const json = (b: unknown, s = 200) =>
 
 type Body = {
   channel_id: string;
-  action: "init" | "connect" | "status" | "disconnect" | "delete";
-  phone?: string;         // opcional p/ pairing code
-  force?: boolean;        // recria a instância quando credenciais antigas falharem
+  action:
+    | "init" | "connect" | "status" | "disconnect" | "delete"
+    | "set_profile_name" | "set_profile_picture"
+    | "get_privacy" | "set_privacy"
+    | "save_n8n" | "generate_api_key";
+  phone?: string;
+  force?: boolean;
+  // payloads
+  profile_name?: string;
+  profile_picture_url?: string;
+  privacy?: Record<string, string>;
+  n8n?: { enabled: boolean; url?: string | null; secret?: string | null };
 };
 
 const asRecord = (value: unknown): Record<string, unknown> =>
