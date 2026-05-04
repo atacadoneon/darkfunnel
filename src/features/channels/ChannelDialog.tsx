@@ -215,12 +215,14 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
       setStep("rotation");
     } else if (step === "rotation") {
       if (kind === "uazapi") {
-        setStep("uaz_connect");
-        if (activeChannelId) void initAndConnect(activeChannelId);
+        setStep("integrations");
       } else {
         toast.success("Canal salvo");
         onOpenChange(false);
       }
+    } else if (step === "integrations") {
+      setStep("uaz_connect");
+      if (activeChannelId) void initAndConnect(activeChannelId);
     }
   };
 
@@ -249,7 +251,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
 
   const goBack = () => {
     if (step === "rotation") setStep("info");
-    else if (step === "uaz_connect") setStep("rotation");
+    else if (step === "integrations") setStep("rotation");
+    else if (step === "uaz_connect") setStep("integrations");
     else if (step === "info" && !editing) setStep("type");
   };
 
