@@ -59,11 +59,62 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [savingName, setSavingName] = useState(false);
 
   // QR
+  type ConnectErr = { title: string; status?: number; message: string; body?: unknown; url?: string };
   const [qr, setQr] = useState<string | null>(null);
   const [connStatus, setConnStatus] = useState<string>("pending");
-  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectError, setConnectError] = useState<ConnectErr | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
+
+  // Invoca edge function via fetch direto para capturar HTTP status + body bruto em caso de erro.
+  const invokeEdge = async (fn: string, body: unknown): Promise<{ ok: true; data: any } | { ok: false; err: ConnectErr }> => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${fn}`;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? (import.meta.env.VITE_SUPABASE_ANON_KEY as string);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+        },
+        body: JSON.stringify(body),
+      });
+      const text = await res.text();
+      let parsed: any = text;
+      try { parsed = JSON.parse(text); } catch { /* keep text */ }
+      if (!res.ok) {
+        return {
+          ok: false,
+          err: {
+            title: `HTTP ${res.status} ${res.statusText}`,
+            status: res.status,
+            message: (parsed && typeof parsed === "object" && parsed.error) || (typeof parsed === "string" ? parsed : "Erro na Edge Function"),
+            body: parsed,
+            url,
+          },
+        };
+      }
+      if (parsed && typeof parsed === "object" && parsed.error) {
+        return {
+          ok: false,
+          err: { title: "Erro retornado pela função", status: res.status, message: String(parsed.error), body: parsed, url },
+        };
+      }
+      return { ok: true, data: parsed };
+    } catch (e) {
+      return {
+        ok: false,
+        err: {
+          title: "Falha de rede ao chamar Edge Function",
+          message: (e as Error).message,
+          body: { hint: "Possível CORS, função não publicada (404), ou bloqueio de rede. Verifique se a função foi publicada (Publish → Update)." },
+          url,
+        },
+      };
+    }
+  };
 
   const { data: existingMembers = [] } = useChannelMembers(activeChannelId);
 
