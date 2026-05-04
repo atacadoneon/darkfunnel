@@ -333,7 +333,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                     toast.success("Nome atualizado");
                   }}
                   setNameDraft={setNameDraft}
-                  onRefreshQr={() => activeChannelId && connect(activeChannelId)}
+                  onRefreshQr={() => activeChannelId && initAndConnect(activeChannelId)}
+                  initializing={initializing}
                   onDisconnect={disconnect}
                 />
               )}
