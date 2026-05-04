@@ -447,7 +447,7 @@ function UazConnect(props: {
   phone: string | null;
   qr: string | null;
   connStatus: string;
-  connectError: string | null;
+  connectError: { title: string; status?: number; message: string; body?: unknown; url?: string } | null;
   polling: boolean;
   editingName: boolean;
   nameDraft: string;
