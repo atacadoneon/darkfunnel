@@ -199,8 +199,7 @@ Deno.serve(async (req) => {
       if (!r.ok) return json({ error: "uazapi connect failed", detail: r.data }, 502);
       const qr = extractQr(r.data);
       const paircode = extractPaircode(r.data);
-      const inst = instanceFrom(r.data);
-      const status = mapStatus(inst.status ?? asRecord(r.data)?.status);
+      const status = statusFrom(r.data);
       await admin.from("channel_credentials").update({ last_qr: qr, last_qr_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: status === "connected" ? "connected" : "qr_pending" }).eq("id", body.channel_id);
       return json({ ok: true, qr, paircode, status });
@@ -209,13 +208,12 @@ Deno.serve(async (req) => {
     if (body.action === "status") {
       const r = await uaz(creds.host, "/instance/status", { method: "GET", token: creds.instance_token });
       if (!r.ok) return json({ error: "uazapi status failed", detail: r.data }, 502);
-      const inst = instanceFrom(r.data);
-      const status = mapStatus(inst?.status ?? asRecord(r.data)?.status);
-      const phone = inst?.owner ?? inst?.wid ?? null;
+      const status = statusFrom(r.data);
+      const phone = phoneFrom(r.data);
       const update: Record<string, unknown> = { status };
-      if (phone) update.phone_e164 = phone.replace(/[^\d+]/g, "").replace(/^/, (s: string) => s.startsWith("+") ? s : "+" + s);
+      if (phone) update.phone_e164 = phone;
       await admin.from("channels").update(update).eq("id", body.channel_id);
-      return json({ ok: true, status, raw: inst });
+      return json({ ok: true, status, raw: instanceFrom(r.data) });
     }
 
     if (body.action === "disconnect") {
@@ -225,7 +223,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "delete") {
-      await uaz(creds.host, "/instance", { method: "DELETE", admintoken: creds.admin_token ?? "" });
+      await uaz(creds.host, "/instance", { method: "DELETE", token: creds.instance_token });
       await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
       return json({ ok: true });
