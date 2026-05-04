@@ -1,10 +1,10 @@
 // Webhook público que a uazapi chama com eventos.
 // URL: /functions/v1/uazapi-webhook?secret=XXX&channel=YYY
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (b: unknown, s = 200) =>
@@ -37,7 +37,8 @@ Deno.serve(async (req) => {
   const channelId = url.searchParams.get("channel");
   if (!secret || !channelId) return json({ error: "missing params" }, 400);
 
-  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("DARKFUNNEL_SUPABASE_SERVICE_ROLE_KEY") || "";
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, service, { auth: { persistSession: false } });
 
   const { data: creds } = await sb.from("channel_credentials").select("channel_id,webhook_secret").eq("channel_id", channelId).maybeSingle();
   if (!creds || creds.webhook_secret !== secret) return json({ error: "invalid secret" }, 401);

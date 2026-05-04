@@ -15,6 +15,7 @@ type Body = {
   channel_id: string;
   action: "init" | "connect" | "status" | "disconnect" | "delete";
   phone?: string;         // opcional p/ pairing code
+  force?: boolean;        // recria a instância quando credenciais antigas falharem
 };
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -48,6 +49,29 @@ function extractPaircode(data: unknown): string | null {
   const inst = instanceFrom(data);
   const paircode = inst.paircode ?? inst.pairCode ?? root.paircode ?? root.pairCode;
   return typeof paircode === "string" && paircode.trim() ? paircode.trim() : null;
+}
+
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function statusFrom(data: unknown): string {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  return mapStatus(inst.status ?? root.status ?? root);
+}
+
+function phoneFrom(data: unknown): string | null {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  const status = asRecord(root.status);
+  const jid = asRecord(status.jid ?? root.jid);
+  const raw = firstString(inst.owner, inst.wid, jid.user, root.owner, root.wid);
+  const digits = raw?.replace(/\D/g, "") ?? "";
+  return digits ? `+${digits}` : null;
 }
 
 async function uaz(host: string, path: string, init: RequestInit & { token?: string; admintoken?: string }) {
@@ -85,7 +109,8 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("DARKFUNNEL_SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!url || !anon || !service) return json({ error: "Configuração do banco incompleta na função" }, 500);
 
   const userClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
   const admin = createClient(url, service, { auth: { persistSession: false } });
@@ -116,6 +141,15 @@ Deno.serve(async (req) => {
       const adminToken = (Deno.env.get("UAZAPI_ADMIN_TOKEN") || "").trim();
       if (!host || !adminToken) return json({ error: "UAZAPI_HOST/UAZAPI_ADMIN_TOKEN não configurados" }, 500);
 
+      if (creds?.instance_token && !body.force) {
+        return json({ ok: true, instance_id: creds.instance_id ?? null, reused: true });
+      }
+
+      if (creds?.instance_token && body.force) {
+        await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token });
+        await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
+      }
+
       // uazapiGO V2: cria instância via endpoint administrativo
       const r = await uaz(host, "/instance/create", {
         method: "POST",
@@ -139,17 +173,20 @@ Deno.serve(async (req) => {
       // Configura webhook automaticamente
       const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
       const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
-      await uaz(host, "/webhook", {
+      const webhookResult = await uaz(host, "/webhook", {
         method: "POST",
         token: instance_token,
         body: JSON.stringify({
           url: webhook,
           enabled: true,
-          events: { messages: true, messages_update: true, connection: true, contacts: true, presence: false },
+          events: ["messages", "messages_update", "connection", "contacts"],
+          excludeMessages: ["isGroupYes"],
+          addUrlEvents: false,
+          addUrlTypesMessages: false,
         }),
       });
 
-      return json({ ok: true, instance_id });
+      return json({ ok: true, instance_id, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
     }
 
     if (!creds) return json({ error: "instância não inicializada" }, 400);
@@ -163,8 +200,7 @@ Deno.serve(async (req) => {
       if (!r.ok) return json({ error: "uazapi connect failed", detail: r.data }, 502);
       const qr = extractQr(r.data);
       const paircode = extractPaircode(r.data);
-      const inst = instanceFrom(r.data);
-      const status = mapStatus(inst.status ?? asRecord(r.data)?.status);
+      const status = statusFrom(r.data);
       await admin.from("channel_credentials").update({ last_qr: qr, last_qr_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: status === "connected" ? "connected" : "qr_pending" }).eq("id", body.channel_id);
       return json({ ok: true, qr, paircode, status });
@@ -173,13 +209,12 @@ Deno.serve(async (req) => {
     if (body.action === "status") {
       const r = await uaz(creds.host, "/instance/status", { method: "GET", token: creds.instance_token });
       if (!r.ok) return json({ error: "uazapi status failed", detail: r.data }, 502);
-      const inst = instanceFrom(r.data);
-      const status = mapStatus(inst?.status ?? asRecord(r.data)?.status);
-      const phone = inst?.owner ?? inst?.wid ?? null;
+      const status = statusFrom(r.data);
+      const phone = phoneFrom(r.data);
       const update: Record<string, unknown> = { status };
-      if (phone) update.phone_e164 = phone.replace(/[^\d+]/g, "").replace(/^/, (s: string) => s.startsWith("+") ? s : "+" + s);
+      if (phone) update.phone_e164 = phone;
       await admin.from("channels").update(update).eq("id", body.channel_id);
-      return json({ ok: true, status, raw: inst });
+      return json({ ok: true, status, raw: instanceFrom(r.data) });
     }
 
     if (body.action === "disconnect") {
@@ -189,7 +224,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "delete") {
-      await uaz(creds.host, "/instance", { method: "DELETE", admintoken: creds.admin_token ?? "" });
+      await uaz(creds.host, "/instance", { method: "DELETE", token: creds.instance_token });
       await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
       return json({ ok: true });
