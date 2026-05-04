@@ -331,8 +331,10 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
             <div className="py-2">
               {step === "info" && <ChannelStepInfo value={info} onChange={setInfo} />}
               {step === "rotation" && <ChannelStepRotation channelId={activeChannelId} />}
+              {step === "integrations" && <ChannelStepIntegrations channelId={activeChannelId} />}
               {step === "uaz_connect" && (
                 <UazConnect
+                  channelId={activeChannelId}
                   displayName={info.display_name}
                   phone={channel?.phone_e164 ?? null}
                   qr={qr}
