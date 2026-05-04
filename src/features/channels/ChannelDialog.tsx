@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { Smartphone, BadgeCheck, ArrowLeft, Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Smartphone, BadgeCheck, ArrowLeft, Loader2, RefreshCw, CheckCircle2, Pencil } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
@@ -45,6 +45,9 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [phone, setPhone] = useState("");
   const [policy, setPolicy] = useState<ChannelRow["policy"]>("support");
   const [saving, setSaving] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingName, setSavingName] = useState(false);
 
   // QR / status
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
@@ -264,13 +267,56 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
             </DialogHeader>
 
             {(displayName || phone) && (
-              <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm space-y-1">
-                {displayName && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Canal</span>
-                    <span className="font-medium">{displayName}</span>
-                  </div>
-                )}
+              <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">Canal</span>
+                  {editingName ? (
+                    <div className="flex items-center gap-2 flex-1 max-w-[260px]">
+                      <Input
+                        autoFocus
+                        value={nameDraft}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        className="h-8"
+                      />
+                      <Button
+                        size="sm"
+                        disabled={savingName || !nameDraft.trim() || !activeChannelId}
+                        onClick={async () => {
+                          if (!activeChannelId) return;
+                          setSavingName(true);
+                          const { error } = await supabase
+                            .from("channels")
+                            .update({ display_name: nameDraft.trim() })
+                            .eq("id", activeChannelId);
+                          setSavingName(false);
+                          if (error) { toast.error(error.message); return; }
+                          setDisplayName(nameDraft.trim());
+                          setEditingName(false);
+                          qc.invalidateQueries({ queryKey: ["channels", current?.id] });
+                          toast.success("Nome atualizado");
+                        }}
+                      >
+                        {savingName ? <Loader2 className="h-3 w-3 animate-spin" /> : "Salvar"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingName(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{displayName}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => { setNameDraft(displayName); setEditingName(true); }}
+                        aria-label="Editar nome"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 {phone && (
                   <div className="flex justify-between gap-3">
                     <span className="text-muted-foreground">Número</span>
