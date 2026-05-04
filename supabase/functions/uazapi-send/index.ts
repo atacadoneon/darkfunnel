@@ -1,4 +1,5 @@
 // Envia mensagem de texto via uazapi. Cria registro em messages.
+// redeploy: 2026-05-04T02:30Z
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {

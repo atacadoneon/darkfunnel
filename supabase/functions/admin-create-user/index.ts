@@ -1,4 +1,5 @@
 // Cria um novo usuário e adiciona ao workspace (somente admin/owner do workspace)
+// redeploy: 2026-05-04T02:30Z
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
