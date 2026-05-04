@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.uazapi-send]
 verify_jwt = false
+
+[functions.admin-create-user]
+verify_jwt = false

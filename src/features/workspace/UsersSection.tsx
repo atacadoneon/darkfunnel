@@ -242,40 +242,44 @@ function AddUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const { current } = useWorkspace();
   const qc = useQueryClient();
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [password, setPassword] = useState("");
+  const [clientVisibleName, setClientVisibleName] = useState("");
+  const [hideClientName, setHideClientName] = useState(true);
   const [role, setRole] = useState<WorkspaceRole>("member");
   const [saving, setSaving] = useState(false);
 
-  const reset = () => { setEmail(""); setRole("member"); };
+  const reset = () => {
+    setEmail(""); setDisplayName(""); setPassword("");
+    setClientVisibleName(""); setHideClientName(true); setRole("member");
+  };
 
   const handleAdd = async () => {
-    if (!current || !email.trim()) return;
+    if (!current) return;
+    if (!email.trim() || !displayName.trim() || !password) {
+      toast.error("Preencha email, nome e senha"); return;
+    }
+    if (password.length < 6) { toast.error("Senha deve ter ao menos 6 caracteres"); return; }
     setSaving(true);
     try {
-      const target = email.trim().toLowerCase();
-      const { data: profile, error: pErr } = await supabase
-        .from("profiles")
-        .select("id,email")
-        .ilike("email", target)
-        .maybeSingle();
-      if (pErr) throw pErr;
-      if (!profile) {
-        toast.error("Nenhum usuário com esse email. Peça para se cadastrar primeiro.");
-        return;
-      }
-      const { error } = await supabase
-        .from("workspace_members")
-        .insert({ workspace_id: current.id, user_id: profile.id, role });
-      if (error) {
-        if (error.code === "23505") toast.error("Esse usuário já faz parte.");
-        else throw error;
-        return;
-      }
-      toast.success("Usuário adicionado");
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          workspace_id: current.id,
+          email: email.trim().toLowerCase(),
+          password,
+          display_name: displayName.trim(),
+          client_visible_name: hideClientName ? null : (clientVisibleName.trim() || null),
+          role,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Usuário cadastrado");
       qc.invalidateQueries({ queryKey: ["ws-members", current.id] });
       reset();
       onOpenChange(false);
     } catch (e) {
-      toast.error((e as Error).message);
+      toast.error((e as Error).message || "Erro ao cadastrar usuário");
     } finally {
       setSaving(false);
     }
@@ -283,32 +287,73 @@ function AddUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Adicionar usuário</DialogTitle>
-          <DialogDescription>O usuário precisa já ter uma conta cadastrada.</DialogDescription>
+          <DialogTitle>Cadastrar Usuário</DialogTitle>
+          <DialogDescription>
+            Preencha os dados do usuário que terá acesso à sua conta.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Email</label>
-            <Input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@empresa.com" />
+
+        <div className="space-y-5">
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+            <h4 className="text-sm font-semibold text-primary">Dados do Usuário</h4>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Email</label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Digite o email..." />
+              <p className="text-xs text-muted-foreground">Insira um email válido para poder recuperar a senha em caso de esquecimento.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Nome</label>
+              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Nome do usuário" />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Senha</label>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Digite a senha..." />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 sm:items-end">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Nome visível para o cliente</label>
+                <Input
+                  value={clientVisibleName}
+                  onChange={(e) => setClientVisibleName(e.target.value)}
+                  placeholder="Nome visível para o cliente"
+                  disabled={hideClientName}
+                />
+                <p className="text-xs text-muted-foreground">Este é o nome que será inserido automaticamente antes da mensagem caso ative esta opção.</p>
+              </div>
+              <Button
+                type="button"
+                variant={hideClientName ? "secondary" : "default"}
+                onClick={() => setHideClientName((v) => !v)}
+                className="sm:min-w-[140px]"
+              >
+                {hideClientName ? "Não Exibir" : "Exibir"}
+              </Button>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Permissão</label>
+
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+            <h4 className="text-sm font-semibold text-primary">Nível/Permissões</h4>
             <Select value={role} onValueChange={(v) => setRole(v as WorkspaceRole)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="- SELECIONE -" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="member">Membro</SelectItem>
+                <SelectItem value="member">Membro (vendedor)</SelectItem>
                 <SelectItem value="manager">Gestor</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
+
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleAdd} disabled={saving || !email.trim()}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
+          <Button onClick={handleAdd} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar Usuário"}
           </Button>
         </DialogFooter>
       </DialogContent>
