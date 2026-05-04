@@ -280,19 +280,15 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     setInitializing(true);
     setConnectError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
-        body: { channel_id: id, action: "init" },
-      });
-      const detail = data?.detail ? `: ${typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)}` : "";
-      if (error || data?.error) {
-        const message = `Falha ao inicializar instância: ${data?.error ?? error?.message ?? "erro desconhecido"}${detail}`;
-        setConnectError(message);
-        toast.error(message);
+      const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init" });
+      if (r.ok === false) {
+        setConnectError({ ...r.err, title: r.err.title + " (init)" });
+        toast.error(`Falha ao inicializar instância: ${r.err.message}`);
         return;
       }
       await connect(id);
     } catch (e) {
-      setConnectError((e as Error).message);
+      setConnectError({ title: "Erro inesperado", message: (e as Error).message });
       toast.error((e as Error).message);
     } finally {
       setInitializing(false);
