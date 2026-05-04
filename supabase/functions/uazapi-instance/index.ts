@@ -116,17 +116,17 @@ Deno.serve(async (req) => {
       const adminToken = (Deno.env.get("UAZAPI_ADMIN_TOKEN") || "").trim();
       if (!host || !adminToken) return json({ error: "UAZAPI_HOST/UAZAPI_ADMIN_TOKEN não configurados" }, 500);
 
-      // Tenta /instance/init (uazapi V2)
-      const r = await uaz(host, "/instance/init", {
+      // uazapiGO V2: cria instância via endpoint administrativo
+      const r = await uaz(host, "/instance/create", {
         method: "POST",
         admintoken: adminToken,
         body: JSON.stringify({ name: channel.display_name, systemName: channel.display_name }),
       });
       if (!r.ok) return json({ error: "uazapi init failed", detail: r.data }, 502);
 
-      const inst = r.data?.instance ?? r.data;
-      const instance_token = inst?.token ?? r.data?.token;
-      const instance_id = inst?.id ?? inst?.instanceId ?? r.data?.id ?? null;
+      const inst = instanceFrom(r.data);
+      const instance_token = inst?.token ?? asRecord(r.data)?.token;
+      const instance_id = inst?.id ?? inst?.instanceId ?? asRecord(r.data)?.id ?? null;
       if (!instance_token) return json({ error: "uazapi: token não retornado", detail: r.data }, 502);
 
       await admin.from("channel_credentials").upsert({
@@ -161,9 +161,10 @@ Deno.serve(async (req) => {
         body: JSON.stringify(body.phone ? { phone: body.phone } : {}),
       });
       if (!r.ok) return json({ error: "uazapi connect failed", detail: r.data }, 502);
-      const qr = r.data?.instance?.qrcode ?? r.data?.qrcode ?? r.data?.qr ?? null;
-      const paircode = r.data?.instance?.paircode ?? r.data?.paircode ?? null;
-      const status = mapStatus(r.data?.instance?.status ?? r.data?.status);
+      const qr = extractQr(r.data);
+      const paircode = extractPaircode(r.data);
+      const inst = instanceFrom(r.data);
+      const status = mapStatus(inst.status ?? asRecord(r.data)?.status);
       await admin.from("channel_credentials").update({ last_qr: qr, last_qr_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: status === "connected" ? "connected" : "qr_pending" }).eq("id", body.channel_id);
       return json({ ok: true, qr, paircode, status });
@@ -172,8 +173,8 @@ Deno.serve(async (req) => {
     if (body.action === "status") {
       const r = await uaz(creds.host, "/instance/status", { method: "GET", token: creds.instance_token });
       if (!r.ok) return json({ error: "uazapi status failed", detail: r.data }, 502);
-      const inst = r.data?.instance ?? r.data;
-      const status = mapStatus(inst?.status);
+      const inst = instanceFrom(r.data);
+      const status = mapStatus(inst?.status ?? asRecord(r.data)?.status);
       const phone = inst?.owner ?? inst?.wid ?? null;
       const update: Record<string, unknown> = { status };
       if (phone) update.phone_e164 = phone.replace(/[^\d+]/g, "").replace(/^/, (s: string) => s.startsWith("+") ? s : "+" + s);
