@@ -17,8 +17,8 @@ type Body = {
   phone?: string;         // opcional p/ pairing code
 };
 
-const asRecord = (value: unknown): Record<string, any> =>
-  value && typeof value === "object" ? value as Record<string, any> : {};
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" ? value as Record<string, unknown> : {};
 
 const instanceFrom = (data: unknown) => {
   const root = asRecord(data);
@@ -58,7 +58,7 @@ async function uaz(host: string, path: string, init: RequestInit & { token?: str
   const text = await res.text();
   let data: unknown = text;
   try { data = JSON.parse(text); } catch { /* keep text */ }
-  return { ok: res.ok, status: res.status, data: data as any };
+  return { ok: res.ok, status: res.status, data };
 }
 
 function mapStatus(connStatus: unknown): string {
