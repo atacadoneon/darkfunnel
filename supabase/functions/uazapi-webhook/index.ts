@@ -41,11 +41,21 @@ Deno.serve(async (req) => {
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("DARKFUNNEL_SUPABASE_SERVICE_ROLE_KEY") || "";
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, service, { auth: { persistSession: false } });
 
-  const { data: creds } = await sb.from("channel_credentials").select("channel_id,webhook_secret").eq("channel_id", channelId).maybeSingle();
+  const { data: creds } = await sb.from("channel_credentials").select("channel_id,webhook_secret,n8n_enabled,n8n_webhook_url,n8n_webhook_secret").eq("channel_id", channelId).maybeSingle();
   if (!creds || creds.webhook_secret !== secret) return json({ error: "invalid secret" }, 401);
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+
+  // Forward para n8n se habilitado (best-effort)
+  if (creds.n8n_enabled && creds.n8n_webhook_url) {
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (creds.n8n_webhook_secret) headers["x-webhook-secret"] = creds.n8n_webhook_secret as string;
+      fetch(creds.n8n_webhook_url as string, { method: "POST", headers, body: JSON.stringify({ channel_id: channelId, event: body }) })
+        .catch((e) => console.error("n8n forward error", e));
+    } catch (e) { console.error("n8n forward setup error", e); }
+  }
 
   try {
     const eventType = body?.event ?? body?.EventType ?? body?.type ?? "";
