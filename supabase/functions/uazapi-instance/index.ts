@@ -17,6 +17,39 @@ type Body = {
   phone?: string;         // opcional p/ pairing code
 };
 
+const asRecord = (value: unknown): Record<string, any> =>
+  value && typeof value === "object" ? value as Record<string, any> : {};
+
+const instanceFrom = (data: unknown) => {
+  const root = asRecord(data);
+  return asRecord(root.instance ?? asRecord(root.data).instance ?? root.data ?? data);
+};
+
+function normalizeQr(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const qr = value.trim();
+  if (!qr) return null;
+  if (qr.startsWith("data:") || qr.startsWith("http")) return qr;
+  const compact = qr.replace(/\s/g, "");
+  if (compact.startsWith("iVBORw0KGgo")) return `data:image/png;base64,${compact}`;
+  if (compact.startsWith("/9j/")) return `data:image/jpeg;base64,${compact}`;
+  if (compact.startsWith("PHN2Zy")) return `data:image/svg+xml;base64,${compact}`;
+  return qr;
+}
+
+function extractQr(data: unknown): string | null {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  return normalizeQr(inst.qrcode ?? inst.qrCode ?? inst.qr ?? root.qrcode ?? root.qrCode ?? root.qr);
+}
+
+function extractPaircode(data: unknown): string | null {
+  const root = asRecord(data);
+  const inst = instanceFrom(data);
+  const paircode = inst.paircode ?? inst.pairCode ?? root.paircode ?? root.pairCode;
+  return typeof paircode === "string" && paircode.trim() ? paircode.trim() : null;
+}
+
 async function uaz(host: string, path: string, init: RequestInit & { token?: string; admintoken?: string }) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (init.token) headers["token"] = init.token;
@@ -28,11 +61,17 @@ async function uaz(host: string, path: string, init: RequestInit & { token?: str
   return { ok: res.ok, status: res.status, data: data as any };
 }
 
-function mapStatus(connStatus: string | undefined): string {
-  switch ((connStatus || "").toLowerCase()) {
+function mapStatus(connStatus: unknown): string {
+  if (connStatus && typeof connStatus === "object") {
+    const status = asRecord(connStatus);
+    if (status.connected || status.loggedIn) return "connected";
+  }
+  switch (String(connStatus || "").toLowerCase()) {
     case "connected": return "connected";
+    case "open": return "connected";
     case "connecting": return "qr_pending";
     case "disconnected": return "disconnected";
+    case "close": return "disconnected";
     default: return "pending";
   }
 }
