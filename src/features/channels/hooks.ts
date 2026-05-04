@@ -12,6 +12,8 @@ export type ChannelStatus =
   | "banned"
   | "expired";
 
+export type ChannelVisibility = "all" | "sector" | "selected";
+
 export type ChannelRow = {
   id: string;
   workspace_id: string;
@@ -25,6 +27,9 @@ export type ChannelRow = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  sector_id: string | null;
+  visibility: ChannelVisibility;
+  rotation_enabled: boolean;
 };
 
 export function useChannels() {
