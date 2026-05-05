@@ -145,7 +145,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
         {visibleSections.map((section) => (
-          <SidebarGroup key={section.label}>
+          <SidebarGroup key={section.label} className="py-1">
             {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
