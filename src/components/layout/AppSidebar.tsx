@@ -122,7 +122,7 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="gap-0">
         {!collapsed && (
           <SidebarGroup>
             <SidebarGroupContent>
