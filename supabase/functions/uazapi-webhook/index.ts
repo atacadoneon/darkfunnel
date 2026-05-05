@@ -153,6 +153,10 @@ Deno.serve(async (req) => {
         if (convError) throw convError;
         conv = createdConv;
       }
+      const { data: existing } = externalId
+        ? await sb.from("messages").select("id").eq("conversation_id", conv.id).eq("payload->>external_id", externalId).maybeSingle()
+        : { data: null };
+      if (existing) continue;
       const { error: msgError } = await sb.from("messages").insert({
         workspace_id: channel.workspace_id,
         conversation_id: conv.id,
