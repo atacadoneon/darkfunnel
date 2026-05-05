@@ -96,10 +96,6 @@ Deno.serve(async (req) => {
       const externalId = m.id ?? m.key?.id ?? null;
       const pushName = m.pushName ?? m.notify ?? null;
       const profilePic = m.profilePic ?? null;
-      const { data: existing } = externalId
-        ? await sb.from("messages").select("id").eq("external_id", externalId).eq("channel_id", channelId).maybeSingle()
-        : { data: null };
-      if (existing) continue;
 
       const contactPhone = fromMe ? normalizePhone(phone) : phone;
       if (!contactPhone) continue;
@@ -153,25 +149,26 @@ Deno.serve(async (req) => {
           status: "open",
           unread_count: fromMe ? 0 : 1,
           last_message_at: tsIso,
-          last_message_preview: extractText(m).slice(0, 180),
         }).select("id").single();
         if (convError) throw convError;
         conv = createdConv;
       }
-      const { error } = await sb.rpc("uazapi_ingest_message", {
-        p_channel: channelId,
-        p_external_id: m.id ?? m.key?.id ?? null,
-        p_from_phone: fromMe ? (myNumber ?? null) : phone,
-        p_to_phone: fromMe ? phone : (myNumber ?? null),
-        p_direction: fromMe ? "out" : "in",
-        p_type: inferType(m),
-        p_payload: { body: extractText(m), raw: m },
-        p_timestamp: tsIso,
-        p_from_me: fromMe,
-        p_push_name: m.pushName ?? m.notify ?? null,
-        p_profile_pic: m.profilePic ?? null,
+      const { error: msgError } = await sb.from("messages").insert({
+        workspace_id: channel.workspace_id,
+        conversation_id: conv.id,
+        direction: fromMe ? "out" : "in",
+        type: inferType(m),
+        payload: { body: extractText(m), external_id: externalId, from_phone: fromMe ? normalizePhone(myNumber) : phone, to_phone: fromMe ? phone : normalizePhone(myNumber), raw: m },
+        status: fromMe ? "sent" : "received",
+        created_at: tsIso,
+        sent_at: fromMe ? tsIso : null,
       });
-      if (error) throw error;
+      if (msgError) throw msgError;
+      const { data: currentConv } = await sb.from("conversations").select("unread_count").eq("id", conv.id).maybeSingle();
+      await sb.from("conversations").update({
+        last_message_at: tsIso,
+        unread_count: fromMe ? (currentConv?.unread_count ?? 0) : (currentConv?.unread_count ?? 0) + 1,
+      }).eq("id", conv.id);
     }
     return json({ ok: true, processed: msgs.length });
   } catch (e) {
