@@ -110,6 +110,8 @@ export default function Inbox() {
 
   useEffect(() => { setActiveMatchIdx(0); }, [searchQuery]);
 
+  const [newConvOpen, setNewConvOpen] = useState(false);
+
   const openCount = filtered.filter((c) => c.status === "open" || c.status === "in_progress").length;
   const unreadCount = filtered.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
