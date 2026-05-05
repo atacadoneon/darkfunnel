@@ -76,7 +76,7 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
       return;
     }
     onOpenChange(false);
-    navigate(`/inbox?conversation=${convId}`);
+    navigate(`/chats?conversation=${convId}`);
   };
 
   return (

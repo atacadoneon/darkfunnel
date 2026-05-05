@@ -78,19 +78,30 @@ const App = () => (
                 >
                   <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="inbox" element={<Inbox />} />
-                  <Route path="contacts" element={<Navigate to="/pipeline?tab=banco" replace />} />
-                  <Route path="pipeline" element={<Pipeline />} />
-                  <Route path="deals" element={<Navigate to="/pipeline" replace />} />
-                  <Route path="email" element={<Placeholder title="Email Marketing" />} />
-                  <Route path="goals" element={<Placeholder title="Metas" />} />
-                  <Route path="tasks" element={<Placeholder title="Tarefas" />} />
-                  <Route path="meetings" element={<Placeholder title="Reuniões" />} />
+                  <Route path="chats" element={<Inbox />} />
+                  <Route path="funildevendas" element={<Pipeline />} />
+                  <Route path="negocios" element={<Navigate to="/funildevendas" replace />} />
+                  <Route path="emailmarketing" element={<Placeholder title="Email Marketing" />} />
+                  <Route path="metas" element={<Placeholder title="Metas" />} />
+                  <Route path="tarefas" element={<Placeholder title="Tarefas" />} />
+                  <Route path="reunioes" element={<Placeholder title="Reuniões" />} />
                   <Route path="quiz" element={<Placeholder title="Quiz" />} />
-                  <Route path="cadence" element={<Placeholder title="Fluxo de Cadência" />} />
-                  <Route path="automations" element={<Placeholder title="Automações" />} />
-                  <Route path="channels" element={<Navigate to="/settings?tab=channels" replace />} />
+                  <Route path="cadencia" element={<Placeholder title="Fluxo de Cadência" />} />
+                  <Route path="automacoes" element={<Placeholder title="Automações" />} />
                   <Route path="settings" element={<Settings />} />
+
+                  {/* Redirects de rotas antigas em inglês */}
+                  <Route path="inbox" element={<Navigate to="/chats" replace />} />
+                  <Route path="pipeline" element={<Navigate to="/funildevendas" replace />} />
+                  <Route path="deals" element={<Navigate to="/funildevendas" replace />} />
+                  <Route path="contacts" element={<Navigate to="/funildevendas?tab=banco" replace />} />
+                  <Route path="email" element={<Navigate to="/emailmarketing" replace />} />
+                  <Route path="goals" element={<Navigate to="/metas" replace />} />
+                  <Route path="tasks" element={<Navigate to="/tarefas" replace />} />
+                  <Route path="meetings" element={<Navigate to="/reunioes" replace />} />
+                  <Route path="cadence" element={<Navigate to="/cadencia" replace />} />
+                  <Route path="automations" element={<Navigate to="/automacoes" replace />} />
+                  <Route path="channels" element={<Navigate to="/settings?tab=channels" replace />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
