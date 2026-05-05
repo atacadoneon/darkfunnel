@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
     const msgs: any[] = Array.isArray(body?.messages) ? body.messages
       : Array.isArray(body?.data?.messages) ? body.data.messages
       : Array.isArray(body?.data) ? body.data
+      : body?.message && (body?.key || body?.from || body?.sender || body?.chatid || body?.messageType) ? [body]
       : body?.message ? [body.message]
       : body?.messageType || body?.key ? [body]
       : [];
@@ -147,7 +148,7 @@ Deno.serve(async (req) => {
           contact_id: contact.id,
           channel_id: channelId,
           status: "open",
-          unread_count: fromMe ? 0 : 1,
+          unread_count: 0,
           last_message_at: tsIso,
         }).select("id").single();
         if (convError) throw convError;
