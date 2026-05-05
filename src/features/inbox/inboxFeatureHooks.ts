@@ -133,6 +133,32 @@ export function useCancelScheduled() {
   });
 }
 
+/* ------------------ Respostas rápidas ------------------ */
+export type QuickReply = {
+  id: string;
+  title: string;
+  shortcut: string | null;
+  message_type: string;
+  payload: { body?: string; [key: string]: unknown };
+};
+
+export function useQuickReplies() {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["quick-replies", current?.id],
+    enabled: !!current,
+    queryFn: async (): Promise<QuickReply[]> => {
+      const { data, error } = await supabase
+        .from("quick_replies")
+        .select("id,title,shortcut,message_type,payload")
+        .is("archived_at", null)
+        .order("title", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as QuickReply[];
+    },
+  });
+}
+
 /* ------------------ Playbooks ------------------ */
 export type Playbook = { id: string; name: string; description: string | null };
 

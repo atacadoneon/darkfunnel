@@ -12,21 +12,28 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 function inferType(msg: any): string {
-  const t = msg?.messageType ?? msg?.type;
+  const content = msg?.message ?? msg;
+  const t = msg?.messageType ?? msg?.type ?? content?.messageType ?? content?.type;
   if (t) return String(t).toLowerCase();
-  if (msg?.imageMessage) return "image";
-  if (msg?.audioMessage) return "audio";
-  if (msg?.videoMessage) return "video";
-  if (msg?.documentMessage) return "document";
-  if (msg?.stickerMessage) return "sticker";
+  if (content?.imageMessage) return "image";
+  if (content?.audioMessage) return "audio";
+  if (content?.videoMessage) return "video";
+  if (content?.documentMessage) return "document";
+  if (content?.stickerMessage) return "sticker";
   return "text";
 }
 function extractText(msg: any): string {
+  const content = msg?.message ?? msg;
   return (
-    msg?.text ?? msg?.body ?? msg?.message?.conversation ??
-    msg?.message?.extendedTextMessage?.text ??
-    msg?.imageMessage?.caption ?? msg?.videoMessage?.caption ?? ""
+    msg?.text ?? msg?.body ?? content?.conversation ??
+    content?.extendedTextMessage?.text ??
+    content?.imageMessage?.caption ?? content?.videoMessage?.caption ?? ""
   );
+}
+
+function normalizePhone(value: unknown): string | null {
+  const digits = String(value ?? "").split("@")[0].replace(/\D/g, "");
+  return digits.length >= 8 ? `+${digits}` : null;
 }
 
 Deno.serve(async (req) => {
@@ -43,6 +50,9 @@ Deno.serve(async (req) => {
 
   const { data: creds } = await sb.from("channel_credentials").select("channel_id,webhook_secret,n8n_enabled,n8n_webhook_url,n8n_webhook_secret").eq("channel_id", channelId).maybeSingle();
   if (!creds || creds.webhook_secret !== secret) return json({ error: "invalid secret" }, 401);
+
+  const { data: channel } = await sb.from("channels").select("id,workspace_id").eq("id", channelId).maybeSingle();
+  if (!channel) return json({ error: "channel not found" }, 404);
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
@@ -70,7 +80,9 @@ Deno.serve(async (req) => {
 
     // Mensagens (uma ou várias)
     const msgs: any[] = Array.isArray(body?.messages) ? body.messages
+      : Array.isArray(body?.data?.messages) ? body.data.messages
       : Array.isArray(body?.data) ? body.data
+      : body?.message && (body?.key || body?.from || body?.sender || body?.chatid || body?.messageType) ? [body]
       : body?.message ? [body.message]
       : body?.messageType || body?.key ? [body]
       : [];
@@ -78,24 +90,90 @@ Deno.serve(async (req) => {
     for (const m of msgs) {
       const fromMe = !!(m.fromMe ?? m.key?.fromMe);
       const remote = m.chatid ?? m.key?.remoteJid ?? m.from ?? m.sender ?? "";
-      const phone = String(remote).split("@")[0];
+      const phone = normalizePhone(remote);
       const myNumber = m.owner ?? m.toNumber ?? null;
       const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
       const tsIso = new Date((typeof ts === "number" && ts < 2e10 ? ts * 1000 : ts)).toISOString();
+      const externalId = m.id ?? m.key?.id ?? null;
+      const pushName = m.pushName ?? m.notify ?? null;
+      const profilePic = m.profilePic ?? null;
 
-      await sb.rpc("uazapi_ingest_message", {
-        p_channel: channelId,
-        p_external_id: m.id ?? m.key?.id ?? null,
-        p_from_phone: fromMe ? (myNumber ?? null) : phone,
-        p_to_phone: fromMe ? phone : (myNumber ?? null),
-        p_direction: fromMe ? "out" : "in",
-        p_type: inferType(m),
-        p_payload: { body: extractText(m), raw: m },
-        p_timestamp: tsIso,
-        p_from_me: fromMe,
-        p_push_name: m.pushName ?? m.notify ?? null,
-        p_profile_pic: m.profilePic ?? null,
+      const contactPhone = fromMe ? normalizePhone(phone) : phone;
+      if (!contactPhone) continue;
+
+      let { data: contact } = await sb
+        .from("contacts")
+        .select("id")
+        .eq("workspace_id", channel.workspace_id)
+        .eq("phone_e164", contactPhone)
+        .maybeSingle();
+      if (!contact) {
+        const { data: identity } = await sb
+          .from("contact_identities")
+          .select("contact_id")
+          .eq("workspace_id", channel.workspace_id)
+          .eq("kind", "whatsapp")
+          .eq("value", contactPhone)
+          .maybeSingle();
+        if (identity?.contact_id) contact = { id: identity.contact_id };
+      }
+      if (!contact) {
+        const { data: created, error: contactError } = await sb.from("contacts").insert({
+          workspace_id: channel.workspace_id,
+          display_name: pushName || contactPhone,
+          phone_e164: contactPhone,
+          profile_pic_url: profilePic,
+        }).select("id").single();
+        if (contactError) throw contactError;
+        contact = created;
+        await sb.from("contact_identities").insert({
+          workspace_id: channel.workspace_id,
+          contact_id: contact.id,
+          kind: "whatsapp",
+          value: contactPhone,
+          is_primary: true,
+        });
+      }
+
+      let { data: conv } = await sb
+        .from("conversations")
+        .select("id")
+        .eq("workspace_id", channel.workspace_id)
+        .eq("contact_id", contact.id)
+        .eq("channel_id", channelId)
+        .maybeSingle();
+      if (!conv) {
+        const { data: createdConv, error: convError } = await sb.from("conversations").insert({
+          workspace_id: channel.workspace_id,
+          contact_id: contact.id,
+          channel_id: channelId,
+          status: "open",
+          unread_count: 0,
+          last_message_at: tsIso,
+        }).select("id").single();
+        if (convError) throw convError;
+        conv = createdConv;
+      }
+      const { data: existing } = externalId
+        ? await sb.from("messages").select("id").eq("conversation_id", conv.id).eq("payload->>external_id", externalId).maybeSingle()
+        : { data: null };
+      if (existing) continue;
+      const { error: msgError } = await sb.from("messages").insert({
+        workspace_id: channel.workspace_id,
+        conversation_id: conv.id,
+        direction: fromMe ? "out" : "in",
+        type: inferType(m),
+        payload: { body: extractText(m), external_id: externalId, from_phone: fromMe ? normalizePhone(myNumber) : phone, to_phone: fromMe ? phone : normalizePhone(myNumber), raw: m },
+        status: fromMe ? "sent" : "received",
+        created_at: tsIso,
+        sent_at: fromMe ? tsIso : null,
       });
+      if (msgError) throw msgError;
+      const { data: currentConv } = await sb.from("conversations").select("unread_count").eq("id", conv.id).maybeSingle();
+      await sb.from("conversations").update({
+        last_message_at: tsIso,
+        unread_count: fromMe ? (currentConv?.unread_count ?? 0) : (currentConv?.unread_count ?? 0) + 1,
+      }).eq("id", conv.id);
     }
     return json({ ok: true, processed: msgs.length });
   } catch (e) {
