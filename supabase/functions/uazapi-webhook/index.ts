@@ -31,6 +31,11 @@ function extractText(msg: any): string {
   );
 }
 
+function normalizePhone(value: unknown): string | null {
+  const digits = String(value ?? "").split("@")[0].replace(/\D/g, "");
+  return digits.length >= 8 ? `+${digits}` : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -45,6 +50,9 @@ Deno.serve(async (req) => {
 
   const { data: creds } = await sb.from("channel_credentials").select("channel_id,webhook_secret,n8n_enabled,n8n_webhook_url,n8n_webhook_secret").eq("channel_id", channelId).maybeSingle();
   if (!creds || creds.webhook_secret !== secret) return json({ error: "invalid secret" }, 401);
+
+  const { data: channel } = await sb.from("channels").select("id,workspace_id").eq("id", channelId).maybeSingle();
+  if (!channel) return json({ error: "channel not found" }, 404);
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
