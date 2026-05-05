@@ -119,10 +119,15 @@ export default function Inbox() {
     <div className="flex h-full">
       <div className="w-80 border-r flex flex-col">
         <div className="p-3 border-b">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 px-0.5">
-            <span><span className="font-semibold text-foreground">{openCount}</span> abertas</span>
-            <span className="opacity-50">·</span>
-            <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
+          <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span><span className="font-semibold text-foreground">{openCount}</span> abertas</span>
+              <span className="opacity-50">·</span>
+              <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
+            </div>
+            <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setNewConvOpen(true)}>
+              <Plus className="h-3.5 w-3.5" /> Nova
+            </Button>
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
         </div>
