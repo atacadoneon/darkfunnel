@@ -38,7 +38,7 @@ export default function Signup() {
       p_name: workspaceName || `${name || "Meu"} Workspace`,
     });
     if (rpcErr) toast.error(rpcErr.message);
-    nav("/app", { replace: true });
+    nav("/dashboard", { replace: true });
   };
 
   return (

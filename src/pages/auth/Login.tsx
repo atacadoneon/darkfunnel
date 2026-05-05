@@ -19,7 +19,7 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
-    nav("/app", { replace: true });
+    nav("/dashboard", { replace: true });
   };
 
   const onGoogle = async () => {

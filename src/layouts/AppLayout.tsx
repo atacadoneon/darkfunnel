@@ -52,7 +52,7 @@ export default function AppLayout() {
     return <div className="flex h-screen items-center justify-center text-muted-foreground">Carregando...</div>;
   }
   if (workspaces.length === 0) return <CreateWorkspacePrompt />;
-  if (!current) return <Navigate to="/app" replace />;
+  if (!current) return <Navigate to="/dashboard" replace />;
 
   return (
     <SidebarProvider>
