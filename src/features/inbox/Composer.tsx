@@ -1,10 +1,12 @@
 import { useState, useRef, type KeyboardEvent } from "react";
-import { Send, Calendar, Clock } from "lucide-react";
+import { Send, Calendar, Clock, MessagesSquare } from "lucide-react";
 import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
-import { useScheduledMessages } from "./inboxFeatureHooks";
+import { useQuickReplies, useScheduledMessages } from "./inboxFeatureHooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useQueryClient } from "@tanstack/react-query";
@@ -21,8 +23,10 @@ export function Composer({ conversation }: Props) {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
   const { data: pendings = [] } = useScheduledMessages(conversation.id);
+  const { data: quickReplies = [] } = useQuickReplies();
 
   const isCloud = conversation.channels?.kind === "whatsapp_cloud";
   const isUazapi = conversation.channels?.kind === "uazapi";
@@ -103,6 +107,46 @@ export function Composer({ conversation }: Props) {
           rows={1}
           className="resize-none min-h-[40px] max-h-32"
         />
+        <Popover open={quickOpen} onOpenChange={setQuickOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={windowExpired}
+              title="Respostas rápidas"
+            >
+              <MessagesSquare className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="end">
+            <Command>
+              <CommandInput placeholder="Buscar resposta rápida..." />
+              <CommandList>
+                <CommandEmpty>Nenhuma resposta rápida.</CommandEmpty>
+                <CommandGroup>
+                  {quickReplies.map((reply) => (
+                    <CommandItem
+                      key={reply.id}
+                      value={`${reply.shortcut ?? ""} ${reply.title} ${reply.payload?.body ?? ""}`}
+                      onSelect={() => {
+                        setText((currentText) => [currentText.trim(), reply.payload?.body ?? ""].filter(Boolean).join("\n"));
+                        setQuickOpen(false);
+                        setTimeout(() => ref.current?.focus(), 0);
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">{reply.title}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {reply.shortcut ? `${reply.shortcut} · ` : ""}{reply.payload?.body ?? ""}
+                        </div>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
         <Button
           variant="outline"
           size="icon"
