@@ -12,20 +12,22 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 function inferType(msg: any): string {
-  const t = msg?.messageType ?? msg?.type;
+  const content = msg?.message ?? msg;
+  const t = msg?.messageType ?? msg?.type ?? content?.messageType ?? content?.type;
   if (t) return String(t).toLowerCase();
-  if (msg?.imageMessage) return "image";
-  if (msg?.audioMessage) return "audio";
-  if (msg?.videoMessage) return "video";
-  if (msg?.documentMessage) return "document";
-  if (msg?.stickerMessage) return "sticker";
+  if (content?.imageMessage) return "image";
+  if (content?.audioMessage) return "audio";
+  if (content?.videoMessage) return "video";
+  if (content?.documentMessage) return "document";
+  if (content?.stickerMessage) return "sticker";
   return "text";
 }
 function extractText(msg: any): string {
+  const content = msg?.message ?? msg;
   return (
-    msg?.text ?? msg?.body ?? msg?.message?.conversation ??
-    msg?.message?.extendedTextMessage?.text ??
-    msg?.imageMessage?.caption ?? msg?.videoMessage?.caption ?? ""
+    msg?.text ?? msg?.body ?? content?.conversation ??
+    content?.extendedTextMessage?.text ??
+    content?.imageMessage?.caption ?? content?.videoMessage?.caption ?? ""
   );
 }
 
@@ -70,6 +72,7 @@ Deno.serve(async (req) => {
 
     // Mensagens (uma ou várias)
     const msgs: any[] = Array.isArray(body?.messages) ? body.messages
+      : Array.isArray(body?.data?.messages) ? body.data.messages
       : Array.isArray(body?.data) ? body.data
       : body?.message ? [body.message]
       : body?.messageType || body?.key ? [body]
