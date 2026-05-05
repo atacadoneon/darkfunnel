@@ -42,25 +42,25 @@ const sections: { label: string; items: Item[] }[] = [
     label: "Principal",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
-      { title: "Funil de Vendas", url: "/pipeline", icon: Users },
-      { title: "Chats", url: "/inbox", icon: MessageCircle },
-      { title: "Email Marketing", url: "/email", icon: Mail },
+      { title: "Funil de Vendas", url: "/funildevendas", icon: Users },
+      { title: "Chats", url: "/chats", icon: MessageCircle },
+      { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
     ],
   },
   {
     label: "Gestão",
     items: [
-      { title: "Metas", url: "/goals", icon: Target },
-      { title: "Tarefas", url: "/tasks", icon: ListChecks },
-      { title: "Reuniões", url: "/meetings", icon: Calendar },
+      { title: "Metas", url: "/metas", icon: Target },
+      { title: "Tarefas", url: "/tarefas", icon: ListChecks },
+      { title: "Reuniões", url: "/reunioes", icon: Calendar },
       { title: "Quiz", url: "/quiz", icon: ClipboardList },
     ],
   },
   {
     label: "Automação",
     items: [
-      { title: "Fluxo de Cadência", url: "/cadence", icon: MessageSquare },
-      { title: "Automações", url: "/automations", icon: Workflow },
+      { title: "Fluxo de Cadência", url: "/cadencia", icon: MessageSquare },
+      { title: "Automações", url: "/automacoes", icon: Workflow },
     ],
   },
   {
