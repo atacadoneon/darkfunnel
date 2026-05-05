@@ -85,8 +85,7 @@ Deno.serve(async (req) => {
       const myNumber = m.owner ?? m.toNumber ?? null;
       const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
       const tsIso = new Date((typeof ts === "number" && ts < 2e10 ? ts * 1000 : ts)).toISOString();
-
-      await sb.rpc("uazapi_ingest_message", {
+      const { error } = await sb.rpc("uazapi_ingest_message", {
         p_channel: channelId,
         p_external_id: m.id ?? m.key?.id ?? null,
         p_from_phone: fromMe ? (myNumber ?? null) : phone,
@@ -99,6 +98,7 @@ Deno.serve(async (req) => {
         p_push_name: m.pushName ?? m.notify ?? null,
         p_profile_pic: m.profilePic ?? null,
       });
+      if (error) throw error;
     }
     return json({ ok: true, processed: msgs.length });
   } catch (e) {
