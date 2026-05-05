@@ -178,6 +178,12 @@ export default function Inbox() {
 
       {/* Painel direito */}
       {selected && <ContactPanel conversation={selected} />}
+
+      <NewConversationDialog
+        open={newConvOpen}
+        onOpenChange={setNewConvOpen}
+        onCreated={(id) => setSelectedId(id)}
+      />
     </div>
   );
 }
