@@ -61,26 +61,27 @@ const App = () => (
           <AuthProvider>
             <WorkspaceProvider>
               <Routes>
-                <Route path="/" element={<Navigate to="/app" replace />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
 
+                <Route path="/app/*" element={<Navigate to="/dashboard" replace />} />
+
                 <Route
-                  path="/app"
+                  path="/"
                   element={
                     <RequireAuth>
                       <AppLayout />
                     </RequireAuth>
                   }
                 >
-                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route index element={<Navigate to="/dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="inbox" element={<Inbox />} />
-                  <Route path="contacts" element={<Navigate to="/app/pipeline?tab=banco" replace />} />
+                  <Route path="contacts" element={<Navigate to="/pipeline?tab=banco" replace />} />
                   <Route path="pipeline" element={<Pipeline />} />
-                  <Route path="deals" element={<Navigate to="/app/pipeline" replace />} />
+                  <Route path="deals" element={<Navigate to="/pipeline" replace />} />
                   <Route path="email" element={<Placeholder title="Email Marketing" />} />
                   <Route path="goals" element={<Placeholder title="Metas" />} />
                   <Route path="tasks" element={<Placeholder title="Tarefas" />} />
@@ -88,7 +89,7 @@ const App = () => (
                   <Route path="quiz" element={<Placeholder title="Quiz" />} />
                   <Route path="cadence" element={<Placeholder title="Fluxo de Cadência" />} />
                   <Route path="automations" element={<Placeholder title="Automações" />} />
-                  <Route path="channels" element={<Navigate to="/app/settings?tab=channels" replace />} />
+                  <Route path="channels" element={<Navigate to="/settings?tab=channels" replace />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
 
