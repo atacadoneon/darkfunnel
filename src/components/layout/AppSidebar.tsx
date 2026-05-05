@@ -118,30 +118,31 @@ export function AppSidebar() {
               <span className="truncate">{wsName}</span>
             </button>
 
-            <div className="space-y-1.5">
-              <p className="text-xs text-muted-foreground">
-                Usuário: <span className="text-foreground">{userName}</span>
-              </p>
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-muted transition-colors"
-              >
-                <Users className="h-4 w-4" />
-                Equipe Online
-              </button>
-              <button
-                type="button"
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-emerald-500 hover:bg-muted transition-colors"
-              >
-                <UserCheck className="h-4 w-4" />
-                Disponível
-              </button>
-            </div>
           </div>
         )}
       </SidebarHeader>
 
       <SidebarContent>
+        {!collapsed && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton>
+                    <Users className="h-4 w-4" />
+                    <span>Equipe Online</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton className="text-emerald-500">
+                    <UserCheck className="h-4 w-4" />
+                    <span>Disponível</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         {visibleSections.map((section) => (
           <SidebarGroup key={section.label}>
             {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
