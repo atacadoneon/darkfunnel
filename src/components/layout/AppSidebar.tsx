@@ -165,7 +165,7 @@ export function AppSidebar() {
         ))}
 
         {!collapsed && (
-          <SidebarGroup>
+          <SidebarGroup className="py-1">
             <SidebarGroupContent className="space-y-2 px-2">
               <button
                 type="button"
