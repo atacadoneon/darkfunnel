@@ -19,7 +19,7 @@ export default function ResetPassword() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Senha atualizada");
-    nav("/app", { replace: true });
+    nav("/dashboard", { replace: true });
   };
 
   return (

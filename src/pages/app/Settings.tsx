@@ -31,7 +31,7 @@ export default function Settings() {
   const allowed = useIsManagerOrAdmin();
   const { isLoading } = useMyRole();
   if (isLoading) return null;
-  if (!allowed) return <Navigate to="/app/dashboard" replace />;
+  if (!allowed) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
