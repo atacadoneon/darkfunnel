@@ -89,10 +89,75 @@ Deno.serve(async (req) => {
     for (const m of msgs) {
       const fromMe = !!(m.fromMe ?? m.key?.fromMe);
       const remote = m.chatid ?? m.key?.remoteJid ?? m.from ?? m.sender ?? "";
-      const phone = String(remote).split("@")[0];
+      const phone = normalizePhone(remote);
       const myNumber = m.owner ?? m.toNumber ?? null;
       const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
       const tsIso = new Date((typeof ts === "number" && ts < 2e10 ? ts * 1000 : ts)).toISOString();
+      const externalId = m.id ?? m.key?.id ?? null;
+      const pushName = m.pushName ?? m.notify ?? null;
+      const profilePic = m.profilePic ?? null;
+      const { data: existing } = externalId
+        ? await sb.from("messages").select("id").eq("external_id", externalId).eq("channel_id", channelId).maybeSingle()
+        : { data: null };
+      if (existing) continue;
+
+      const contactPhone = fromMe ? normalizePhone(phone) : phone;
+      if (!contactPhone) continue;
+
+      let { data: contact } = await sb
+        .from("contacts")
+        .select("id")
+        .eq("workspace_id", channel.workspace_id)
+        .eq("phone_e164", contactPhone)
+        .maybeSingle();
+      if (!contact) {
+        const { data: identity } = await sb
+          .from("contact_identities")
+          .select("contact_id")
+          .eq("workspace_id", channel.workspace_id)
+          .eq("kind", "whatsapp")
+          .eq("value", contactPhone)
+          .maybeSingle();
+        if (identity?.contact_id) contact = { id: identity.contact_id };
+      }
+      if (!contact) {
+        const { data: created, error: contactError } = await sb.from("contacts").insert({
+          workspace_id: channel.workspace_id,
+          display_name: pushName || contactPhone,
+          phone_e164: contactPhone,
+          profile_pic_url: profilePic,
+        }).select("id").single();
+        if (contactError) throw contactError;
+        contact = created;
+        await sb.from("contact_identities").insert({
+          workspace_id: channel.workspace_id,
+          contact_id: contact.id,
+          kind: "whatsapp",
+          value: contactPhone,
+          is_primary: true,
+        });
+      }
+
+      let { data: conv } = await sb
+        .from("conversations")
+        .select("id")
+        .eq("workspace_id", channel.workspace_id)
+        .eq("contact_id", contact.id)
+        .eq("channel_id", channelId)
+        .maybeSingle();
+      if (!conv) {
+        const { data: createdConv, error: convError } = await sb.from("conversations").insert({
+          workspace_id: channel.workspace_id,
+          contact_id: contact.id,
+          channel_id: channelId,
+          status: "open",
+          unread_count: fromMe ? 0 : 1,
+          last_message_at: tsIso,
+          last_message_preview: extractText(m).slice(0, 180),
+        }).select("id").single();
+        if (convError) throw convError;
+        conv = createdConv;
+      }
       const { error } = await sb.rpc("uazapi_ingest_message", {
         p_channel: channelId,
         p_external_id: m.id ?? m.key?.id ?? null,
