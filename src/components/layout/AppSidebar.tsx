@@ -124,7 +124,8 @@ export function AppSidebar() {
 
       <SidebarContent className="gap-0">
         {!collapsed && (
-          <SidebarGroup>
+          <SidebarGroup className="py-0">
+
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
