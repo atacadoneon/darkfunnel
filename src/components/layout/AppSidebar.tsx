@@ -41,31 +41,31 @@ const sections: { label: string; items: Item[] }[] = [
   {
     label: "Principal",
     items: [
-      { title: "Dashboard", url: "/app/dashboard", icon: LayoutGrid },
-      { title: "Funil de Vendas", url: "/app/pipeline", icon: Users },
-      { title: "Chats", url: "/app/inbox", icon: MessageCircle },
-      { title: "Email Marketing", url: "/app/email", icon: Mail },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
+      { title: "Funil de Vendas", url: "/pipeline", icon: Users },
+      { title: "Chats", url: "/inbox", icon: MessageCircle },
+      { title: "Email Marketing", url: "/email", icon: Mail },
     ],
   },
   {
     label: "Gestão",
     items: [
-      { title: "Metas", url: "/app/goals", icon: Target },
-      { title: "Tarefas", url: "/app/tasks", icon: ListChecks },
-      { title: "Reuniões", url: "/app/meetings", icon: Calendar },
-      { title: "Quiz", url: "/app/quiz", icon: ClipboardList },
+      { title: "Metas", url: "/goals", icon: Target },
+      { title: "Tarefas", url: "/tasks", icon: ListChecks },
+      { title: "Reuniões", url: "/meetings", icon: Calendar },
+      { title: "Quiz", url: "/quiz", icon: ClipboardList },
     ],
   },
   {
     label: "Automação",
     items: [
-      { title: "Fluxo de Cadência", url: "/app/cadence", icon: MessageSquare },
-      { title: "Automações", url: "/app/automations", icon: Workflow },
+      { title: "Fluxo de Cadência", url: "/cadence", icon: MessageSquare },
+      { title: "Automações", url: "/automations", icon: Workflow },
     ],
   },
   {
     label: "Ferramentas",
-    items: [{ title: "Configurações", url: "/app/settings", icon: Settings }],
+    items: [{ title: "Configurações", url: "/settings", icon: Settings }],
   },
 ];
 
@@ -80,7 +80,7 @@ export function AppSidebar() {
   const visibleSections = sections
     .map((s) => ({
       ...s,
-      items: s.items.filter((i) => canSeeSettings || i.url !== "/app/settings"),
+      items: s.items.filter((i) => canSeeSettings || i.url !== "/settings"),
     }))
     .filter((s) => s.items.length > 0);
 
