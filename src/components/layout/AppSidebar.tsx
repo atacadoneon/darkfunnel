@@ -162,36 +162,44 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+
+        {!collapsed && (
+          <SidebarGroup>
+            <SidebarGroupContent className="space-y-2 px-2">
+              <button
+                type="button"
+                className="w-full relative flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors"
+              >
+                <span className="relative">
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Ajuda
+              </button>
+              <button
+                type="button"
+                className="w-full flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Painel do Parceiro
+              </button>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-2 space-y-2">
+      <SidebarFooter className="border-t p-2">
         {!collapsed ? (
-          <>
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs text-muted-foreground">
             <button
               type="button"
-              className="w-full relative flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
             >
-              <span className="relative">
-                <HelpCircle className="h-4 w-4" />
-                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
-              Ajuda
-            </button>
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Painel do Parceiro
-            </button>
-            <button
-              type="button"
-              className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <LifeBuoy className="h-4 w-4" />
+              <LifeBuoy className="h-3.5 w-3.5" />
               Suporte
             </button>
-          </>
+            <span className="truncate">{userName}</span>
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-1">
             <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Ajuda">
