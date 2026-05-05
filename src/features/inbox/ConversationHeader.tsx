@@ -68,7 +68,7 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
   const { data: contactDeal } = useContactDeal(conversation.contact_id);
 
   return (
-    <div className="h-14 border-b flex items-center px-4 gap-2">
+    <div className="min-h-14 border-b flex flex-wrap items-center px-4 py-2 gap-2">
       <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm font-semibold">
         {(c?.display_name ?? c?.phone_e164 ?? "?").charAt(0).toUpperCase()}
       </div>
@@ -91,7 +91,7 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
         </div>
       </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
         {/* Responsável */}
         <AssigneePopover
           conversationId={conversation.id}
