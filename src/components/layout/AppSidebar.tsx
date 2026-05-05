@@ -122,9 +122,10 @@ export function AppSidebar() {
         )}
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="gap-0">
         {!collapsed && (
-          <SidebarGroup>
+          <SidebarGroup className="py-0">
+
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
@@ -144,7 +145,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
         {visibleSections.map((section) => (
-          <SidebarGroup key={section.label}>
+          <SidebarGroup key={section.label} className="py-1">
             {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
@@ -164,7 +165,7 @@ export function AppSidebar() {
         ))}
 
         {!collapsed && (
-          <SidebarGroup>
+          <SidebarGroup className="py-1">
             <SidebarGroupContent className="space-y-2 px-2">
               <button
                 type="button"
@@ -187,6 +188,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
+
 
       <SidebarFooter className="border-t p-2">
         {!collapsed ? (
