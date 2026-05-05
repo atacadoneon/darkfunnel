@@ -14,6 +14,9 @@ import { Composer } from "@/features/inbox/Composer";
 import { ContactPanel } from "@/features/inbox/ContactPanel";
 import { ConversationHeader } from "@/features/inbox/ConversationHeader";
 import { MessageSearchBar } from "@/features/inbox/MessageSearchBar";
+import { NewConversationDialog } from "@/features/inbox/NewConversationDialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 function sortConvs<T extends {
   last_message_at: string | null;
@@ -107,6 +110,8 @@ export default function Inbox() {
 
   useEffect(() => { setActiveMatchIdx(0); }, [searchQuery]);
 
+  const [newConvOpen, setNewConvOpen] = useState(false);
+
   const openCount = filtered.filter((c) => c.status === "open" || c.status === "in_progress").length;
   const unreadCount = filtered.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
@@ -114,10 +119,15 @@ export default function Inbox() {
     <div className="flex h-full">
       <div className="w-80 border-r flex flex-col">
         <div className="p-3 border-b">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2 px-0.5">
-            <span><span className="font-semibold text-foreground">{openCount}</span> abertas</span>
-            <span className="opacity-50">·</span>
-            <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
+          <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span><span className="font-semibold text-foreground">{openCount}</span> abertas</span>
+              <span className="opacity-50">·</span>
+              <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
+            </div>
+            <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setNewConvOpen(true)}>
+              <Plus className="h-3.5 w-3.5" /> Nova
+            </Button>
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
         </div>
@@ -168,6 +178,12 @@ export default function Inbox() {
 
       {/* Painel direito */}
       {selected && <ContactPanel conversation={selected} />}
+
+      <NewConversationDialog
+        open={newConvOpen}
+        onOpenChange={setNewConvOpen}
+        onCreated={(id) => setSelectedId(id)}
+      />
     </div>
   );
 }
