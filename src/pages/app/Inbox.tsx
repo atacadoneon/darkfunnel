@@ -14,6 +14,9 @@ import { Composer } from "@/features/inbox/Composer";
 import { ContactPanel } from "@/features/inbox/ContactPanel";
 import { ConversationHeader } from "@/features/inbox/ConversationHeader";
 import { MessageSearchBar } from "@/features/inbox/MessageSearchBar";
+import { NewConversationDialog } from "@/features/inbox/NewConversationDialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 function sortConvs<T extends {
   last_message_at: string | null;
