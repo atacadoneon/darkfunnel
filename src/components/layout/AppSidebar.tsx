@@ -188,6 +188,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
+
       <SidebarFooter className="border-t p-2">
         {!collapsed ? (
           <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs text-muted-foreground">
