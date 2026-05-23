@@ -32,7 +32,7 @@ export function useTags() {
   useEffect(() => {
     if (!current) return;
     const ch = supabase
-      .channel(`tags:${current.id}`)
+      .channel(`tags:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "workspace_tags", filter: `workspace_id=eq.${current.id}` },

@@ -53,7 +53,7 @@ export function useChannels() {
   useEffect(() => {
     if (!current) return;
     const ch = supabase
-      .channel(`channels:${current.id}`)
+      .channel(`channels:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "channels", filter: `workspace_id=eq.${current.id}` },
