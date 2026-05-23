@@ -65,6 +65,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [connectError, setConnectError] = useState<ConnectErr | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
+  const [manualHost, setManualHost] = useState("https://darkfunells.uazapi.com");
+  const [manualToken, setManualToken] = useState("");
 
   // Invoca edge function via fetch direto para capturar HTTP status + body bruto em caso de erro.
   const invokeEdge = async (fn: string, body: unknown): Promise<{ ok: true; data: any } | { ok: false; err: ConnectErr }> => {
@@ -294,6 +296,33 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     } catch (e) {
       setConnectError({ title: "Erro inesperado", message: (e as Error).message });
       toast.error((e as Error).message);
+    } finally {
+      setInitializing(false);
+    }
+  };
+
+  const attachExistingInstance = async () => {
+    if (!activeChannelId) return;
+    if (!manualHost.trim() || !manualToken.trim()) {
+      toast.error("Informe Server URL e Instance Token");
+      return;
+    }
+    setInitializing(true);
+    setConnectError(null);
+    try {
+      const r = await invokeEdge("uazapi-instance", {
+        channel_id: activeChannelId,
+        action: "attach_instance",
+        instance_host: manualHost.trim(),
+        instance_token: manualToken.trim(),
+      });
+      if (r.ok === false) {
+        setConnectError({ ...r.err, title: r.err.title + " (usar instância existente)" });
+        toast.error(`Falha ao vincular instância: ${r.err.message}`);
+        return;
+      }
+      toast.success("Instância vinculada");
+      await connect(activeChannelId);
     } finally {
       setInitializing(false);
     }
