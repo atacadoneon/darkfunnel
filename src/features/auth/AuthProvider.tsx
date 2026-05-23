@@ -24,9 +24,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 1) listener BEFORE getSession (per Supabase guidelines)
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
+      // FIX: propaga JWT pro Realtime — sem isso o broadcast é bloqueado pela RLS
+      if (s?.access_token) {
+        supabase.realtime.setAuth(s.access_token);
+      }
     });
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+      // FIX: idem no bootstrap inicial
+      if (data.session?.access_token) {
+        supabase.realtime.setAuth(data.session.access_token);
+      }
       setLoading(false);
     });
     return () => sub.subscription.unsubscribe();
