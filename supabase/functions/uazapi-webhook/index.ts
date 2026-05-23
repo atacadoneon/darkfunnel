@@ -100,23 +100,36 @@ Deno.serve(async (req) => {
     } catch (e) { console.error("n8n forward setup error", e); }
   }
 
+  let logStatus = "ok";
+  let logError: string | null = null;
+  let eventType = "";
+  let msgsCount = 0;
+
   try {
-    const eventType = body?.event ?? body?.EventType ?? body?.type ?? "";
+    eventType = body?.event ?? body?.EventType ?? body?.type ?? "";
+    console.log("uazapi-webhook recv", { channelId, eventType, keys: Object.keys(body ?? {}) });
+
     // Conexão
     if (/connection|status/i.test(eventType) || body?.connection) {
       const status = String(body?.status ?? body?.connection ?? body?.instance?.status ?? "").toLowerCase();
       const map: Record<string, string> = { connected: "connected", open: "connected", connecting: "qr_pending", disconnected: "disconnected", close: "disconnected" };
       const s = map[status];
       if (s) await sb.from("channels").update({ status: s }).eq("id", channelId);
+      logStatus = "connection_event";
+      await sb.from("webhook_debug_log").insert({ channel_id: channelId, event_type: eventType, msgs_count: 0, status: logStatus, error: null, body }).then(() => {}, () => {});
       return json({ ok: true });
     }
 
     // Mensagens (uma ou várias). A Uazapi pode enviar direto no body ou dentro de data/payload/result.
     const msgs = collectMessages(body);
+    msgsCount = msgs.length;
     if (msgs.length === 0) {
       console.warn("uazapi-webhook: payload sem mensagens reconhecidas", { eventType, keys: Object.keys(body ?? {}) });
+      logStatus = "no_messages_found";
     }
 
+    let inserted = 0;
+    let skippedDup = 0;
     for (const m of msgs) {
       const fromMe = !!(m.fromMe ?? m.key?.fromMe);
       const remote = m.chatid ?? m.key?.remoteJid ?? m.remoteJid ?? m.from ?? m.chatJid ?? m.jid ?? "";
@@ -132,7 +145,7 @@ Deno.serve(async (req) => {
       const profilePic = isGroup ? (m.groupPic ?? m.chatPic ?? null) : (m.profilePic ?? null);
 
       const contactPhone = fromMe && !isGroup ? phone : phone;
-      if (!contactPhone) continue;
+      if (!contactPhone) { console.warn("skip msg sem phone", { externalId, remote }); continue; }
 
       let { data: contact } = await sb
         .from("contacts")
@@ -164,7 +177,7 @@ Deno.serve(async (req) => {
           phone_e164: contactPhone,
           profile_pic_url: profilePic,
         }).select("id,display_name,profile_pic_url").single();
-        if (contactError) throw contactError;
+        if (contactError) { console.error("contact insert err", contactError); throw contactError; }
         contact = created;
         await sb.from("contact_identities").insert({
           workspace_id: channel.workspace_id,
@@ -174,10 +187,8 @@ Deno.serve(async (req) => {
           is_primary: true,
         });
       } else {
-        // Atualiza nome/foto se mudaram ou estavam vazios
         const update: Record<string, unknown> = {};
         if (!fromMe && pushName && pushName !== contact.display_name) {
-          // só sobrescreve se o nome atual estava vazio, igual ao telefone, ou diferente do pushName recebido
           if (!contact.display_name || contact.display_name === contactPhone || contact.display_name !== pushName) {
             update.display_name = pushName;
           }
@@ -206,13 +217,13 @@ Deno.serve(async (req) => {
           unread_count: 0,
           last_message_at: tsIso,
         }).select("id").single();
-        if (convError) throw convError;
+        if (convError) { console.error("conv insert err", convError); throw convError; }
         conv = createdConv;
       }
       const { data: existing } = externalId
         ? await sb.from("messages").select("id").eq("conversation_id", conv.id).eq("payload->>external_id", externalId).maybeSingle()
         : { data: null };
-      if (existing) continue;
+      if (existing) { skippedDup++; continue; }
       const { error: msgError } = await sb.from("messages").insert({
         workspace_id: channel.workspace_id,
         conversation_id: conv.id,
@@ -223,16 +234,22 @@ Deno.serve(async (req) => {
         created_at: tsIso,
         sent_at: fromMe ? tsIso : null,
       });
-      if (msgError) throw msgError;
+      if (msgError) { console.error("msg insert err", msgError); throw msgError; }
+      inserted++;
       const { data: currentConv } = await sb.from("conversations").select("unread_count").eq("id", conv.id).maybeSingle();
       await sb.from("conversations").update({
         last_message_at: tsIso,
         unread_count: fromMe ? (currentConv?.unread_count ?? 0) : (currentConv?.unread_count ?? 0) + 1,
       }).eq("id", conv.id);
     }
-    return json({ ok: true, processed: msgs.length });
+    logStatus = `processed inserted=${inserted} dup=${skippedDup} total=${msgs.length}`;
+    await sb.from("webhook_debug_log").insert({ channel_id: channelId, event_type: eventType, msgs_count: msgsCount, status: logStatus, error: null, body }).then(() => {}, () => {});
+    return json({ ok: true, processed: msgs.length, inserted, skippedDup });
   } catch (e) {
+    logError = (e as Error).message;
+    logStatus = "error";
     console.error("uazapi-webhook error", e);
-    return json({ error: (e as Error).message }, 500);
+    await sb.from("webhook_debug_log").insert({ channel_id: channelId, event_type: eventType, msgs_count: msgsCount, status: logStatus, error: logError, body }).then(() => {}, () => {});
+    return json({ error: logError }, 500);
   }
 });
