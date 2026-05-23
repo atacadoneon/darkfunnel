@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
           url: webhook,
           enabled: true,
           events: ["messages", "messages_update", "connection", "contacts"],
-          excludeMessages: ["isGroupYes"],
+          excludeMessages: [],
           addUrlEvents: false,
           addUrlTypesMessages: false,
         }),
