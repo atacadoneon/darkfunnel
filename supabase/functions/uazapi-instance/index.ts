@@ -484,7 +484,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "reconfigure_webhook") {
-      const { data: c3 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+      const c3 = await loadCredentials(admin, body.channel_id);
       if (!c3?.webhook_secret) return json({ error: "webhook_secret ausente; reconecte o canal" }, 400);
       const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c3.webhook_secret}&channel=${body.channel_id}`;
       const payload = {
@@ -530,7 +530,7 @@ Deno.serve(async (req) => {
       await admin.from("channels").update({ status: status === "connected" ? "connected" : "qr_pending" }).eq("id", body.channel_id);
       // Garante grupos sempre habilitados no webhook (best-effort)
       try {
-        const { data: cw } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+        const cw = await loadCredentials(admin, body.channel_id);
         if (cw?.webhook_secret) {
           const webhook = `${url}/functions/v1/uazapi-webhook?secret=${cw.webhook_secret}&channel=${body.channel_id}`;
           const payload = {
