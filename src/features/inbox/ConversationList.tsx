@@ -22,7 +22,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
   });
 
   return (
-    <div ref={parentRef} className="h-full overflow-y-auto">
+    <div ref={parentRef} className="h-full overflow-y-auto scrollbar-hide">
       <div style={{ height: v.getTotalSize(), position: "relative" }}>
         {v.getVirtualItems().map((vi) => {
           const c = conversations[vi.index];
