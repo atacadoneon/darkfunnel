@@ -195,11 +195,19 @@ Deno.serve(async (req) => {
       if (!host || !adminToken) return json({ error: "UAZAPI_HOST/UAZAPI_ADMIN_TOKEN não configurados" }, 500);
 
       if (creds?.instance_token && !body.force) {
-        return json({ ok: true, instance_id: creds.instance_id ?? null, reused: true });
+        const statusCheck = await uaz(creds.host || host, "/instance/status", { method: "GET", token: creds.instance_token });
+        if (statusCheck.ok) {
+          return json({ ok: true, instance_id: creds.instance_id ?? null, reused: true });
+        }
+
+        await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
+        await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
       }
 
       if (creds?.instance_token && body.force) {
-        await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token });
+        try {
+          await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token });
+        } catch (_) { /* instância já pode ter sido removida no painel da UAZAPI */ }
         await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
       }
 
