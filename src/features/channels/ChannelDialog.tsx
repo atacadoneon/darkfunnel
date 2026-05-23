@@ -264,14 +264,6 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     if (step === "info") {
       setAdvancing(true);
       const id = await saveInfo();
-      // Para canais UAZAPI: dispara init em background para já persistir
-      // host, admin_token, instance_token, instance_id e webhook_secret
-      // em channel_credentials assim que o canal é criado.
-      if (id && kind === "uazapi") {
-        void supabase.functions.invoke("uazapi-instance", {
-          body: { channel_id: id, action: "init" },
-        }).catch(() => { /* silencioso; init será re-tentado no passo de conexão */ });
-      }
       setAdvancing(false);
       if (!id) return;
       setStep("rotation");
