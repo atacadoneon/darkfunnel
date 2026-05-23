@@ -438,6 +438,11 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                   }}
                   setNameDraft={setNameDraft}
                   onRefreshQr={() => activeChannelId && initAndConnect(activeChannelId)}
+                  manualHost={manualHost}
+                  manualToken={manualToken}
+                  onManualHostChange={setManualHost}
+                  onManualTokenChange={setManualToken}
+                  onAttachExisting={attachExistingInstance}
                   initializing={initializing}
                   onDisconnect={disconnect}
                 />
@@ -490,6 +495,11 @@ function UazConnect(props: {
   onSaveName: () => void;
   setNameDraft: (v: string) => void;
   onRefreshQr: () => void;
+  manualHost: string;
+  manualToken: string;
+  onManualHostChange: (v: string) => void;
+  onManualTokenChange: (v: string) => void;
+  onAttachExisting: () => void;
   onDisconnect: () => void;
   initializing?: boolean;
 }) {
