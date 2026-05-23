@@ -13,7 +13,7 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const SUPPORTED_ACTIONS = [
-  "init", "connect", "status", "disconnect", "delete",
+  "init", "attach_instance", "connect", "status", "disconnect", "delete",
   "set_profile_name", "set_profile_picture",
   "get_privacy", "set_privacy",
   "save_n8n", "generate_api_key",
@@ -24,7 +24,7 @@ const SUPPORTED_ACTIONS = [
 type Body = {
   channel_id: string;
   action:
-    | "init" | "connect" | "status" | "disconnect" | "delete"
+    | "init" | "attach_instance" | "connect" | "status" | "disconnect" | "delete"
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
     | "save_n8n" | "generate_api_key"
@@ -33,6 +33,9 @@ type Body = {
   phone?: string;
   force?: boolean;
   contact_id?: string;
+  instance_host?: string;
+  instance_token?: string;
+  instance_id?: string;
   // payloads
   profile_name?: string;
   profile_picture_url?: string;
@@ -248,6 +251,47 @@ Deno.serve(async (req) => {
       });
 
       return json({ ok: true, instance_id, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
+    }
+
+    if (body.action === "attach_instance") {
+      const host = normalizeHost(String(body.instance_host ?? ""));
+      const instanceToken = String(body.instance_token ?? "").trim();
+      if (!host || !instanceToken) return json({ error: "Informe Server URL e Instance Token" }, 400);
+
+      const statusCheck = await uaz(host, "/instance/status", { method: "GET", token: instanceToken });
+      if (!statusCheck.ok) return json({ error: "uazapi status failed", detail: statusCheck.data }, 502);
+
+      await admin.from("channel_credentials").upsert({
+        channel_id: body.channel_id,
+        host,
+        admin_token: null,
+        instance_token: instanceToken,
+        instance_id: body.instance_id?.trim() || creds?.instance_id || null,
+        updated_at: new Date().toISOString(),
+      });
+
+      const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+      const webhookResult = await uaz(host, "/webhook", {
+        method: "POST",
+        token: instanceToken,
+        body: JSON.stringify({
+          url: webhook,
+          enabled: true,
+          events: ["messages", "messages_update", "connection", "contacts", "groups"],
+          excludeMessages: [],
+          addUrlEvents: false,
+          addUrlTypesMessages: false,
+        }),
+      });
+
+      const status = statusFrom(statusCheck.data);
+      const phone = phoneFrom(statusCheck.data);
+      const channelUpdate: Record<string, unknown> = { status };
+      if (phone) channelUpdate.phone_e164 = phone;
+      await admin.from("channels").update(channelUpdate).eq("id", body.channel_id);
+
+      return json({ ok: true, status, phone, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
     }
 
     if (!creds) return json({ error: "instância não inicializada" }, 400);
