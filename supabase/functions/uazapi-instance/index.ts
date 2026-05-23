@@ -140,6 +140,27 @@ async function uaz(host: string, path: string, init: RequestInit & { token?: str
   }
 }
 
+async function findExistingUazInstance(host: string, adminToken: string, displayName: string) {
+  const listRes = await uaz(host, "/instance/all", { method: "GET", admintoken: adminToken });
+  if (!listRes.ok) return null;
+  const root = asRecord(listRes.data);
+  const arr: unknown[] = Array.isArray(listRes.data)
+    ? listRes.data as unknown[]
+    : Array.isArray(root.instances) ? root.instances as unknown[]
+    : Array.isArray(root.data) ? root.data as unknown[]
+    : [];
+  const expected = displayName.trim().toLowerCase();
+  const target = arr.map(asRecord).find((it) => {
+    const name = firstString(it.name, it.systemName, it.system_name, it.instanceName)?.toLowerCase();
+    return !!name && name === expected;
+  });
+  if (!target) return null;
+  const token = firstString(target.token, target.instance_token, target.instanceToken);
+  if (!token) return null;
+  const id = firstString(target.id, target.instanceId, target.instance_id);
+  return { token, id };
+}
+
 function mapStatus(connStatus: unknown): string {
   if (connStatus && typeof connStatus === "object") {
     const status = asRecord(connStatus);
@@ -159,15 +180,60 @@ const INIT_LOCK_TTL_MS = 90_000;
 
 async function waitForInitializedCredentials(admin: any, channelId: string) {
   for (let attempt = 0; attempt < 8; attempt++) {
-    const { data } = await admin
-      .from("channel_credentials")
-      .select("*")
-      .eq("channel_id", channelId)
-      .maybeSingle();
-    if (data?.instance_token) return data;
+    const creds = await loadCredentials(admin, channelId);
+    if (creds?.instance_token) return creds;
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
   return null;
+}
+
+async function loadCredentials(admin: any, channelId: string) {
+  const { data, error } = await admin
+    .from("channel_credentials")
+    .select("*")
+    .eq("channel_id", channelId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!error) return data ?? null;
+
+  const fallback = await admin
+    .from("channel_credentials")
+    .select("*")
+    .eq("channel_id", channelId)
+    .limit(1)
+    .maybeSingle();
+  return fallback.data ?? null;
+}
+
+async function cleanupDuplicateCredentials(admin: any, channelId: string, keepId: unknown) {
+  if (!keepId) return;
+  try {
+    await admin.from("channel_credentials").delete().eq("channel_id", channelId).neq("id", keepId);
+  } catch (_) { /* best-effort */ }
+}
+
+async function saveCredentials(admin: any, channelId: string, values: Record<string, unknown>) {
+  const existing = await loadCredentials(admin, channelId);
+  const payload = { channel_id: channelId, ...values, updated_at: new Date().toISOString() };
+
+  if (existing?.id) {
+    const { error } = await admin.from("channel_credentials").update(payload).eq("id", existing.id);
+    if (error) throw error;
+    await cleanupDuplicateCredentials(admin, channelId, existing.id);
+    return await loadCredentials(admin, channelId);
+  }
+
+  if (existing) {
+    const { error } = await admin.from("channel_credentials").update(payload).eq("channel_id", channelId);
+    if (error) throw error;
+    return await loadCredentials(admin, channelId);
+  }
+
+  const { error } = await admin.from("channel_credentials").insert(payload);
+  if (error) throw error;
+  return await loadCredentials(admin, channelId);
 }
 
 async function claimInitLock(admin: any, channel: any, channelId: string) {
@@ -242,10 +308,8 @@ Deno.serve(async (req) => {
     .from("workspace_members").select("user_id").eq("workspace_id", channel.workspace_id).eq("user_id", u.user.id).maybeSingle();
   if (!member) return json({ error: "forbidden" }, 403);
 
-  // load creds (se existirem)
-  const { data: loadedCreds } = await admin
-    .from("channel_credentials").select("*").eq("channel_id", body.channel_id).maybeSingle();
-  let creds = loadedCreds;
+  // load creds (se existirem). Usa helper tolerante a registros duplicados legados.
+  let creds = await loadCredentials(admin, body.channel_id);
 
   try {
     if (body.action === "init") {
@@ -267,6 +331,7 @@ Deno.serve(async (req) => {
       if (creds?.instance_token && body.force) {
         try { await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token }); } catch (_) { /* noop */ }
         await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
+        creds = null;
       }
 
       const lock = await claimInitLock(admin, channel, body.channel_id);
@@ -282,17 +347,14 @@ Deno.serve(async (req) => {
 
       // Helper: registra credenciais existentes + webhook
       const registerExisting = async (existingHost: string, existingToken: string, existingId: string | null) => {
-        await admin.from("channel_credentials").upsert({
-          channel_id: body.channel_id,
+        const saved = await saveCredentials(admin, body.channel_id, {
           host: existingHost,
           admin_token: adminToken,
           instance_token: existingToken,
           instance_id: existingId,
-          updated_at: new Date().toISOString(),
         });
         await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
-        const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
-        const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+        const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
         const webhookResult = await uaz(existingHost, "/webhook", {
           method: "POST", token: existingToken,
           body: JSON.stringify({
@@ -303,6 +365,9 @@ Deno.serve(async (req) => {
         });
         return { ok: true, instance_id: existingId, reused: true, webhook_configured: webhookResult.ok };
       };
+
+      const existingByName = !body.force ? await findExistingUazInstance(host, adminToken, channel.display_name) : null;
+      if (existingByName) return json(await registerExisting(host, existingByName.token, existingByName.id));
 
       // 2) Cria nova instância (endpoint /instance/init)
       const r = await uaz(host, "/instance/init", {
@@ -351,15 +416,12 @@ Deno.serve(async (req) => {
         return json({ error: "uazapi: token não retornado", detail: r.data }, 502);
       }
 
-      await admin.from("channel_credentials").upsert({
-        channel_id: body.channel_id,
+      const saved = await saveCredentials(admin, body.channel_id, {
         host, admin_token: adminToken, instance_token, instance_id,
-        updated_at: new Date().toISOString(),
       });
       await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
 
-      const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
       const webhookResult = await uaz(host, "/webhook", {
         method: "POST", token: instance_token,
         body: JSON.stringify({
@@ -383,17 +445,14 @@ Deno.serve(async (req) => {
       const statusCheck = await uaz(host, "/instance/status", { method: "GET", token: instanceToken });
       if (!statusCheck.ok) return json({ error: "uazapi status failed", detail: statusCheck.data }, 502);
 
-      await admin.from("channel_credentials").upsert({
-        channel_id: body.channel_id,
+      const saved = await saveCredentials(admin, body.channel_id, {
         host,
         admin_token: null,
         instance_token: instanceToken,
         instance_id: body.instance_id?.trim() || creds?.instance_id || null,
-        updated_at: new Date().toISOString(),
       });
 
-      const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
       const webhookResult = await uaz(host, "/webhook", {
         method: "POST",
         token: instanceToken,
@@ -425,7 +484,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "reconfigure_webhook") {
-      const { data: c3 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+      const c3 = await loadCredentials(admin, body.channel_id);
       if (!c3?.webhook_secret) return json({ error: "webhook_secret ausente; reconecte o canal" }, 400);
       const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c3.webhook_secret}&channel=${body.channel_id}`;
       const payload = {
@@ -471,7 +530,7 @@ Deno.serve(async (req) => {
       await admin.from("channels").update({ status: status === "connected" ? "connected" : "qr_pending" }).eq("id", body.channel_id);
       // Garante grupos sempre habilitados no webhook (best-effort)
       try {
-        const { data: cw } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+        const cw = await loadCredentials(admin, body.channel_id);
         if (cw?.webhook_secret) {
           const webhook = `${url}/functions/v1/uazapi-webhook?secret=${cw.webhook_secret}&channel=${body.channel_id}`;
           const payload = {
