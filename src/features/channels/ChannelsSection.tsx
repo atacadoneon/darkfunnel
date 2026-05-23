@@ -193,6 +193,20 @@ export function ChannelsSection() {
                       )}
                       Atualizar contatos
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onReconfigure(c)}
+                      disabled={reconfigId === c.id}
+                      title="Reconfigurar webhook (habilitar mensagens de grupos)"
+                    >
+                      {reconfigId === c.id ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Webhook className="h-4 w-4 mr-2" />
+                      )}
+                      Habilitar grupos
+                    </Button>
                   </>
                 )}
                 <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
