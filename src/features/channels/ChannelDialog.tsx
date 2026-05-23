@@ -66,6 +66,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
   const initInFlightRef = useRef<Promise<void> | null>(null);
+  const advancingRef = useRef(false);
 
   // Invoca edge function via fetch direto para capturar HTTP status + body bruto em caso de erro.
   const invokeEdge = async (fn: string, body: unknown): Promise<{ ok: true; data: any } | { ok: false; err: ConnectErr }> => {
@@ -262,22 +263,29 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [initializing, setInitializing] = useState(false);
 
   const goNext = async () => {
-    if (step === "info") {
-      setAdvancing(true);
-      const id = await saveInfo();
-      setAdvancing(false);
-      if (!id) return;
-      setStep("rotation");
-    } else if (step === "rotation") {
-      if (kind === "uazapi") {
-        setStep("integrations");
-      } else {
-        toast.success("Canal salvo");
-        onOpenChange(false);
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    try {
+      if (step === "info") {
+        setAdvancing(true);
+        const id = await saveInfo();
+        setAdvancing(false);
+        if (!id) return;
+        setStep("rotation");
+      } else if (step === "rotation") {
+        if (kind === "uazapi") {
+          setStep("integrations");
+        } else {
+          toast.success("Canal salvo");
+          onOpenChange(false);
+        }
+      } else if (step === "integrations") {
+        setStep("uaz_connect");
+        if (activeChannelId) void initAndConnect(activeChannelId);
       }
-    } else if (step === "integrations") {
-      setStep("uaz_connect");
-      if (activeChannelId) void initAndConnect(activeChannelId);
+    } finally {
+      setAdvancing(false);
+      advancingRef.current = false;
     }
   };
 
