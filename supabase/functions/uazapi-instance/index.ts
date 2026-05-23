@@ -19,7 +19,8 @@ type Body = {
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
     | "save_n8n" | "generate_api_key"
-    | "sync_history" | "refresh_contacts";
+    | "sync_history" | "refresh_contacts"
+    | "reconfigure_webhook";
   phone?: string;
   force?: boolean;
   // payloads
