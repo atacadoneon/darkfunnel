@@ -221,21 +221,35 @@ Deno.serve(async (req) => {
 
     if (body.action === "reconfigure_webhook") {
       const { data: c3 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c3?.webhook_secret}&channel=${body.channel_id}`;
-      const r = await uaz(creds.host, "/webhook", {
+      if (!c3?.webhook_secret) return json({ error: "webhook_secret ausente; reconecte o canal" }, 400);
+      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c3.webhook_secret}&channel=${body.channel_id}`;
+      const payload = {
+        url: webhook,
+        enabled: true,
+        events: ["messages", "messages_update", "connection", "contacts"],
+        excludeMessages: [] as string[],
+        addUrlEvents: false,
+        addUrlTypesMessages: false,
+      };
+      let r = await uaz(creds.host, "/webhook", {
         method: "POST",
         token: creds.instance_token,
-        body: JSON.stringify({
-          url: webhook,
-          enabled: true,
-          events: ["messages", "messages_update", "connection", "contacts"],
-          excludeMessages: [],
-          addUrlEvents: false,
-          addUrlTypesMessages: false,
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!r.ok) return json({ error: "uazapi webhook failed", detail: r.data }, 502);
-      return json({ ok: true });
+      // fallback: algumas versões da uazapi expõem em /instance/webhook
+      if (!r.ok) {
+        const r2 = await uaz(creds.host, "/instance/webhook", {
+          method: "POST",
+          token: creds.instance_token,
+          body: JSON.stringify(payload),
+        });
+        if (r2.ok) r = r2;
+      }
+      if (!r.ok) {
+        const detailStr = typeof r.data === "string" ? r.data : JSON.stringify(r.data);
+        return json({ error: `uazapi webhook falhou: ${detailStr?.slice(0, 300)}`, detail: r.data }, 502);
+      }
+      return json({ ok: true, webhook });
     }
 
     if (body.action === "connect") {
