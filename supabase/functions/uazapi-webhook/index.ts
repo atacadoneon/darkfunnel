@@ -90,15 +90,18 @@ Deno.serve(async (req) => {
     for (const m of msgs) {
       const fromMe = !!(m.fromMe ?? m.key?.fromMe);
       const remote = m.chatid ?? m.key?.remoteJid ?? m.from ?? m.sender ?? "";
+      const isGroup = String(remote).includes("@g.us") || !!m.isGroup;
+      const participant = m.participant ?? m.key?.participant ?? m.sender ?? null;
       const phone = normalizePhone(remote);
       const myNumber = m.owner ?? m.toNumber ?? null;
       const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
       const tsIso = new Date((typeof ts === "number" && ts < 2e10 ? ts * 1000 : ts)).toISOString();
       const externalId = m.id ?? m.key?.id ?? null;
-      const pushName = m.pushName ?? m.notify ?? null;
-      const profilePic = m.profilePic ?? null;
+      const groupName = m.groupName ?? m.chatName ?? m.subject ?? null;
+      const pushName = isGroup ? (groupName || m.pushName || m.notify || null) : (m.pushName ?? m.notify ?? null);
+      const profilePic = isGroup ? (m.groupPic ?? m.chatPic ?? null) : (m.profilePic ?? null);
 
-      const contactPhone = fromMe ? normalizePhone(phone) : phone;
+      const contactPhone = fromMe && !isGroup ? normalizePhone(phone) : phone;
       if (!contactPhone) continue;
 
       let { data: contact } = await sb
