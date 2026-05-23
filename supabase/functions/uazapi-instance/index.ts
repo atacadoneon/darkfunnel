@@ -155,6 +155,61 @@ function mapStatus(connStatus: unknown): string {
   }
 }
 
+const INIT_LOCK_TTL_MS = 90_000;
+
+async function waitForInitializedCredentials(admin: any, channelId: string) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const { data } = await admin
+      .from("channel_credentials")
+      .select("*")
+      .eq("channel_id", channelId)
+      .maybeSingle();
+    if (data?.instance_token) return data;
+    await new Promise((resolve) => setTimeout(resolve, 750));
+  }
+  return null;
+}
+
+async function claimInitLock(admin: any, channel: any, channelId: string) {
+  const metadata = asRecord(channel.metadata);
+  const startedAt = typeof metadata.uazapi_init_started_at === "string"
+    ? Date.parse(metadata.uazapi_init_started_at)
+    : 0;
+  const lockIsFresh = typeof metadata.uazapi_init_lock === "string"
+    && Number.isFinite(startedAt)
+    && Date.now() - startedAt < INIT_LOCK_TTL_MS;
+  if (lockIsFresh) return { acquired: false as const, lockId: null };
+
+  const lockId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("channels")
+    .update({
+      metadata: { ...metadata, uazapi_init_lock: lockId, uazapi_init_started_at: now },
+      updated_at: now,
+    })
+    .eq("id", channelId)
+    .eq("updated_at", channel.updated_at)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) return { acquired: false as const, lockId: null };
+  return { acquired: true as const, lockId };
+}
+
+async function releaseInitLock(admin: any, channelId: string, lockId: string) {
+  const { data } = await admin
+    .from("channels")
+    .select("metadata")
+    .eq("id", channelId)
+    .maybeSingle();
+  const metadata = asRecord(data?.metadata);
+  if (metadata.uazapi_init_lock !== lockId) return;
+  delete metadata.uazapi_init_lock;
+  delete metadata.uazapi_init_started_at;
+  await admin.from("channels").update({ metadata }).eq("id", channelId);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -188,8 +243,9 @@ Deno.serve(async (req) => {
   if (!member) return json({ error: "forbidden" }, 403);
 
   // load creds (se existirem)
-  const { data: creds } = await admin
+  const { data: loadedCreds } = await admin
     .from("channel_credentials").select("*").eq("channel_id", body.channel_id).maybeSingle();
+  let creds = loadedCreds;
 
   try {
     if (body.action === "init") {
