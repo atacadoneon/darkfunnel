@@ -36,6 +36,33 @@ function normalizePhone(value: unknown): string | null {
   return digits.length >= 8 ? `+${digits}` : null;
 }
 
+function hasMessageShape(value: any): boolean {
+  if (!value || typeof value !== "object") return false;
+  return !!(
+    value.messageType || value.key || value.message || value.id || value.messageid ||
+    value.chatid || value.remoteJid || value.from || value.sender || value.sender_pn
+  );
+}
+
+function collectMessages(value: any): any[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.flatMap(collectMessages);
+  if (hasMessageShape(value)) return [value];
+
+  const candidates = [
+    value.messages,
+    value.data?.messages,
+    value.data?.message,
+    value.data,
+    value.payload?.messages,
+    value.payload?.message,
+    value.payload,
+    value.result?.messages,
+    value.result?.message,
+  ];
+  return candidates.flatMap(collectMessages);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -78,25 +105,22 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
-    // Mensagens (uma ou várias)
-    const msgs: any[] = Array.isArray(body?.messages) ? body.messages
-      : Array.isArray(body?.data?.messages) ? body.data.messages
-      : Array.isArray(body?.data) ? body.data
-      : body?.message && (body?.key || body?.from || body?.sender || body?.chatid || body?.messageType) ? [body]
-      : body?.message ? [body.message]
-      : body?.messageType || body?.key ? [body]
-      : [];
+    // Mensagens (uma ou várias). A Uazapi pode enviar direto no body ou dentro de data/payload/result.
+    const msgs = collectMessages(body);
+    if (msgs.length === 0) {
+      console.warn("uazapi-webhook: payload sem mensagens reconhecidas", { eventType, keys: Object.keys(body ?? {}) });
+    }
 
     for (const m of msgs) {
       const fromMe = !!(m.fromMe ?? m.key?.fromMe);
-      const remote = m.chatid ?? m.key?.remoteJid ?? m.from ?? m.sender ?? "";
+      const remote = m.chatid ?? m.key?.remoteJid ?? m.remoteJid ?? m.from ?? m.chatJid ?? m.jid ?? "";
       const isGroup = String(remote).includes("@g.us") || !!m.isGroup;
-      const participant = m.participant ?? m.key?.participant ?? m.sender ?? null;
-      const phone = normalizePhone(remote);
-      const myNumber = m.owner ?? m.toNumber ?? null;
+      const participant = m.participant ?? m.key?.participant ?? m.sender_pn ?? m.sender ?? null;
+      const phone = normalizePhone(remote) ?? normalizePhone(m.sender_pn) ?? normalizePhone(m.sender) ?? normalizePhone(m.from);
+      const myNumber = m.owner ?? m.toNumber ?? m.to ?? m.me ?? null;
       const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
       const tsIso = new Date((typeof ts === "number" && ts < 2e10 ? ts * 1000 : ts)).toISOString();
-      const externalId = m.id ?? m.key?.id ?? null;
+      const externalId = m.id ?? m.messageid ?? m.key?.id ?? null;
       const groupName = m.groupName ?? m.chatName ?? m.subject ?? null;
       const pushName = isGroup ? (groupName || m.pushName || m.notify || null) : (m.pushName ?? m.notify ?? null);
       const profilePic = isGroup ? (m.groupPic ?? m.chatPic ?? null) : (m.profilePic ?? null);
