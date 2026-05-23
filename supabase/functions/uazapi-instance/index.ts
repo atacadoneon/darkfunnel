@@ -19,7 +19,7 @@ type Body = {
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
     | "save_n8n" | "generate_api_key"
-    | "sync_history";
+    | "sync_history" | "refresh_contacts";
   phone?: string;
   force?: boolean;
   // payloads
