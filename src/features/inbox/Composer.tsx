@@ -1,5 +1,5 @@
-import { useState, useRef, type KeyboardEvent } from "react";
-import { Send, Calendar, Clock, MessagesSquare } from "lucide-react";
+import { useState, useRef, useEffect, type KeyboardEvent } from "react";
+import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music } from "lucide-react";
 import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 import { useQuickReplies, useScheduledMessages } from "./inboxFeatureHooks";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,45 @@ type Props = {
   conversation: ConversationRow;
 };
 
+type AttachmentType = "image" | "audio" | "video" | "document";
+
+type Attachment = {
+  file: File;
+  type: AttachmentType;
+  ptt?: boolean;
+};
+
+const MAX_BYTES = 50 * 1024 * 1024;
+const ACCEPT =
+  "image/jpeg,image/png,image/webp,image/gif,audio/ogg,audio/mpeg,audio/mp4,audio/wav,audio/webm,video/mp4,video/webm,video/quicktime,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.csv";
+
+function sanitizeFilename(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .slice(0, 100);
+}
+
+function detectType(mime: string): AttachmentType {
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime.startsWith("video/")) return "video";
+  return "document";
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatSeconds(s: number): string {
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+}
+
 export function Composer({ conversation }: Props) {
   const { current } = useWorkspace();
   const qc = useQueryClient();
@@ -24,7 +63,15 @@ export function Composer({ conversation }: Props) {
   const [sending, setSending] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recSeconds, setRecSeconds] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recChunksRef = useRef<Blob[]>([]);
+  const recStreamRef = useRef<MediaStream | null>(null);
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { data: pendings = [] } = useScheduledMessages(conversation.id);
   const { data: quickReplies = [] } = useQuickReplies();
 
@@ -35,19 +82,105 @@ export function Composer({ conversation }: Props) {
       ? new Date(conversation.window_expires_at) < new Date()
       : false;
 
+  useEffect(() => {
+    return () => {
+      if (recTimerRef.current) clearInterval(recTimerRef.current);
+      recStreamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  const handleFile = (f: File | undefined | null) => {
+    if (!f) return;
+    if (!isUazapi) {
+      toast.error("Mídia disponível só em UAZAPI por enquanto");
+      return;
+    }
+    if (f.size > MAX_BYTES) {
+      toast.error("Arquivo excede 50MB");
+      return;
+    }
+    setAttachment({ file: f, type: detectType(f.type || "") });
+  };
+
+  const startRecording = async () => {
+    if (!isUazapi) {
+      toast.error("Mídia disponível só em UAZAPI por enquanto");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recStreamRef.current = stream;
+      let mime = "audio/webm;codecs=opus";
+      if (!MediaRecorder.isTypeSupported(mime)) mime = "audio/ogg;codecs=opus";
+      if (!MediaRecorder.isTypeSupported(mime)) mime = "";
+      const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      recorderRef.current = mr;
+      recChunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        const blob = new Blob(recChunksRef.current, { type: mr.mimeType || "audio/webm" });
+        const ext = (mr.mimeType || "").includes("ogg") ? "ogg" : "webm";
+        const file = new File([blob], `audio_${Date.now()}.${ext}`, { type: blob.type });
+        setAttachment({ file, type: "audio", ptt: true });
+        recStreamRef.current?.getTracks().forEach((t) => t.stop());
+        recStreamRef.current = null;
+      };
+      mr.start();
+      setRecording(true);
+      setRecSeconds(0);
+      recTimerRef.current = setInterval(() => setRecSeconds((s) => s + 1), 1000);
+    } catch (err) {
+      toast.error("Não foi possível acessar microfone: " + (err as Error).message);
+    }
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.stop();
+    setRecording(false);
+    if (recTimerRef.current) {
+      clearInterval(recTimerRef.current);
+      recTimerRef.current = null;
+    }
+  };
+
   const send = async () => {
-    if (!text.trim() || !current) return;
+    if (!current) return;
+    if (!attachment && !text.trim()) return;
     if (windowExpired) {
       toast.error("Janela 24h expirou. Envie um template HSM (em breve via UI).");
       return;
     }
     setSending(true);
     const body = text.trim();
+    const att = attachment;
     setText("");
+    setAttachment(null);
     try {
-      if (isUazapi) {
+      if (att) {
+        if (!isUazapi) throw new Error("Mídia disponível só em UAZAPI por enquanto");
+        const path = `${current.id}/${conversation.id}/${Date.now()}_${sanitizeFilename(att.file.name)}`;
+        const up = await supabase.storage
+          .from("darkfunnel-media")
+          .upload(path, att.file, { contentType: att.file.type || undefined, upsert: false });
+        if (up.error) throw new Error(up.error.message);
+        const signed = await supabase.storage
+          .from("darkfunnel-media")
+          .createSignedUrl(path, 7 * 24 * 3600);
+        if (signed.error || !signed.data?.signedUrl) throw new Error(signed.error?.message || "signed url failed");
         const { error } = await supabase.functions.invoke("uazapi-send", {
-          body: { conversation_id: conversation.id, text: body },
+          body: {
+            conversation_id: conversation.id,
+            type: att.type,
+            media_url: signed.data.signedUrl,
+            text: body || undefined,
+            filename: att.type === "document" ? att.file.name : undefined,
+            ptt: att.type === "audio" ? true : undefined,
+          },
+        });
+        if (error) throw new Error(error.message);
+      } else if (isUazapi) {
+        const { error } = await supabase.functions.invoke("uazapi-send", {
+          body: { conversation_id: conversation.id, type: "text", text: body },
         });
         if (error) throw new Error(error.message);
       } else {
@@ -66,6 +199,7 @@ export function Composer({ conversation }: Props) {
     } catch (err) {
       toast.error((err as Error).message);
       setText(body);
+      if (att) setAttachment(att);
     } finally {
       setSending(false);
       ref.current?.focus();
@@ -78,6 +212,16 @@ export function Composer({ conversation }: Props) {
       void send();
     }
   };
+
+  const AttIcon = attachment
+    ? attachment.type === "image"
+      ? ImageIcon
+      : attachment.type === "audio"
+      ? Music
+      : attachment.type === "video"
+      ? VideoIcon
+      : FileText
+    : FileText;
 
   return (
     <div className="border-t bg-card p-3">
@@ -96,14 +240,45 @@ export function Composer({ conversation }: Props) {
           mensagem(ns) agendada(s) — gerenciar
         </button>
       )}
+      {attachment && (
+        <div className="mb-2 flex items-center gap-2 rounded-md border bg-muted/40 p-2">
+          <AttIcon className="h-5 w-5 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium">{attachment.file.name}</div>
+            <div className="text-xs text-muted-foreground">
+              {attachment.type}{attachment.ptt ? " · ptt" : ""} · {formatBytes(attachment.file.size)}
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAttachment(null)} title="Remover">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      {recording && (
+        <div className="mb-2 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-sm">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />
+          <span className="font-medium">Gravando…</span>
+          <span className="ml-auto tabular-nums text-muted-foreground">{formatSeconds(recSeconds)}</span>
+        </div>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept={ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          handleFile(e.target.files?.[0]);
+          if (fileRef.current) fileRef.current.value = "";
+        }}
+      />
       <div className="flex items-end gap-2">
         <Textarea
           ref={ref}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKey}
-          placeholder={windowExpired ? "Selecione um template..." : "Digite uma mensagem..."}
-          disabled={windowExpired}
+          placeholder={windowExpired ? "Selecione um template..." : attachment ? "Caption (opcional)…" : "Digite uma mensagem..."}
+          disabled={windowExpired || recording}
           rows={1}
           className="resize-none min-h-[40px] max-h-32"
         />
@@ -112,7 +287,7 @@ export function Composer({ conversation }: Props) {
             <Button
               variant="outline"
               size="icon"
-              disabled={windowExpired}
+              disabled={windowExpired || recording}
               title="Respostas rápidas"
             >
               <MessagesSquare className="h-4 w-4" />
@@ -147,16 +322,42 @@ export function Composer({ conversation }: Props) {
             </Command>
           </PopoverContent>
         </Popover>
+        {isUazapi && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => fileRef.current?.click()}
+            disabled={windowExpired || recording || !!attachment}
+            title="Anexar arquivo"
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
+        )}
+        {isUazapi && (
+          <Button
+            variant={recording ? "destructive" : "outline"}
+            size="icon"
+            onClick={() => (recording ? stopRecording() : void startRecording())}
+            disabled={windowExpired || !!attachment}
+            title={recording ? "Parar gravação" : "Gravar áudio"}
+          >
+            {recording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+        )}
         <Button
           variant="outline"
           size="icon"
           onClick={() => setScheduleOpen(true)}
-          disabled={windowExpired}
+          disabled={windowExpired || recording}
           title="Agendar"
         >
           <Calendar className="h-4 w-4" />
         </Button>
-        <Button onClick={() => void send()} disabled={sending || !text.trim() || windowExpired} size="icon">
+        <Button
+          onClick={() => void send()}
+          disabled={sending || recording || (!text.trim() && !attachment) || windowExpired}
+          size="icon"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </div>
