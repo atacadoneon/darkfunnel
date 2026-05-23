@@ -1,6 +1,6 @@
 // Gerencia instâncias uazapi: init, connect (QR), status, disconnect
 // Requer JWT (usuário logado). Valida que user é membro do workspace do canal.
-// redeploy: 2026-05-23T16:31Z v2 — força deploy de refresh_contact e sync_history
+// redeploy: 2026-05-23T17:36Z v3 — publica sync_history/refresh_contacts/refresh_contact
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -11,6 +11,15 @@ const corsHeaders = {
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const SUPPORTED_ACTIONS = [
+  "init", "connect", "status", "disconnect", "delete",
+  "set_profile_name", "set_profile_picture",
+  "get_privacy", "set_privacy",
+  "save_n8n", "generate_api_key",
+  "sync_history", "refresh_contacts", "refresh_contact",
+  "reconfigure_webhook",
+] as const;
 
 type Body = {
   channel_id: string;
@@ -151,6 +160,7 @@ Deno.serve(async (req) => {
   let body: Body;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
   if (!body.channel_id || !body.action) return json({ error: "missing fields" }, 400);
+  body.action = String(body.action).trim() as Body["action"];
 
   // valida acesso ao canal
   const { data: channel, error: chErr } = await admin
