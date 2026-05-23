@@ -19,10 +19,11 @@ type Body = {
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
     | "save_n8n" | "generate_api_key"
-    | "sync_history" | "refresh_contacts"
+    | "sync_history" | "refresh_contacts" | "refresh_contact"
     | "reconfigure_webhook";
   phone?: string;
   force?: boolean;
+  contact_id?: string;
   // payloads
   profile_name?: string;
   profile_picture_url?: string;
@@ -569,6 +570,42 @@ Deno.serve(async (req) => {
       }
 
       return json({ ok: true, contacts_total: targets.length, contacts_updated: updated, errors: errors.slice(0, 10) });
+    }
+
+    if (body.action === "refresh_contact") {
+      if (!body.contact_id) return json({ error: "contact_id obrigatório" }, 400);
+      const { data: contact, error: cErr } = await admin
+        .from("contacts")
+        .select("id, phone_e164, display_name, profile_pic_url, bio, workspace_id")
+        .eq("id", body.contact_id)
+        .maybeSingle();
+      if (cErr || !contact) return json({ error: "contato não encontrado" }, 404);
+      if (contact.workspace_id !== channel.workspace_id) return json({ error: "forbidden" }, 403);
+      if (!contact.phone_e164) return json({ error: "contato sem telefone" }, 400);
+
+      const digits = contact.phone_e164.replace(/\D/g, "");
+      const r = await uaz(creds.host, "/chat/details", {
+        method: "POST",
+        token: creds.instance_token,
+        body: JSON.stringify({ number: digits, preview: false }),
+      });
+      if (!r.ok) return json({ error: "uazapi falhou", detail: r.data }, 502);
+
+      const root = asRecord(r.data);
+      const chat = asRecord(root.chat ?? root.data ?? root);
+      const name = firstString(chat.wa_name, chat.name, chat.pushName, chat.pushname, root.name as string);
+      const image = firstString(chat.image, chat.imagePreview, chat.profilePicUrl, chat.profile_pic_url, root.image as string);
+      const bio = firstString(chat.wa_status, chat.status, chat.about, chat.bio, chat.description, root.status as string);
+
+      const update: Record<string, unknown> = { profile_synced_at: new Date().toISOString() };
+      if (name) update.display_name = name;
+      if (image) update.profile_pic_url = image;
+      if (bio) update.bio = bio;
+
+      const { error: upErr } = await admin.from("contacts").update(update).eq("id", contact.id);
+      if (upErr) return json({ error: "update falhou", detail: upErr.message }, 500);
+
+      return json({ ok: true, name: name ?? null, image: image ?? null, bio: bio ?? null });
     }
 
     return json({ error: "invalid action" }, 400);
