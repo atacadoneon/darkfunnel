@@ -251,17 +251,37 @@ export function ChannelsSection() {
 
       <ChannelDialog open={dialogOpen} onOpenChange={setDialogOpen} channel={editing} />
 
-      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+      <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) { setDeleting(null); setDeleteConversations(false); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover canal?</AlertDialogTitle>
+            <AlertDialogTitle>Tem certeza que deseja remover este canal?</AlertDialogTitle>
             <AlertDialogDescription>
-              O canal "{deleting?.display_name}" será desativado. Conversas existentes não serão apagadas.
+              O canal "{deleting?.display_name}" será desativado e sua instância no UAZAPI será excluída.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3">
+            <Checkbox
+              id="delete-conversations"
+              checked={deleteConversations}
+              onCheckedChange={(v) => setDeleteConversations(v === true)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="delete-conversations" className="cursor-pointer">
+                Também remover todas as conversas atreladas a este canal
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Esta ação apaga conversas e mensagens deste canal permanentemente.
+              </p>
+            </div>
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Remover</AlertDialogAction>
+            <AlertDialogCancel disabled={deletingBusy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={deletingBusy}
+            >
+              {deletingBusy ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
