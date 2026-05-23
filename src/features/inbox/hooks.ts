@@ -38,7 +38,7 @@ export function useConversations() {
       const { data, error } = await supabase
         .from("conversations")
         .select(
-          "id,contact_id,channel_id,status,unread_count,last_message_at,window_expires_at,assigned_user_id,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,contact_tags(tag_id)),channels(kind,display_name)"
+          "id,contact_id,channel_id,status,unread_count,last_message_at,window_expires_at,assigned_user_id,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,bio,contact_tags(tag_id)),channels(kind,display_name)"
         )
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .limit(500);
