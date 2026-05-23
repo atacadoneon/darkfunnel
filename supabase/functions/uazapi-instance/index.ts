@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           url: webhook,
           enabled: true,
-          events: ["messages", "messages_update", "connection", "contacts"],
+          events: ["messages", "messages_update", "connection", "contacts", "groups"],
           excludeMessages: [],
           addUrlEvents: false,
           addUrlTypesMessages: false,
@@ -265,6 +265,23 @@ Deno.serve(async (req) => {
       const status = statusFrom(r.data);
       await admin.from("channel_credentials").update({ last_qr: qr, last_qr_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: status === "connected" ? "connected" : "qr_pending" }).eq("id", body.channel_id);
+      // Garante grupos sempre habilitados no webhook (best-effort)
+      try {
+        const { data: cw } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+        if (cw?.webhook_secret) {
+          const webhook = `${url}/functions/v1/uazapi-webhook?secret=${cw.webhook_secret}&channel=${body.channel_id}`;
+          const payload = {
+            url: webhook,
+            enabled: true,
+            events: ["messages", "messages_update", "connection", "contacts", "groups"],
+            excludeMessages: [] as string[],
+            addUrlEvents: false,
+            addUrlTypesMessages: false,
+          };
+          const rw = await uaz(creds.host, "/webhook", { method: "POST", token: creds.instance_token, body: JSON.stringify(payload) });
+          if (!rw.ok) await uaz(creds.host, "/instance/webhook", { method: "POST", token: creds.instance_token, body: JSON.stringify(payload) });
+        }
+      } catch (_) { /* best-effort */ }
       return json({ ok: true, qr, paircode, status });
     }
 
