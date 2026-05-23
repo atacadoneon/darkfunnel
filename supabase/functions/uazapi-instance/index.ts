@@ -159,15 +159,60 @@ const INIT_LOCK_TTL_MS = 90_000;
 
 async function waitForInitializedCredentials(admin: any, channelId: string) {
   for (let attempt = 0; attempt < 8; attempt++) {
-    const { data } = await admin
-      .from("channel_credentials")
-      .select("*")
-      .eq("channel_id", channelId)
-      .maybeSingle();
-    if (data?.instance_token) return data;
+    const creds = await loadCredentials(admin, channelId);
+    if (creds?.instance_token) return creds;
     await new Promise((resolve) => setTimeout(resolve, 750));
   }
   return null;
+}
+
+async function loadCredentials(admin: any, channelId: string) {
+  const { data, error } = await admin
+    .from("channel_credentials")
+    .select("*")
+    .eq("channel_id", channelId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!error) return data ?? null;
+
+  const fallback = await admin
+    .from("channel_credentials")
+    .select("*")
+    .eq("channel_id", channelId)
+    .limit(1)
+    .maybeSingle();
+  return fallback.data ?? null;
+}
+
+async function cleanupDuplicateCredentials(admin: any, channelId: string, keepId: unknown) {
+  if (!keepId) return;
+  try {
+    await admin.from("channel_credentials").delete().eq("channel_id", channelId).neq("id", keepId);
+  } catch (_) { /* best-effort */ }
+}
+
+async function saveCredentials(admin: any, channelId: string, values: Record<string, unknown>) {
+  const existing = await loadCredentials(admin, channelId);
+  const payload = { channel_id: channelId, ...values, updated_at: new Date().toISOString() };
+
+  if (existing?.id) {
+    const { error } = await admin.from("channel_credentials").update(payload).eq("id", existing.id);
+    if (error) throw error;
+    await cleanupDuplicateCredentials(admin, channelId, existing.id);
+    return await loadCredentials(admin, channelId);
+  }
+
+  if (existing) {
+    const { error } = await admin.from("channel_credentials").update(payload).eq("channel_id", channelId);
+    if (error) throw error;
+    return await loadCredentials(admin, channelId);
+  }
+
+  const { error } = await admin.from("channel_credentials").insert(payload);
+  if (error) throw error;
+  return await loadCredentials(admin, channelId);
 }
 
 async function claimInitLock(admin: any, channel: any, channelId: string) {
