@@ -38,8 +38,10 @@ function normalizePhone(value: unknown): string | null {
 
 function hasMessageShape(value: any): boolean {
   if (!value || typeof value !== "object") return false;
+  const hasRoute = !!(value.key || value.chatid || value.remoteJid || value.from || value.sender || value.sender_pn);
   return !!(
-    value.messageType || value.key || value.id || value.messageid ||
+    value.messageType || hasRoute ||
+    ((value.id || value.messageid) && hasRoute) ||
     value.chatid || value.remoteJid || value.from || value.sender || value.sender_pn
   );
 }
