@@ -145,6 +145,9 @@ export function ChannelsSection() {
                 <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
+              </Card>
+            );
+          })}
         </div>
       )}
 
