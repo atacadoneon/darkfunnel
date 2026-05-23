@@ -102,7 +102,9 @@ export function useMessages(conversationId: string | null) {
       if (error) throw error;
       return ((data ?? []) as unknown as MessageRow[]).reverse();
     },
-    staleTime: 10_000,
+    staleTime: 2_000,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
   });
 
   useEffect(() => {
