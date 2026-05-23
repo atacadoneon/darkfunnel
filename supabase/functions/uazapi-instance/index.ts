@@ -18,7 +18,8 @@ type Body = {
     | "init" | "connect" | "status" | "disconnect" | "delete"
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
-    | "save_n8n" | "generate_api_key";
+    | "save_n8n" | "generate_api_key"
+    | "sync_history";
   phone?: string;
   force?: boolean;
   // payloads
@@ -26,6 +27,9 @@ type Body = {
   profile_picture_url?: string;
   privacy?: Record<string, string>;
   n8n?: { enabled: boolean; url?: string | null; secret?: string | null };
+  // sync_history
+  chat_limit?: number;
+  per_chat_limit?: number;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -300,6 +304,146 @@ Deno.serve(async (req) => {
       const key = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
       await admin.from("channel_credentials").update({ send_api_key: key, updated_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
       return json({ ok: true, api_key: key });
+    }
+
+    if (body.action === "sync_history") {
+      const chatLimit = Math.min(body.chat_limit ?? 200, 500);
+      const perChatLimit = Math.min(body.per_chat_limit ?? 100, 300);
+
+      // 1) busca lista de chats
+      const chatRes = await uaz(creds.host, "/chat/find", {
+        method: "POST",
+        token: creds.instance_token,
+        body: JSON.stringify({ operator: "AND", sort: "-wa_lastMsgTimestamp", limit: chatLimit }),
+      });
+      if (!chatRes.ok) return json({ error: "uazapi chat/find failed", detail: chatRes.data }, 502);
+
+      const chatsRoot = asRecord(chatRes.data);
+      const chats: any[] = Array.isArray(chatRes.data) ? chatRes.data as any[]
+        : Array.isArray(chatsRoot.chats) ? chatsRoot.chats as any[]
+        : Array.isArray(chatsRoot.data) ? chatsRoot.data as any[]
+        : [];
+
+      let imported = 0;
+      let chatsProcessed = 0;
+      const errors: string[] = [];
+
+      for (const ch of chats) {
+        const chatid = ch.wa_chatid ?? ch.chatid ?? ch.id ?? ch.remoteJid;
+        if (!chatid || String(chatid).includes("@g.us")) continue; // pula grupos
+        chatsProcessed++;
+
+        // 2) busca mensagens do chat
+        const msgRes = await uaz(creds.host, "/message/find", {
+          method: "POST",
+          token: creds.instance_token,
+          body: JSON.stringify({ operator: "AND", sort: "-messageTimestamp", chatid, limit: perChatLimit }),
+        });
+        if (!msgRes.ok) { errors.push(`chat ${chatid}: ${JSON.stringify(msgRes.data).slice(0,120)}`); continue; }
+
+        const msgsRoot = asRecord(msgRes.data);
+        const msgs: any[] = Array.isArray(msgRes.data) ? msgRes.data as any[]
+          : Array.isArray(msgsRoot.messages) ? msgsRoot.messages as any[]
+          : Array.isArray(msgsRoot.data) ? msgsRoot.data as any[]
+          : [];
+
+        // ordena cronologicamente para inserir do mais antigo ao mais novo
+        msgs.sort((a, b) => (a.messageTimestamp ?? 0) - (b.messageTimestamp ?? 0));
+
+        for (const m of msgs) {
+          try {
+            const fromMe = !!(m.fromMe ?? m.key?.fromMe);
+            const remote = m.chatid ?? m.key?.remoteJid ?? m.from ?? m.sender ?? chatid;
+            const digits = String(remote ?? "").split("@")[0].replace(/\D/g, "");
+            const contactPhone = digits.length >= 8 ? `+${digits}` : null;
+            if (!contactPhone) continue;
+
+            const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
+            const tsIso = new Date((typeof ts === "number" && ts < 2e10 ? ts * 1000 : ts)).toISOString();
+            const externalId = m.id ?? m.key?.id ?? null;
+            const pushName = m.pushName ?? m.sender_name ?? ch.wa_name ?? ch.name ?? null;
+            const profilePic = m.profilePic ?? ch.image ?? ch.imagePreview ?? null;
+
+            // upsert contact
+            let { data: contact } = await admin
+              .from("contacts").select("id")
+              .eq("workspace_id", channel.workspace_id)
+              .eq("phone_e164", contactPhone)
+              .maybeSingle();
+            if (!contact) {
+              const { data: identity } = await admin
+                .from("contact_identities").select("contact_id")
+                .eq("workspace_id", channel.workspace_id)
+                .eq("kind", "whatsapp").eq("value", contactPhone)
+                .maybeSingle();
+              if (identity?.contact_id) contact = { id: identity.contact_id };
+            }
+            if (!contact) {
+              const { data: created } = await admin.from("contacts").insert({
+                workspace_id: channel.workspace_id,
+                display_name: pushName || contactPhone,
+                phone_e164: contactPhone,
+                profile_pic_url: profilePic,
+              }).select("id").single();
+              contact = created;
+              if (contact) await admin.from("contact_identities").insert({
+                workspace_id: channel.workspace_id, contact_id: contact.id,
+                kind: "whatsapp", value: contactPhone, is_primary: true,
+              });
+            }
+            if (!contact) continue;
+
+            // upsert conversation
+            let { data: conv } = await admin.from("conversations").select("id,unread_count")
+              .eq("workspace_id", channel.workspace_id)
+              .eq("contact_id", contact.id).eq("channel_id", body.channel_id)
+              .maybeSingle();
+            if (!conv) {
+              const { data: createdConv } = await admin.from("conversations").insert({
+                workspace_id: channel.workspace_id,
+                contact_id: contact.id, channel_id: body.channel_id,
+                status: "open", unread_count: 0, last_message_at: tsIso,
+              }).select("id,unread_count").single();
+              conv = createdConv;
+            }
+            if (!conv) continue;
+
+            // dedupe por external_id
+            if (externalId) {
+              const { data: exists } = await admin.from("messages").select("id")
+                .eq("conversation_id", conv.id)
+                .eq("payload->>external_id", externalId).maybeSingle();
+              if (exists) continue;
+            }
+
+            const content = m?.message ?? m;
+            const text = m?.text ?? m?.body ?? m?.content ?? content?.conversation
+              ?? content?.extendedTextMessage?.text
+              ?? content?.imageMessage?.caption ?? content?.videoMessage?.caption ?? "";
+            const t = (m?.messageType ?? m?.type ?? content?.messageType ?? "text").toString().toLowerCase();
+
+            const { error: msgErr } = await admin.from("messages").insert({
+              workspace_id: channel.workspace_id,
+              conversation_id: conv.id,
+              direction: fromMe ? "out" : "in",
+              type: t,
+              payload: { body: text, external_id: externalId, raw: m },
+              status: fromMe ? "sent" : "received",
+              created_at: tsIso,
+              sent_at: fromMe ? tsIso : null,
+            });
+            if (msgErr) { errors.push(`msg ${externalId}: ${msgErr.message}`); continue; }
+
+            await admin.from("conversations")
+              .update({ last_message_at: tsIso }).eq("id", conv.id);
+            imported++;
+          } catch (err) {
+            errors.push(`msg err: ${(err as Error).message}`);
+          }
+        }
+      }
+
+      return json({ ok: true, chats_processed: chatsProcessed, messages_imported: imported, errors: errors.slice(0, 10) });
     }
 
     return json({ error: "invalid action" }, 400);
