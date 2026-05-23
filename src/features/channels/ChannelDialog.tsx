@@ -65,6 +65,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [connectError, setConnectError] = useState<ConnectErr | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
+  const initInFlightRef = useRef<Promise<void> | null>(null);
 
   // Invoca edge function via fetch direto para capturar HTTP status + body bruto em caso de erro.
   const invokeEdge = async (fn: string, body: unknown): Promise<{ ok: true; data: any } | { ok: false; err: ConnectErr }> => {
@@ -282,22 +283,30 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
 
 
   const initAndConnect = async (id: string, force = false) => {
-    setInitializing(true);
-    setConnectError(null);
-    try {
-      const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init", force });
-      if (r.ok === false) {
-        setConnectError({ ...r.err, title: r.err.title + " (init)" });
-        toast.error(`Falha ao inicializar instância: ${r.err.message}`);
-        return;
+    if (initInFlightRef.current) return initInFlightRef.current;
+
+    const task = (async () => {
+      setInitializing(true);
+      setConnectError(null);
+      try {
+        const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init", force });
+        if (r.ok === false) {
+          setConnectError({ ...r.err, title: r.err.title + " (init)" });
+          toast.error(`Falha ao inicializar instância: ${r.err.message}`);
+          return;
+        }
+        await connect(id);
+      } catch (e) {
+        setConnectError({ title: "Erro inesperado", message: (e as Error).message });
+        toast.error((e as Error).message);
+      } finally {
+        setInitializing(false);
+        initInFlightRef.current = null;
       }
-      await connect(id);
-    } catch (e) {
-      setConnectError({ title: "Erro inesperado", message: (e as Error).message });
-      toast.error((e as Error).message);
-    } finally {
-      setInitializing(false);
-    }
+    })();
+
+    initInFlightRef.current = task;
+    return task;
   };
 
 
@@ -564,7 +573,7 @@ function UazConnect(props: {
               Status: <span className="font-medium">{connStatus}</span>
               {polling && <Loader2 className="h-3 w-3 animate-spin" />}
             </div>
-            <Button variant="outline" size="sm" onClick={props.onRefreshQr}>
+            <Button variant="outline" size="sm" onClick={props.onRefreshQr} disabled={initializing}>
               <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
             </Button>
           </div>
