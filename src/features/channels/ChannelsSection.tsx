@@ -78,6 +78,23 @@ export function ChannelsSection() {
     }
   };
 
+  const onReconfigure = async (c: ChannelRow) => {
+    setReconfigId(c.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
+        body: { channel_id: c.id, action: "reconfigure_webhook" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Webhook reconfigurado (grupos habilitados)");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setReconfigId(null);
+    }
+  };
+
+
   const confirmDelete = async () => {
     if (!deleting || !current) return;
     const { error } = await supabase
