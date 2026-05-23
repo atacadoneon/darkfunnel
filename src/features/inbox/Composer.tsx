@@ -179,9 +179,10 @@ export function Composer({ conversation }: Props) {
         });
         if (error) throw new Error(error.message);
       } else if (isUazapi) {
-        const { error } = await supabase.functions.invoke("uazapi-send", {
+        const { data, error } = await supabase.functions.invoke("uazapi-send", {
           body: { conversation_id: conversation.id, type: "text", text: body },
         });
+        console.log("[Composer] uazapi-send response:", { data, error });
         if (error) throw new Error(error.message);
       } else {
         const { error } = await supabase.rpc("enqueue_outbound", {
@@ -195,7 +196,9 @@ export function Composer({ conversation }: Props) {
         });
         if (error) throw error;
       }
-      qc.invalidateQueries({ queryKey: ["messages", conversation.id] });
+      await qc.invalidateQueries({ queryKey: ["messages", conversation.id] });
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["messages", conversation.id] }), 1500);
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["messages", conversation.id] }), 4000);
     } catch (err) {
       toast.error((err as Error).message);
       setText(body);
