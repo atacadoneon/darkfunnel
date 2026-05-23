@@ -1,6 +1,6 @@
 // Gerencia instâncias uazapi: init, connect (QR), status, disconnect
 // Requer JWT (usuário logado). Valida que user é membro do workspace do canal.
-// redeploy: 2026-05-04T02:52Z
+// redeploy: 2026-05-23T15:35Z — inclui reconfigure_webhook para habilitar grupos
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
       const payload = {
         url: webhook,
         enabled: true,
-        events: ["messages", "messages_update", "connection", "contacts"],
+        events: ["messages", "messages_update", "connection", "contacts", "groups"],
         excludeMessages: [] as string[],
         addUrlEvents: false,
         addUrlTypesMessages: false,
