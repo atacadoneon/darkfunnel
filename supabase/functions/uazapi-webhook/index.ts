@@ -52,6 +52,8 @@ function collectMessages(value: any): any[] {
   const candidates = [
     value.messages,
     value.message,
+    value.event?.messages,
+    value.event?.message,
     value.data?.messages,
     value.data?.message,
     value.data,
