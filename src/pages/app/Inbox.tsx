@@ -16,7 +16,12 @@ import { ConversationHeader } from "@/features/inbox/ConversationHeader";
 import { MessageSearchBar } from "@/features/inbox/MessageSearchBar";
 import { NewConversationDialog } from "@/features/inbox/NewConversationDialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
+import { useChannels } from "@/features/channels/hooks";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 
 function sortConvs<T extends {
   last_message_at: string | null;
