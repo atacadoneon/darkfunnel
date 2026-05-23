@@ -122,3 +122,14 @@ All colors MUST be HSL.
 *::-webkit-scrollbar {
   display: none;
 }
+
+/* Containment de scroll: rolagem fica restrita ao bloco onde o mouse está,
+   sem propagar para a página/contêineres pais. Aplica-se a qualquer elemento rolável. */
+[class*="overflow-auto"],
+[class*="overflow-y-auto"],
+[class*="overflow-x-auto"],
+[class*="overflow-scroll"],
+[class*="overflow-y-scroll"],
+[class*="overflow-x-scroll"] {
+  overscroll-behavior: contain;
+}
