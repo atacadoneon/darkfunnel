@@ -162,17 +162,6 @@ export default function Inbox() {
               <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
             </div>
             <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1 px-2 text-xs"
-                onClick={onRefreshNames}
-                disabled={refreshingNames}
-                title="Buscar nomes dos contatos no WhatsApp e salvar"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${refreshingNames ? "animate-spin" : ""}`} />
-                Nomes
-              </Button>
               <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setNewConvOpen(true)}>
                 <Plus className="h-3.5 w-3.5" /> Nova
               </Button>
