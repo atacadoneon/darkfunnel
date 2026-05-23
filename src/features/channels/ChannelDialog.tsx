@@ -212,12 +212,12 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     }
   };
 
-  const connect = async (id: string) => {
+  const connect = async (id: string, allowInit = true) => {
     setQr(null);
     setConnectError(null);
     const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "connect" });
     if (r.ok === false) {
-      if (r.err.status === 400 && /instância não inicializada/i.test(r.err.message)) {
+      if (allowInit && r.err.status === 400 && /instância não inicializada/i.test(r.err.message)) {
         await initAndConnect(id, true);
         return;
       }
@@ -295,7 +295,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
           toast.error(`Falha ao inicializar instância: ${r.err.message}`);
           return;
         }
-        await connect(id);
+        await connect(id, false);
       } catch (e) {
         setConnectError({ title: "Erro inesperado", message: (e as Error).message });
         toast.error((e as Error).message);
