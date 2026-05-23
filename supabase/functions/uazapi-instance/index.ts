@@ -618,7 +618,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, name: name ?? null, image: image ?? null, bio: bio ?? null });
     }
 
-    return json({ error: "invalid action" }, 400);
+    return json({ error: "invalid action", action: body.action, supported_actions: SUPPORTED_ACTIONS }, 400);
   } catch (e) {
     console.error(e);
     return json({ error: (e as Error).message }, 500);
