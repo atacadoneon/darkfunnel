@@ -81,10 +81,14 @@ export function ChannelsSection() {
   const onReconfigure = async (c: ChannelRow) => {
     setReconfigId(c.id);
     try {
-      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
-        body: { channel_id: c.id, action: "reconfigure_webhook" },
+      const { data, error } = await supabase.functions.invoke("uazapi-reconfigure-webhook", {
+        body: { channel_id: c.id },
       });
-      if (error) throw error;
+      if (error) {
+        const ctx = (error as unknown as { context?: Response }).context;
+        const detail = ctx ? await ctx.clone().json().catch(() => null) : null;
+        throw new Error(detail?.error || error.message);
+      }
       if (data?.error) throw new Error(data.error);
       toast.success("Webhook reconfigurado (grupos habilitados)");
     } catch (e) {
