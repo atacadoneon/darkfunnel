@@ -100,23 +100,47 @@ export function ChannelsSection() {
 
   const confirmDelete = async () => {
     if (!deleting || !current) return;
-    // Exclui também a instância no UAZAPI (best-effort)
+    setDeletingBusy(true);
     try {
-      await supabase.functions.invoke("uazapi-instance", {
-        body: { channel_id: deleting.id, action: "delete" },
-      });
-    } catch (_) { /* segue exclusão lógica mesmo se falhar */ }
+      // Exclui também a instância no UAZAPI (best-effort)
+      try {
+        await supabase.functions.invoke("uazapi-instance", {
+          body: { channel_id: deleting.id, action: "delete" },
+        });
+      } catch (_) { /* segue exclusão lógica mesmo se falhar */ }
 
-    const { error } = await supabase
-      .from("channels")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", deleting.id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Canal removido");
+      if (deleteConversations) {
+        // Busca conversas do canal para apagar mensagens e depois as conversas
+        const { data: convs, error: cerr } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("channel_id", deleting.id);
+        if (cerr) throw cerr;
+        const ids = (convs ?? []).map((c) => c.id);
+        if (ids.length > 0) {
+          const { error: merr } = await supabase.from("messages").delete().in("conversation_id", ids);
+          if (merr) throw merr;
+          const { error: derr } = await supabase.from("conversations").delete().in("id", ids);
+          if (derr) throw derr;
+        }
+      }
+
+      const { error } = await supabase
+        .from("channels")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", deleting.id);
+      if (error) throw error;
+
+      toast.success(deleteConversations ? "Canal e conversas removidos" : "Canal removido");
       qc.invalidateQueries({ queryKey: ["channels", current.id] });
+      qc.invalidateQueries({ queryKey: ["conversations", current.id] });
+      setDeleting(null);
+      setDeleteConversations(false);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDeletingBusy(false);
     }
-    setDeleting(null);
   };
 
   return (
