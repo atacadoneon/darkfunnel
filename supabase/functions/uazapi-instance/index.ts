@@ -391,15 +391,12 @@ Deno.serve(async (req) => {
         return json({ error: "uazapi: token não retornado", detail: r.data }, 502);
       }
 
-      await admin.from("channel_credentials").upsert({
-        channel_id: body.channel_id,
+      const saved = await saveCredentials(admin, body.channel_id, {
         host, admin_token: adminToken, instance_token, instance_id,
-        updated_at: new Date().toISOString(),
       });
       await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
 
-      const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
       const webhookResult = await uaz(host, "/webhook", {
         method: "POST", token: instance_token,
         body: JSON.stringify({
@@ -423,17 +420,14 @@ Deno.serve(async (req) => {
       const statusCheck = await uaz(host, "/instance/status", { method: "GET", token: instanceToken });
       if (!statusCheck.ok) return json({ error: "uazapi status failed", detail: statusCheck.data }, 502);
 
-      await admin.from("channel_credentials").upsert({
-        channel_id: body.channel_id,
+      const saved = await saveCredentials(admin, body.channel_id, {
         host,
         admin_token: null,
         instance_token: instanceToken,
         instance_id: body.instance_id?.trim() || creds?.instance_id || null,
-        updated_at: new Date().toISOString(),
       });
 
-      const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
       const webhookResult = await uaz(host, "/webhook", {
         method: "POST",
         token: instanceToken,
