@@ -36,6 +36,14 @@ function normalizePhone(value: unknown): string | null {
   return digits.length >= 8 ? `+${digits}` : null;
 }
 
+function firstPhone(...values: unknown[]): string | null {
+  for (const value of values) {
+    const phone = normalizePhone(value);
+    if (phone) return phone;
+  }
+  return null;
+}
+
 function hasMessageShape(value: any): boolean {
   if (!value || typeof value !== "object") return false;
   const hasRoute = !!(value.key || value.chatid || value.remoteJid || value.from || value.sender || value.sender_pn);
@@ -132,11 +140,14 @@ Deno.serve(async (req) => {
     let skippedDup = 0;
     for (const m of msgs) {
       const fromMe = !!(m.fromMe ?? m.key?.fromMe);
-      const remote = m.chatid ?? m.key?.remoteJid ?? m.remoteJid ?? m.from ?? m.chatJid ?? m.jid ?? "";
+      const remote = m.chatid ?? m.key?.remoteJid ?? m.remoteJid ?? m.chatJid ?? m.jid ?? "";
       const isGroup = String(remote).includes("@g.us") || !!m.isGroup;
       const participant = m.participant ?? m.key?.participant ?? m.sender_pn ?? m.sender ?? null;
-      const phone = normalizePhone(remote) ?? normalizePhone(m.sender_pn) ?? normalizePhone(m.sender) ?? normalizePhone(m.from);
-      const myNumber = m.owner ?? m.toNumber ?? m.to ?? m.me ?? null;
+      const routePhone = firstPhone(remote, m.chatid, m.key?.remoteJid, m.remoteJid, m.chatJid, m.jid);
+      const inboundPhone = firstPhone(routePhone, m.sender_pn, m.sender, m.from);
+      const outboundPhone = firstPhone(m.toNumber, m.to, m.recipient, m.recipient_pn, m.destination, m.toJid, routePhone);
+      const phone = fromMe ? outboundPhone : inboundPhone;
+      const myNumber = firstPhone(m.owner, m.me, m.instance?.phone, m.device?.phone, fromMe ? m.from : m.toNumber, fromMe ? m.sender_pn : null, fromMe ? m.sender : null);
       const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
       const tsIso = new Date((typeof ts === "number" && ts < 2e10 ? ts * 1000 : ts)).toISOString();
       const externalId = m.id ?? m.messageid ?? m.key?.id ?? null;
@@ -144,7 +155,7 @@ Deno.serve(async (req) => {
       const pushName = isGroup ? (groupName || m.pushName || m.notify || null) : (m.pushName ?? m.notify ?? null);
       const profilePic = isGroup ? (m.groupPic ?? m.chatPic ?? null) : (m.profilePic ?? null);
 
-      const contactPhone = fromMe && !isGroup ? phone : phone;
+      const contactPhone = phone;
       if (!contactPhone) { console.warn("skip msg sem phone", { externalId, remote }); continue; }
 
       let { data: contact } = await sb
