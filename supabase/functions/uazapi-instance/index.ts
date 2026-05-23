@@ -416,7 +416,13 @@ Deno.serve(async (req) => {
       return json({ ok: true, status, phone, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
     }
 
-    if (!creds) return json({ error: "instância não inicializada" }, 400);
+    if (!creds) {
+      if (body.action === "delete") {
+        await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
+        return json({ ok: true, no_instance: true });
+      }
+      return json({ error: "instância não inicializada" }, 400);
+    }
 
     if (body.action === "reconfigure_webhook") {
       const { data: c3 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
@@ -501,10 +507,19 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "delete") {
-      await uaz(creds.host, "/instance", { method: "DELETE", token: creds.instance_token });
+      let deleted = true;
+      let detail: unknown = undefined;
+      try {
+        const r = await uaz(creds.host, "/instance", { method: "DELETE", token: creds.instance_token });
+        deleted = r.ok;
+        detail = r.ok ? undefined : r.data;
+      } catch (e) {
+        deleted = false;
+        detail = (e as Error).message;
+      }
       await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
       await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
-      return json({ ok: true });
+      return json({ ok: true, uazapi_deleted: deleted, detail });
     }
 
     if (body.action === "set_profile_name") {
