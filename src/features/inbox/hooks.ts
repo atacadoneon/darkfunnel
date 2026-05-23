@@ -63,6 +63,19 @@ export function useConversations() {
         { event: "INSERT", schema: "public", table: "messages", filter: `workspace_id=eq.${current.id}` },
         () => qc.invalidateQueries({ queryKey: ["conversations", current.id] })
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "contacts", filter: `workspace_id=eq.${current.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["conversations", current.id] });
+          qc.invalidateQueries({ queryKey: ["contacts", current.id] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contact_tags" },
+        () => qc.invalidateQueries({ queryKey: ["conversations", current.id] })
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(ch);
