@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.uazapi-webhook]
 verify_jwt = false
 
+[functions.uazapi-reconfigure-webhook]
+verify_jwt = false
+
 [functions.uazapi-send]
 verify_jwt = false
 
