@@ -152,7 +152,7 @@ export default function Inbox() {
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full overflow-hidden">
       <div className="w-80 border-r flex flex-col">
         <div className="p-3 border-b">
           <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
