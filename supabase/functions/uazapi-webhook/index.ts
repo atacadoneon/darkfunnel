@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
         conversation_id: conv.id,
         direction: fromMe ? "out" : "in",
         type: inferType(m),
-        payload: { body: extractText(m), external_id: externalId, from_phone: fromMe ? normalizePhone(myNumber) : phone, to_phone: fromMe ? phone : normalizePhone(myNumber), raw: m },
+        payload: { body: extractText(m), external_id: externalId, from_phone: fromMe ? normalizePhone(myNumber) : phone, to_phone: fromMe ? phone : normalizePhone(myNumber), is_group: isGroup, group_jid: isGroup ? String(remote) : null, participant: isGroup ? participant : null, participant_phone: isGroup ? normalizePhone(participant) : null, raw: m },
         status: fromMe ? "sent" : "received",
         created_at: tsIso,
         sent_at: fromMe ? tsIso : null,
