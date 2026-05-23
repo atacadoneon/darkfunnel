@@ -494,7 +494,7 @@ Deno.serve(async (req) => {
               conversation_id: conv.id,
               direction: fromMe ? "out" : "in",
               type: t,
-              payload: { body: text, external_id: externalId, raw: m },
+              payload: { body: text, external_id: externalId },
               status: fromMe ? "sent" : "received",
               created_at: tsIso,
               sent_at: fromMe ? tsIso : null,
