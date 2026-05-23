@@ -96,10 +96,10 @@ export function useMessages(conversationId: string | null) {
         .from("messages")
         .select("id,conversation_id,direction,type,payload,status,created_at,sent_at,delivered_at,read_at")
         .eq("conversation_id", conversationId!)
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .order("created_at", { ascending: false })
+        .limit(50);
       if (error) throw error;
-      return (data ?? []) as unknown as MessageRow[];
+      return ((data ?? []) as unknown as MessageRow[]).reverse();
     },
     staleTime: 10_000,
   });
