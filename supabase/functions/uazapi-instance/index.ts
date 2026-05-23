@@ -83,6 +83,19 @@ function firstString(...values: unknown[]): string | null {
   return null;
 }
 
+function normalizePhone(value: unknown): string | null {
+  const digits = String(value ?? "").split("@")[0].replace(/\D/g, "");
+  return digits.length >= 8 ? `+${digits}` : null;
+}
+
+function firstPhone(...values: unknown[]): string | null {
+  for (const value of values) {
+    const phone = normalizePhone(value);
+    if (phone) return phone;
+  }
+  return null;
+}
+
 function statusFrom(data: unknown): string {
   const root = asRecord(data);
   const inst = instanceFrom(data);
@@ -415,9 +428,11 @@ Deno.serve(async (req) => {
         for (const m of msgs) {
           try {
             const fromMe = !!(m.fromMe ?? m.key?.fromMe);
-            const remote = m.chatid ?? m.key?.remoteJid ?? m.from ?? m.sender ?? chatid;
-            const digits = String(remote ?? "").split("@")[0].replace(/\D/g, "");
-            const contactPhone = digits.length >= 8 ? `+${digits}` : null;
+            const remote = m.chatid ?? m.key?.remoteJid ?? m.remoteJid ?? chatid;
+            const routePhone = firstPhone(remote, chatid, m.chatid, m.key?.remoteJid, m.remoteJid, m.chatJid, m.jid);
+            const inboundPhone = firstPhone(routePhone, m.sender_pn, m.sender, m.from);
+            const outboundPhone = firstPhone(m.toNumber, m.to, m.recipient, m.recipient_pn, m.destination, m.toJid, routePhone);
+            const contactPhone = fromMe ? outboundPhone : inboundPhone;
             if (!contactPhone) continue;
 
             const ts = m.messageTimestamp ?? m.timestamp ?? Math.floor(Date.now() / 1000);
