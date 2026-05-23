@@ -56,7 +56,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
   const ownerLabel = owner?.display_name || owner?.email || "—";
 
   return (
-    <aside className="w-80 border-l flex flex-col overflow-y-auto bg-card hidden lg:flex">
+    <aside className="w-80 border-l flex flex-col overflow-y-auto overscroll-contain bg-card hidden lg:flex">
       <div className="p-4 border-b flex items-center justify-between">
         <h3 className="font-semibold text-sm">Lead</h3>
         <Button
