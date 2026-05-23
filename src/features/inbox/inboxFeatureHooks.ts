@@ -33,7 +33,7 @@ export function useConversationNotes(conversationId: string | null) {
   useEffect(() => {
     if (!conversationId) return;
     const ch = supabase
-      .channel(`notes:${conversationId}`)
+      .channel(`notes:${conversationId}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "conversation_notes", filter: `conversation_id=eq.${conversationId}` },
         () => qc.invalidateQueries({ queryKey: ["conv-notes", conversationId] }))
       .subscribe();

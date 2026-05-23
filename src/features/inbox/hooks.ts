@@ -51,7 +51,7 @@ export function useConversations() {
   useEffect(() => {
     if (!current) return;
     const ch = supabase
-      .channel(`conv:${current.id}`)
+      .channel(`conv:${current.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversations", filter: `workspace_id=eq.${current.id}` },
@@ -107,7 +107,7 @@ export function useMessages(conversationId: string | null) {
   useEffect(() => {
     if (!conversationId || !current) return;
     const ch = supabase
-      .channel(`msg:${conversationId}`)
+      .channel(`msg:${conversationId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
