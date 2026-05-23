@@ -146,20 +146,36 @@ export function ChannelsSection() {
                   <Pencil className="h-4 w-4" />
                 </Button>
                 {c.kind === "uazapi" && c.status === "connected" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onSync(c)}
-                    disabled={syncingId === c.id}
-                    title="Importar histórico de mensagens do WhatsApp"
-                  >
-                    {syncingId === c.id ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Sincronizar histórico
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onSync(c)}
+                      disabled={syncingId === c.id}
+                      title="Importar histórico de mensagens do WhatsApp"
+                    >
+                      {syncingId === c.id ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Sincronizar histórico
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onRefreshContacts(c)}
+                      disabled={refreshingId === c.id}
+                      title="Atualizar nome, foto e status dos contatos com conversa neste canal"
+                    >
+                      {refreshingId === c.id ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <UserRoundCog className="h-4 w-4 mr-2" />
+                      )}
+                      Atualizar contatos
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
                   <Trash2 className="h-4 w-4" />
