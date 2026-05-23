@@ -1,6 +1,6 @@
 // Gerencia instâncias uazapi: init, connect (QR), status, disconnect
 // Requer JWT (usuário logado). Valida que user é membro do workspace do canal.
-// redeploy: 2026-05-23T17:36Z v3 — publica sync_history/refresh_contacts/refresh_contact
+// redeploy: 2026-05-23T19:25Z v4 — força redeploy para registrar refresh_contact
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
