@@ -195,37 +195,94 @@ Deno.serve(async (req) => {
     if (body.action === "init") {
       const host = (Deno.env.get("UAZAPI_HOST") || "").trim();
       const adminToken = (Deno.env.get("UAZAPI_ADMIN_TOKEN") || "").trim();
+      const fallbackInstanceToken = (Deno.env.get("UAZAPI_INSTANCE_TOKEN") || "").trim();
       if (!host || !adminToken) return json({ error: "UAZAPI_HOST/UAZAPI_ADMIN_TOKEN não configurados" }, 500);
 
+      // 1) Reutiliza credenciais existentes se ainda válidas
       if (creds?.instance_token && !body.force) {
         const statusCheck = await uaz(creds.host || host, "/instance/status", { method: "GET", token: creds.instance_token });
         if (statusCheck.ok) {
           return json({ ok: true, instance_id: creds.instance_id ?? null, reused: true });
         }
-
         await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
         await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
       }
 
       if (creds?.instance_token && body.force) {
-        try {
-          await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token });
-        } catch (_) { /* instância já pode ter sido removida no painel da UAZAPI */ }
+        try { await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token }); } catch (_) { /* noop */ }
         await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
       }
 
-      // uazapiGO V2: cria instância via endpoint administrativo
-      const r = await uaz(host, "/instance/create", {
+      // Helper: registra credenciais existentes + webhook
+      const registerExisting = async (existingHost: string, existingToken: string, existingId: string | null) => {
+        await admin.from("channel_credentials").upsert({
+          channel_id: body.channel_id,
+          host: existingHost,
+          admin_token: adminToken,
+          instance_token: existingToken,
+          instance_id: existingId,
+          updated_at: new Date().toISOString(),
+        });
+        await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
+        const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+        const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+        const webhookResult = await uaz(existingHost, "/webhook", {
+          method: "POST", token: existingToken,
+          body: JSON.stringify({
+            url: webhook, enabled: true,
+            events: ["messages", "messages_update", "connection", "contacts", "groups"],
+            excludeMessages: [], addUrlEvents: false, addUrlTypesMessages: false,
+          }),
+        });
+        return { ok: true, instance_id: existingId, reused: true, webhook_configured: webhookResult.ok };
+      };
+
+      // 2) Cria nova instância (endpoint /instance/init)
+      const r = await uaz(host, "/instance/init", {
         method: "POST",
         admintoken: adminToken,
         body: JSON.stringify({ name: channel.display_name, systemName: channel.display_name }),
       });
-      if (!r.ok) return json({ error: "uazapi init failed", detail: r.data }, 502);
+
+      const limitReached = !r.ok && (
+        /maximum number of instances/i.test(JSON.stringify(r.data)) || r.status === 429
+      );
+
+      if (limitReached) {
+        // 2a) Lista instâncias existentes e tenta reutilizar pelo nome
+        const listRes = await uaz(host, "/instance/all", { method: "GET", admintoken: adminToken });
+        const arr: unknown[] = Array.isArray(listRes.data)
+          ? listRes.data as unknown[]
+          : Array.isArray(asRecord(listRes.data).instances) ? asRecord(listRes.data).instances as unknown[]
+          : [];
+        const items = arr.map(asRecord);
+        const target = items.find((it) => {
+          const name = String(it.name ?? it.systemName ?? "").toLowerCase();
+          return name === String(channel.display_name).toLowerCase();
+        }) ?? items[0];
+        const existingToken = String(target?.token ?? "").trim();
+        const existingId = (target?.id ?? target?.instanceId ?? null) as string | null;
+        if (existingToken) return json(await registerExisting(host, existingToken, existingId));
+        if (fallbackInstanceToken) return json(await registerExisting(host, fallbackInstanceToken, null));
+        return json({
+          error: "uazapi init failed",
+          detail: r.data,
+          hint: "Limite de instâncias atingido. Exclua instâncias não usadas no painel UAZAPI ou configure a secret UAZAPI_INSTANCE_TOKEN.",
+        }, 502);
+      }
+
+      if (!r.ok) {
+        if (fallbackInstanceToken) return json(await registerExisting(host, fallbackInstanceToken, null));
+        return json({ error: "uazapi init failed", detail: r.data }, 502);
+      }
 
       const inst = instanceFrom(r.data);
-      const instance_token = inst?.token ?? asRecord(r.data)?.token;
-      const instance_id = inst?.id ?? inst?.instanceId ?? asRecord(r.data)?.id ?? null;
-      if (!instance_token) return json({ error: "uazapi: token não retornado", detail: r.data }, 502);
+      const instance_token = (inst?.token ?? asRecord(r.data)?.token) as string | undefined;
+      const instance_id = (inst?.id ?? inst?.instanceId ?? asRecord(r.data)?.id ?? null) as string | null;
+      if (!instance_token) {
+        if (fallbackInstanceToken) return json(await registerExisting(host, fallbackInstanceToken, null));
+        return json({ error: "uazapi: token não retornado", detail: r.data }, 502);
+      }
 
       await admin.from("channel_credentials").upsert({
         channel_id: body.channel_id,
@@ -234,19 +291,14 @@ Deno.serve(async (req) => {
       });
       await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
 
-      // Configura webhook automaticamente
       const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
       const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
       const webhookResult = await uaz(host, "/webhook", {
-        method: "POST",
-        token: instance_token,
+        method: "POST", token: instance_token,
         body: JSON.stringify({
-          url: webhook,
-          enabled: true,
+          url: webhook, enabled: true,
           events: ["messages", "messages_update", "connection", "contacts", "groups"],
-          excludeMessages: [],
-          addUrlEvents: false,
-          addUrlTypesMessages: false,
+          excludeMessages: [], addUrlEvents: false, addUrlTypesMessages: false,
         }),
       });
 
