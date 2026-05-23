@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit2, Mail, Building2, Tag as TagIcon, MapPin, DollarSign, User, Calendar } from "lucide-react";
+import { Edit2, Mail, Building2, Tag as TagIcon, MapPin, DollarSign, User, Calendar, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(c?.display_name ?? "");
   const [openDeal, setOpenDeal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const saveName = async () => {
     if (!name.trim() || name === c?.display_name) { setEditingName(false); return; }
@@ -33,20 +34,57 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
     setEditingName(false);
   };
 
+  const refreshContact = async () => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
+        body: { channel_id: conversation.channel_id, action: "refresh_contact", contact_id: conversation.contact_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Contato atualizado");
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const stage = stages.find((s) => s.id === deal?.stage_id);
   const owner = members.find((m) => m.user_id === deal?.assigned_to);
   const ownerLabel = owner?.display_name || owner?.email || "—";
 
   return (
     <aside className="w-80 border-l flex flex-col overflow-y-auto bg-card hidden lg:flex">
-      <div className="p-4 border-b">
+      <div className="p-4 border-b flex items-center justify-between">
         <h3 className="font-semibold text-sm">Lead</h3>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={refreshContact}
+          disabled={refreshing}
+          title="Buscar nome, foto e status atualizados no WhatsApp"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          Atualizar
+        </Button>
       </div>
 
       <div className="p-4 flex flex-col items-center text-center border-b">
-        <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-medium">
-          {(c?.display_name ?? c?.phone_e164 ?? "?").charAt(0).toUpperCase()}
-        </div>
+        {c?.profile_pic_url ? (
+          <img
+            src={c.profile_pic_url}
+            alt={c.display_name ?? "Avatar"}
+            className="h-16 w-16 rounded-full object-cover"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        ) : (
+          <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-medium">
+            {(c?.display_name ?? c?.phone_e164 ?? "?").charAt(0).toUpperCase()}
+          </div>
+        )}
         {editingName ? (
           <Input
             autoFocus value={name} onChange={(e) => setName(e.target.value)}
@@ -59,6 +97,9 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
           </button>
         )}
         <p className="text-xs text-muted-foreground mt-0.5">{c?.phone_e164 ?? "—"}</p>
+        {c?.bio && (
+          <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2" title={c.bio}>{c.bio}</p>
+        )}
         <Badge className="mt-2 capitalize" variant={conversation.status === "open" ? "default" : "secondary"}>
           Conversa {conversation.status}
         </Badge>
