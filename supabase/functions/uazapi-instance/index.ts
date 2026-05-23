@@ -13,7 +13,7 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const SUPPORTED_ACTIONS = [
-  "init", "connect", "status", "disconnect", "delete",
+  "init", "attach_instance", "connect", "status", "disconnect", "delete",
   "set_profile_name", "set_profile_picture",
   "get_privacy", "set_privacy",
   "save_n8n", "generate_api_key",
@@ -24,7 +24,7 @@ const SUPPORTED_ACTIONS = [
 type Body = {
   channel_id: string;
   action:
-    | "init" | "connect" | "status" | "disconnect" | "delete"
+    | "init" | "attach_instance" | "connect" | "status" | "disconnect" | "delete"
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
     | "save_n8n" | "generate_api_key"
@@ -33,6 +33,9 @@ type Body = {
   phone?: string;
   force?: boolean;
   contact_id?: string;
+  instance_host?: string;
+  instance_token?: string;
+  instance_id?: string;
   // payloads
   profile_name?: string;
   profile_picture_url?: string;
