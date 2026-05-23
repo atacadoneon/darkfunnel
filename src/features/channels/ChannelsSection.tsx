@@ -38,6 +38,8 @@ export function ChannelsSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ChannelRow | null>(null);
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
+  const [deleteConversations, setDeleteConversations] = useState(false);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const autoEnabledRef = useRef<Set<string>>(new Set());
