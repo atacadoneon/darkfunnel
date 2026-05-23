@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ export function ChannelsSection() {
   const [editing, setEditing] = useState<ChannelRow | null>(null);
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
 
   const onNew = () => { setEditing(null); setDialogOpen(true); };
   const onEdit = (c: ChannelRow) => { setEditing(c); setDialogOpen(true); };
@@ -55,6 +56,24 @@ export function ChannelsSection() {
       toast.error((e as Error).message);
     } finally {
       setSyncingId(null);
+    }
+  };
+
+  const onRefreshContacts = async (c: ChannelRow) => {
+    setRefreshingId(c.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
+        body: { channel_id: c.id, action: "refresh_contacts" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Contatos atualizados: ${data?.contacts_updated ?? 0} de ${data?.contacts_total ?? 0}`);
+      qc.invalidateQueries({ queryKey: ["contacts", current?.id] });
+      qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRefreshingId(null);
     }
   };
 
@@ -127,20 +146,36 @@ export function ChannelsSection() {
                   <Pencil className="h-4 w-4" />
                 </Button>
                 {c.kind === "uazapi" && c.status === "connected" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onSync(c)}
-                    disabled={syncingId === c.id}
-                    title="Importar histórico de mensagens do WhatsApp"
-                  >
-                    {syncingId === c.id ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Sincronizar histórico
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onSync(c)}
+                      disabled={syncingId === c.id}
+                      title="Importar histórico de mensagens do WhatsApp"
+                    >
+                      {syncingId === c.id ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Sincronizar histórico
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onRefreshContacts(c)}
+                      disabled={refreshingId === c.id}
+                      title="Atualizar nome, foto e status dos contatos com conversa neste canal"
+                    >
+                      {refreshingId === c.id ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <UserRoundCog className="h-4 w-4 mr-2" />
+                      )}
+                      Atualizar contatos
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
                   <Trash2 className="h-4 w-4" />

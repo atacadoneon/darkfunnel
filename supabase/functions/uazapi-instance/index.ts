@@ -19,7 +19,7 @@ type Body = {
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
     | "save_n8n" | "generate_api_key"
-    | "sync_history";
+    | "sync_history" | "refresh_contacts";
   phone?: string;
   force?: boolean;
   // payloads
@@ -460,6 +460,64 @@ Deno.serve(async (req) => {
       }
 
       return json({ ok: true, chats_processed: chatsProcessed, messages_imported: imported, errors: errors.slice(0, 10) });
+    }
+
+    if (body.action === "refresh_contacts") {
+      // Lista contatos que têm conversa neste canal
+      const { data: convs, error: convsErr } = await admin
+        .from("conversations")
+        .select("contact_id, contacts:contact_id(id, phone_e164, display_name, profile_pic_url, bio)")
+        .eq("workspace_id", channel.workspace_id)
+        .eq("channel_id", body.channel_id);
+      if (convsErr) return json({ error: "convs query failed", detail: convsErr.message }, 500);
+
+      const seen = new Set<string>();
+      const targets: { id: string; phone: string; name: string | null; pic: string | null; bio: string | null }[] = [];
+      for (const c of (convs ?? []) as any[]) {
+        const ct = c.contacts;
+        if (!ct || !ct.phone_e164) continue;
+        if (seen.has(ct.id)) continue;
+        seen.add(ct.id);
+        targets.push({ id: ct.id, phone: ct.phone_e164, name: ct.display_name, pic: ct.profile_pic_url, bio: ct.bio });
+      }
+
+      let updated = 0;
+      const errors: string[] = [];
+      const nowIso = new Date().toISOString();
+
+      for (const t of targets) {
+        try {
+          const digits = t.phone.replace(/\D/g, "");
+          // Tenta /chat/details (uazapiGO v2)
+          const r = await uaz(creds.host, "/chat/details", {
+            method: "POST",
+            token: creds.instance_token,
+            body: JSON.stringify({ number: digits, preview: false }),
+          });
+          if (!r.ok) { errors.push(`${digits}: ${JSON.stringify(r.data).slice(0,120)}`); continue; }
+
+          const root = asRecord(r.data);
+          const chat = asRecord(root.chat ?? root.data ?? root);
+          const name = firstString(chat.wa_name, chat.name, chat.pushName, chat.pushname, root.name as string);
+          const image = firstString(chat.image, chat.imagePreview, chat.profilePicUrl, chat.profile_pic_url, root.image as string);
+          const bio = firstString(chat.wa_status, chat.status, chat.about, chat.bio, chat.description, root.status as string);
+
+          const update: Record<string, unknown> = { profile_synced_at: nowIso };
+          if (name && (!t.name || t.name === t.phone || t.name !== name)) update.display_name = name;
+          if (image && image !== t.pic) update.profile_pic_url = image;
+          if (bio && bio !== t.bio) update.bio = bio;
+
+          if (Object.keys(update).length > 0) {
+            const { error: upErr } = await admin.from("contacts").update(update).eq("id", t.id);
+            if (upErr) { errors.push(`${digits} upd: ${upErr.message}`); continue; }
+            updated++;
+          }
+        } catch (err) {
+          errors.push(`${t.phone}: ${(err as Error).message}`);
+        }
+      }
+
+      return json({ ok: true, contacts_total: targets.length, contacts_updated: updated, errors: errors.slice(0, 10) });
     }
 
     return json({ error: "invalid action" }, 400);
