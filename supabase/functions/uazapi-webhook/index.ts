@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       const pushName = isGroup ? (groupName || m.pushName || m.notify || null) : (m.pushName ?? m.notify ?? null);
       const profilePic = isGroup ? (m.groupPic ?? m.chatPic ?? null) : (m.profilePic ?? null);
 
-      const contactPhone = fromMe && !isGroup ? normalizePhone(phone) : phone;
+      const contactPhone = fromMe && !isGroup ? phone : phone;
       if (!contactPhone) continue;
 
       let { data: contact } = await sb
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
           .from("contact_identities")
           .select("contact_id")
           .eq("workspace_id", channel.workspace_id)
-          .eq("kind", "whatsapp")
+          .in("kind", ["whatsapp", "whatsapp_jid"])
           .eq("value", contactPhone)
           .maybeSingle();
         if (identity?.contact_id) {
