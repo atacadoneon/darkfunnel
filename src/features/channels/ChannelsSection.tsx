@@ -3,6 +3,8 @@ import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, Refre
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useChannels, type ChannelRow, type ChannelStatus } from "@/features/channels/hooks";
 import { ChannelDialog } from "@/features/channels/ChannelDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +38,8 @@ export function ChannelsSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ChannelRow | null>(null);
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
+  const [deleteConversations, setDeleteConversations] = useState(false);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const autoEnabledRef = useRef<Set<string>>(new Set());
@@ -96,23 +100,47 @@ export function ChannelsSection() {
 
   const confirmDelete = async () => {
     if (!deleting || !current) return;
-    // Exclui também a instância no UAZAPI (best-effort)
+    setDeletingBusy(true);
     try {
-      await supabase.functions.invoke("uazapi-instance", {
-        body: { channel_id: deleting.id, action: "delete" },
-      });
-    } catch (_) { /* segue exclusão lógica mesmo se falhar */ }
+      // Exclui também a instância no UAZAPI (best-effort)
+      try {
+        await supabase.functions.invoke("uazapi-instance", {
+          body: { channel_id: deleting.id, action: "delete" },
+        });
+      } catch (_) { /* segue exclusão lógica mesmo se falhar */ }
 
-    const { error } = await supabase
-      .from("channels")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", deleting.id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Canal removido");
+      if (deleteConversations) {
+        // Busca conversas do canal para apagar mensagens e depois as conversas
+        const { data: convs, error: cerr } = await supabase
+          .from("conversations")
+          .select("id")
+          .eq("channel_id", deleting.id);
+        if (cerr) throw cerr;
+        const ids = (convs ?? []).map((c) => c.id);
+        if (ids.length > 0) {
+          const { error: merr } = await supabase.from("messages").delete().in("conversation_id", ids);
+          if (merr) throw merr;
+          const { error: derr } = await supabase.from("conversations").delete().in("id", ids);
+          if (derr) throw derr;
+        }
+      }
+
+      const { error } = await supabase
+        .from("channels")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", deleting.id);
+      if (error) throw error;
+
+      toast.success(deleteConversations ? "Canal e conversas removidos" : "Canal removido");
       qc.invalidateQueries({ queryKey: ["channels", current.id] });
+      qc.invalidateQueries({ queryKey: ["conversations", current.id] });
+      setDeleting(null);
+      setDeleteConversations(false);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDeletingBusy(false);
     }
-    setDeleting(null);
   };
 
   return (
@@ -223,17 +251,37 @@ export function ChannelsSection() {
 
       <ChannelDialog open={dialogOpen} onOpenChange={setDialogOpen} channel={editing} />
 
-      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+      <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) { setDeleting(null); setDeleteConversations(false); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover canal?</AlertDialogTitle>
+            <AlertDialogTitle>Tem certeza que deseja remover este canal?</AlertDialogTitle>
             <AlertDialogDescription>
-              O canal "{deleting?.display_name}" será desativado. Conversas existentes não serão apagadas.
+              O canal "{deleting?.display_name}" será desativado e sua instância no UAZAPI será excluída.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3">
+            <Checkbox
+              id="delete-conversations"
+              checked={deleteConversations}
+              onCheckedChange={(v) => setDeleteConversations(v === true)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="delete-conversations" className="cursor-pointer">
+                Também remover todas as conversas atreladas a este canal
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Esta ação apaga conversas e mensagens deste canal permanentemente.
+              </p>
+            </div>
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Remover</AlertDialogAction>
+            <AlertDialogCancel disabled={deletingBusy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={deletingBusy}
+            >
+              {deletingBusy ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
