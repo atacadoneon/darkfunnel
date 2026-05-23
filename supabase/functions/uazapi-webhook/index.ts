@@ -39,7 +39,7 @@ function normalizePhone(value: unknown): string | null {
 function hasMessageShape(value: any): boolean {
   if (!value || typeof value !== "object") return false;
   return !!(
-    value.messageType || value.key || value.message || value.id || value.messageid ||
+    value.messageType || value.key || value.id || value.messageid ||
     value.chatid || value.remoteJid || value.from || value.sender || value.sender_pn
   );
 }
