@@ -152,8 +152,8 @@ export default function Inbox() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden">
-      <div className="w-80 border-r flex flex-col">
+    <div className="flex h-full min-h-0 overflow-hidden">
+      <div className="w-80 shrink-0 border-r flex min-h-0 flex-col overflow-hidden">
         <div className="p-3 border-b">
           <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -169,7 +169,7 @@ export default function Inbox() {
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
         </div>
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           {isLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Carregando...</div>
           ) : (
@@ -182,7 +182,7 @@ export default function Inbox() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex min-h-0 flex-col min-w-0 overflow-hidden">
         {selected ? (
           <>
             <ConversationHeader
