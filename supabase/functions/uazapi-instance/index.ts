@@ -269,6 +269,17 @@ Deno.serve(async (req) => {
         await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
       }
 
+      const lock = await claimInitLock(admin, channel, body.channel_id);
+      if (!lock.acquired) {
+        const initialized = await waitForInitializedCredentials(admin, body.channel_id);
+        if (initialized?.instance_token) {
+          return json({ ok: true, instance_id: initialized.instance_id ?? null, reused: true, waited: true });
+        }
+        return json({ error: "inicialização da instância já está em andamento" }, 409);
+      }
+
+      try {
+
       // Helper: registra credenciais existentes + webhook
       const registerExisting = async (existingHost: string, existingToken: string, existingId: string | null) => {
         await admin.from("channel_credentials").upsert({
@@ -359,6 +370,9 @@ Deno.serve(async (req) => {
       });
 
       return json({ ok: true, instance_id, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
+      } finally {
+        await releaseInitLock(admin, body.channel_id, lock.lockId);
+      }
     }
 
     if (body.action === "attach_instance") {
