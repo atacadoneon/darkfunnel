@@ -65,6 +65,8 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [connectError, setConnectError] = useState<ConnectErr | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
+  const initInFlightRef = useRef<Promise<void> | null>(null);
+  const advancingRef = useRef(false);
 
   // Invoca edge function via fetch direto para capturar HTTP status + body bruto em caso de erro.
   const invokeEdge = async (fn: string, body: unknown): Promise<{ ok: true; data: any } | { ok: false; err: ConnectErr }> => {
@@ -211,12 +213,12 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     }
   };
 
-  const connect = async (id: string) => {
+  const connect = async (id: string, allowInit = true) => {
     setQr(null);
     setConnectError(null);
     const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "connect" });
     if (r.ok === false) {
-      if (r.err.status === 400 && /instância não inicializada/i.test(r.err.message)) {
+      if (allowInit && r.err.status === 400 && /instância não inicializada/i.test(r.err.message)) {
         await initAndConnect(id, true);
         return;
       }
@@ -261,43 +263,58 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [initializing, setInitializing] = useState(false);
 
   const goNext = async () => {
-    if (step === "info") {
-      setAdvancing(true);
-      const id = await saveInfo();
-      setAdvancing(false);
-      if (!id) return;
-      setStep("rotation");
-    } else if (step === "rotation") {
-      if (kind === "uazapi") {
-        setStep("integrations");
-      } else {
-        toast.success("Canal salvo");
-        onOpenChange(false);
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    try {
+      if (step === "info") {
+        setAdvancing(true);
+        const id = await saveInfo();
+        setAdvancing(false);
+        if (!id) return;
+        setStep("rotation");
+      } else if (step === "rotation") {
+        if (kind === "uazapi") {
+          setStep("integrations");
+        } else {
+          toast.success("Canal salvo");
+          onOpenChange(false);
+        }
+      } else if (step === "integrations") {
+        setStep("uaz_connect");
+        if (activeChannelId) void initAndConnect(activeChannelId);
       }
-    } else if (step === "integrations") {
-      setStep("uaz_connect");
-      if (activeChannelId) void initAndConnect(activeChannelId);
+    } finally {
+      setAdvancing(false);
+      advancingRef.current = false;
     }
   };
 
 
   const initAndConnect = async (id: string, force = false) => {
-    setInitializing(true);
-    setConnectError(null);
-    try {
-      const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init", force });
-      if (r.ok === false) {
-        setConnectError({ ...r.err, title: r.err.title + " (init)" });
-        toast.error(`Falha ao inicializar instância: ${r.err.message}`);
-        return;
+    if (initInFlightRef.current) return initInFlightRef.current;
+
+    const task = (async () => {
+      setInitializing(true);
+      setConnectError(null);
+      try {
+        const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init", force });
+        if (r.ok === false) {
+          setConnectError({ ...r.err, title: r.err.title + " (init)" });
+          toast.error(`Falha ao inicializar instância: ${r.err.message}`);
+          return;
+        }
+        await connect(id, false);
+      } catch (e) {
+        setConnectError({ title: "Erro inesperado", message: (e as Error).message });
+        toast.error((e as Error).message);
+      } finally {
+        setInitializing(false);
+        initInFlightRef.current = null;
       }
-      await connect(id);
-    } catch (e) {
-      setConnectError({ title: "Erro inesperado", message: (e as Error).message });
-      toast.error((e as Error).message);
-    } finally {
-      setInitializing(false);
-    }
+    })();
+
+    initInFlightRef.current = task;
+    return task;
   };
 
 
@@ -564,7 +581,7 @@ function UazConnect(props: {
               Status: <span className="font-medium">{connStatus}</span>
               {polling && <Loader2 className="h-3 w-3 animate-spin" />}
             </div>
-            <Button variant="outline" size="sm" onClick={props.onRefreshQr}>
+            <Button variant="outline" size="sm" onClick={props.onRefreshQr} disabled={initializing}>
               <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
             </Button>
           </div>
