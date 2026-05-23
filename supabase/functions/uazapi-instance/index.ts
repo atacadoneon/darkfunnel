@@ -140,6 +140,27 @@ async function uaz(host: string, path: string, init: RequestInit & { token?: str
   }
 }
 
+async function findExistingUazInstance(host: string, adminToken: string, displayName: string) {
+  const listRes = await uaz(host, "/instance/all", { method: "GET", admintoken: adminToken });
+  if (!listRes.ok) return null;
+  const root = asRecord(listRes.data);
+  const arr: unknown[] = Array.isArray(listRes.data)
+    ? listRes.data as unknown[]
+    : Array.isArray(root.instances) ? root.instances as unknown[]
+    : Array.isArray(root.data) ? root.data as unknown[]
+    : [];
+  const expected = displayName.trim().toLowerCase();
+  const target = arr.map(asRecord).find((it) => {
+    const name = firstString(it.name, it.systemName, it.system_name, it.instanceName)?.toLowerCase();
+    return !!name && name === expected;
+  });
+  if (!target) return null;
+  const token = firstString(target.token, target.instance_token, target.instanceToken);
+  if (!token) return null;
+  const id = firstString(target.id, target.instanceId, target.instance_id);
+  return { token, id };
+}
+
 function mapStatus(connStatus: unknown): string {
   if (connStatus && typeof connStatus === "object") {
     const status = asRecord(connStatus);
