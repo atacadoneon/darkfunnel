@@ -287,10 +287,8 @@ Deno.serve(async (req) => {
     .from("workspace_members").select("user_id").eq("workspace_id", channel.workspace_id).eq("user_id", u.user.id).maybeSingle();
   if (!member) return json({ error: "forbidden" }, 403);
 
-  // load creds (se existirem)
-  const { data: loadedCreds } = await admin
-    .from("channel_credentials").select("*").eq("channel_id", body.channel_id).maybeSingle();
-  let creds = loadedCreds;
+  // load creds (se existirem). Usa helper tolerante a registros duplicados legados.
+  let creds = await loadCredentials(admin, body.channel_id);
 
   try {
     if (body.action === "init") {
@@ -327,17 +325,14 @@ Deno.serve(async (req) => {
 
       // Helper: registra credenciais existentes + webhook
       const registerExisting = async (existingHost: string, existingToken: string, existingId: string | null) => {
-        await admin.from("channel_credentials").upsert({
-          channel_id: body.channel_id,
+        const saved = await saveCredentials(admin, body.channel_id, {
           host: existingHost,
           admin_token: adminToken,
           instance_token: existingToken,
           instance_id: existingId,
-          updated_at: new Date().toISOString(),
         });
         await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
-        const { data: c2 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
-        const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c2?.webhook_secret}&channel=${body.channel_id}`;
+        const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
         const webhookResult = await uaz(existingHost, "/webhook", {
           method: "POST", token: existingToken,
           body: JSON.stringify({
