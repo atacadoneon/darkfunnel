@@ -331,6 +331,7 @@ Deno.serve(async (req) => {
       if (creds?.instance_token && body.force) {
         try { await uaz(creds.host || host, "/instance", { method: "DELETE", token: creds.instance_token }); } catch (_) { /* noop */ }
         await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
+        creds = null;
       }
 
       const lock = await claimInitLock(admin, channel, body.channel_id);
@@ -364,6 +365,9 @@ Deno.serve(async (req) => {
         });
         return { ok: true, instance_id: existingId, reused: true, webhook_configured: webhookResult.ok };
       };
+
+      const existingByName = !body.force ? await findExistingUazInstance(host, adminToken, channel.display_name) : null;
+      if (existingByName) return json(await registerExisting(host, existingByName.token, existingByName.id));
 
       // 2) Cria nova instância (endpoint /instance/init)
       const r = await uaz(host, "/instance/init", {
