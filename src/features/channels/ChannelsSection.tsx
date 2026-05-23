@@ -37,6 +37,7 @@ export function ChannelsSection() {
   const [editing, setEditing] = useState<ChannelRow | null>(null);
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
 
   const onNew = () => { setEditing(null); setDialogOpen(true); };
   const onEdit = (c: ChannelRow) => { setEditing(c); setDialogOpen(true); };
