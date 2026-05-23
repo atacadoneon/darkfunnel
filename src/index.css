@@ -113,3 +113,12 @@ All colors MUST be HSL.
     display: none;
   }
 }
+
+/* Esconde barra de rolagem em todos os elementos visualmente, mantendo o scroll funcional */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
