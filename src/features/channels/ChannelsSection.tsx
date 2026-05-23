@@ -96,6 +96,13 @@ export function ChannelsSection() {
 
   const confirmDelete = async () => {
     if (!deleting || !current) return;
+    // Exclui também a instância no UAZAPI (best-effort)
+    try {
+      await supabase.functions.invoke("uazapi-instance", {
+        body: { channel_id: deleting.id, action: "delete" },
+      });
+    } catch (_) { /* segue exclusão lógica mesmo se falhar */ }
+
     const { error } = await supabase
       .from("channels")
       .update({ deleted_at: new Date().toISOString() })
