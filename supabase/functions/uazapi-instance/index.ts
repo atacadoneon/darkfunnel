@@ -19,10 +19,11 @@ type Body = {
     | "set_profile_name" | "set_profile_picture"
     | "get_privacy" | "set_privacy"
     | "save_n8n" | "generate_api_key"
-    | "sync_history" | "refresh_contacts"
+    | "sync_history" | "refresh_contacts" | "refresh_contact"
     | "reconfigure_webhook";
   phone?: string;
   force?: boolean;
+  contact_id?: string;
   // payloads
   profile_name?: string;
   profile_picture_url?: string;
