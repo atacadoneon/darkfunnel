@@ -20,6 +20,7 @@ export type ConversationRow = {
         display_name: string | null;
         phone_e164: string | null;
         profile_pic_url: string | null;
+        bio?: string | null;
         contact_tags?: { tag_id: string }[];
       }
     | null;
