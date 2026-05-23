@@ -216,6 +216,10 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     setConnectError(null);
     const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "connect" });
     if (r.ok === false) {
+      if (r.err.status === 400 && /instância não inicializada/i.test(r.err.message)) {
+        await initAndConnect(id, true);
+        return;
+      }
       setConnectError({ ...r.err, title: r.err.title + " (connect)" });
       toast.error(`Conectar QR falhou: ${r.err.message}`);
       return;
@@ -276,11 +280,11 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     }
   };
 
-  const initAndConnect = async (id: string) => {
+  const initAndConnect = async (id: string, force = false) => {
     setInitializing(true);
     setConnectError(null);
     try {
-      const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init" });
+      const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "init", force });
       if (r.ok === false) {
         setConnectError({ ...r.err, title: r.err.title + " (init)" });
         toast.error(`Falha ao inicializar instância: ${r.err.message}`);
