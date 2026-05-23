@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
       let { data: contact } = await sb
         .from("contacts")
-        .select("id")
+        .select("id,display_name,profile_pic_url")
         .eq("workspace_id", channel.workspace_id)
         .eq("phone_e164", contactPhone)
         .maybeSingle();
@@ -115,7 +115,14 @@ Deno.serve(async (req) => {
           .eq("kind", "whatsapp")
           .eq("value", contactPhone)
           .maybeSingle();
-        if (identity?.contact_id) contact = { id: identity.contact_id };
+        if (identity?.contact_id) {
+          const { data: c2 } = await sb
+            .from("contacts")
+            .select("id,display_name,profile_pic_url")
+            .eq("id", identity.contact_id)
+            .maybeSingle();
+          if (c2) contact = c2;
+        }
       }
       if (!contact) {
         const { data: created, error: contactError } = await sb.from("contacts").insert({
@@ -123,7 +130,7 @@ Deno.serve(async (req) => {
           display_name: pushName || contactPhone,
           phone_e164: contactPhone,
           profile_pic_url: profilePic,
-        }).select("id").single();
+        }).select("id,display_name,profile_pic_url").single();
         if (contactError) throw contactError;
         contact = created;
         await sb.from("contact_identities").insert({
@@ -133,6 +140,21 @@ Deno.serve(async (req) => {
           value: contactPhone,
           is_primary: true,
         });
+      } else {
+        // Atualiza nome/foto se mudaram ou estavam vazios
+        const update: Record<string, unknown> = {};
+        if (!fromMe && pushName && pushName !== contact.display_name) {
+          // só sobrescreve se o nome atual estava vazio, igual ao telefone, ou diferente do pushName recebido
+          if (!contact.display_name || contact.display_name === contactPhone || contact.display_name !== pushName) {
+            update.display_name = pushName;
+          }
+        }
+        if (profilePic && profilePic !== contact.profile_pic_url) {
+          update.profile_pic_url = profilePic;
+        }
+        if (Object.keys(update).length > 0) {
+          await sb.from("contacts").update(update).eq("id", contact.id);
+        }
       }
 
       let { data: conv } = await sb
