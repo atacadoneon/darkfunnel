@@ -95,7 +95,7 @@ export function NewConversationDialog({ open, onOpenChange, onCreated }: Props) 
         <div className="space-y-3">
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground">Canal</label>
-            <Select value={channelId ?? ""} onValueChange={setChannelId}>
+            <Select value={channelId ?? undefined} onValueChange={setChannelId}>
               <SelectTrigger><SelectValue placeholder="Selecione o canal" /></SelectTrigger>
               <SelectContent>
                 {activeChannels.length === 0 && (
