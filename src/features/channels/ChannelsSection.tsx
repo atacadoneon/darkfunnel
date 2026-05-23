@@ -59,6 +59,24 @@ export function ChannelsSection() {
     }
   };
 
+  const onRefreshContacts = async (c: ChannelRow) => {
+    setRefreshingId(c.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("uazapi-instance", {
+        body: { channel_id: c.id, action: "refresh_contacts" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Contatos atualizados: ${data?.contacts_updated ?? 0} de ${data?.contacts_total ?? 0}`);
+      qc.invalidateQueries({ queryKey: ["contacts", current?.id] });
+      qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleting || !current) return;
     const { error } = await supabase
