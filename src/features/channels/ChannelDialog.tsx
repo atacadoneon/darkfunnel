@@ -65,8 +65,6 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
   const [connectError, setConnectError] = useState<ConnectErr | null>(null);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<number | null>(null);
-  const [manualHost, setManualHost] = useState("https://darkfunells.uazapi.com");
-  const [manualToken, setManualToken] = useState("");
 
   // Invoca edge function via fetch direto para capturar HTTP status + body bruto em caso de erro.
   const invokeEdge = async (fn: string, body: unknown): Promise<{ ok: true; data: any } | { ok: false; err: ConnectErr }> => {
@@ -301,32 +299,6 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     }
   };
 
-  const attachExistingInstance = async () => {
-    if (!activeChannelId) return;
-    if (!manualHost.trim() || !manualToken.trim()) {
-      toast.error("Informe Server URL e Instance Token");
-      return;
-    }
-    setInitializing(true);
-    setConnectError(null);
-    try {
-      const r = await invokeEdge("uazapi-instance", {
-        channel_id: activeChannelId,
-        action: "attach_instance",
-        instance_host: manualHost.trim(),
-        instance_token: manualToken.trim(),
-      });
-      if (r.ok === false) {
-        setConnectError({ ...r.err, title: r.err.title + " (usar instância existente)" });
-        toast.error(`Falha ao vincular instância: ${r.err.message}`);
-        return;
-      }
-      toast.success("Instância vinculada");
-      await connect(activeChannelId);
-    } finally {
-      setInitializing(false);
-    }
-  };
 
   const goBack = () => {
     if (step === "rotation") setStep("info");
@@ -438,11 +410,6 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
                   }}
                   setNameDraft={setNameDraft}
                   onRefreshQr={() => activeChannelId && initAndConnect(activeChannelId)}
-                  manualHost={manualHost}
-                  manualToken={manualToken}
-                  onManualHostChange={setManualHost}
-                  onManualTokenChange={setManualToken}
-                  onAttachExisting={attachExistingInstance}
                   initializing={initializing}
                   onDisconnect={disconnect}
                 />
@@ -495,23 +462,11 @@ function UazConnect(props: {
   onSaveName: () => void;
   setNameDraft: (v: string) => void;
   onRefreshQr: () => void;
-  manualHost: string;
-  manualToken: string;
-  onManualHostChange: (v: string) => void;
-  onManualTokenChange: (v: string) => void;
-  onAttachExisting: () => void;
   onDisconnect: () => void;
   initializing?: boolean;
 }) {
   const { channelId, phone, qr, connStatus, connectError, polling, initializing } = props;
   const connected = connStatus === "connected";
-  const [instance, setInstance] = useState<{ instance_id: string | null } | null>(null);
-
-  useEffect(() => {
-    if (!channelId) return;
-    supabase.from("channel_credentials").select("instance_id").eq("channel_id", channelId).maybeSingle()
-      .then(({ data }) => setInstance({ instance_id: (data?.instance_id as string | null) ?? null }));
-  }, [channelId, connStatus]);
 
   return (
     <div className="space-y-4">
@@ -546,9 +501,8 @@ function UazConnect(props: {
               </div>
               <Button size="sm" variant="outline" onClick={props.onDisconnect}>Desconectar</Button>
             </div>
-            <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-muted-foreground">
-              <div>Instância: <span className="font-medium text-foreground">{instance?.instance_id ?? "—"}</span></div>
-              <div>Provider: <span className="font-medium text-foreground">UAZAPI</span></div>
+            <div className="mt-3 text-xs text-muted-foreground">
+              Provider: <span className="font-medium text-foreground">UAZAPI</span>
             </div>
           </div>
         ) : (
@@ -612,26 +566,6 @@ function UazConnect(props: {
             <Button variant="outline" size="sm" onClick={props.onRefreshQr}>
               <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
             </Button>
-            <div className="w-full max-w-md rounded-lg border bg-muted/20 p-3 space-y-2">
-              <div className="text-xs font-semibold">Usar instância já criada no UAZAPI</div>
-              <Input
-                placeholder="Server URL"
-                value={props.manualHost}
-                onChange={(e) => props.onManualHostChange(e.target.value)}
-                disabled={initializing}
-              />
-              <Input
-                type="password"
-                placeholder="Instance Token"
-                value={props.manualToken}
-                onChange={(e) => props.onManualTokenChange(e.target.value)}
-                disabled={initializing}
-              />
-              <Button variant="secondary" size="sm" className="w-full" onClick={props.onAttachExisting} disabled={initializing}>
-                {initializing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                Vincular e gerar QR
-              </Button>
-            </div>
           </div>
         )}
       </div>
