@@ -17,7 +17,7 @@ export function AppTopbar() {
   const { user, signOut } = useAuth();
 
   return (
-    <header className="h-14 border-b flex items-center gap-3 px-3">
+    <header className="h-14 shrink-0 border-b flex items-center gap-3 px-3">
       <SidebarTrigger />
       <span className="font-semibold tracking-tight">DarkFunnel</span>
       <div className="ml-auto flex items-center gap-1">
