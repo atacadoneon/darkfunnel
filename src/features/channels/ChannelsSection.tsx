@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog, Webhook } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,19 @@ export function ChannelsSection() {
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
-  const [reconfigId, setReconfigId] = useState<string | null>(null);
+  const autoEnabledRef = useRef<Set<string>>(new Set());
+
+  // Garante que grupos estejam sempre habilitados nos canais conectados
+  useEffect(() => {
+    channels.forEach((c) => {
+      if (c.kind === "uazapi" && c.status === "connected" && !autoEnabledRef.current.has(c.id)) {
+        autoEnabledRef.current.add(c.id);
+        supabase.functions
+          .invoke("uazapi-reconfigure-webhook", { body: { channel_id: c.id } })
+          .catch(() => { /* silencioso */ });
+      }
+    });
+  }, [channels]);
 
   const onNew = () => { setEditing(null); setDialogOpen(true); };
   const onEdit = (c: ChannelRow) => { setEditing(c); setDialogOpen(true); };
@@ -78,25 +90,8 @@ export function ChannelsSection() {
     }
   };
 
-  const onReconfigure = async (c: ChannelRow) => {
-    setReconfigId(c.id);
-    try {
-      const { data, error } = await supabase.functions.invoke("uazapi-reconfigure-webhook", {
-        body: { channel_id: c.id },
-      });
-      if (error) {
-        const ctx = (error as unknown as { context?: Response }).context;
-        const detail = ctx ? await ctx.clone().json().catch(() => null) : null;
-        throw new Error(detail?.error || error.message);
-      }
-      if (data?.error) throw new Error(data.error);
-      toast.success("Webhook reconfigurado (grupos habilitados)");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setReconfigId(null);
-    }
-  };
+
+
 
 
   const confirmDelete = async () => {
@@ -196,20 +191,6 @@ export function ChannelsSection() {
                         <UserRoundCog className="h-4 w-4 mr-2" />
                       )}
                       Atualizar contatos
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onReconfigure(c)}
-                      disabled={reconfigId === c.id}
-                      title="Reconfigurar webhook (habilitar mensagens de grupos)"
-                    >
-                      {reconfigId === c.id ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Webhook className="h-4 w-4 mr-2" />
-                      )}
-                      Habilitar grupos
                     </Button>
                   </>
                 )}
