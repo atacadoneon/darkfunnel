@@ -219,6 +219,25 @@ Deno.serve(async (req) => {
 
     if (!creds) return json({ error: "instância não inicializada" }, 400);
 
+    if (body.action === "reconfigure_webhook") {
+      const { data: c3 } = await admin.from("channel_credentials").select("webhook_secret").eq("channel_id", body.channel_id).maybeSingle();
+      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c3?.webhook_secret}&channel=${body.channel_id}`;
+      const r = await uaz(creds.host, "/webhook", {
+        method: "POST",
+        token: creds.instance_token,
+        body: JSON.stringify({
+          url: webhook,
+          enabled: true,
+          events: ["messages", "messages_update", "connection", "contacts"],
+          excludeMessages: [],
+          addUrlEvents: false,
+          addUrlTypesMessages: false,
+        }),
+      });
+      if (!r.ok) return json({ error: "uazapi webhook failed", detail: r.data }, 502);
+      return json({ ok: true });
+    }
+
     if (body.action === "connect") {
       const r = await uaz(creds.host, "/instance/connect", {
         method: "POST",
