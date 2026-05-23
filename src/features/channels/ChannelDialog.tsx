@@ -612,6 +612,26 @@ function UazConnect(props: {
             <Button variant="outline" size="sm" onClick={props.onRefreshQr}>
               <RefreshCw className="h-4 w-4 mr-2" /> Atualizar QR
             </Button>
+            <div className="w-full max-w-md rounded-lg border bg-muted/20 p-3 space-y-2">
+              <div className="text-xs font-semibold">Usar instância já criada no UAZAPI</div>
+              <Input
+                placeholder="Server URL"
+                value={props.manualHost}
+                onChange={(e) => props.onManualHostChange(e.target.value)}
+                disabled={initializing}
+              />
+              <Input
+                type="password"
+                placeholder="Instance Token"
+                value={props.manualToken}
+                onChange={(e) => props.onManualTokenChange(e.target.value)}
+                disabled={initializing}
+              />
+              <Button variant="secondary" size="sm" className="w-full" onClick={props.onAttachExisting} disabled={initializing}>
+                {initializing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Vincular e gerar QR
+              </Button>
+            </div>
           </div>
         )}
       </div>
