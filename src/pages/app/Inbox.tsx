@@ -120,6 +120,37 @@ export default function Inbox() {
   const openCount = filtered.filter((c) => c.status === "open" || c.status === "in_progress").length;
   const unreadCount = filtered.reduce((acc, c) => acc + (c.unread_count || 0), 0);
 
+  const { data: channels = [] } = useChannels();
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+  const [refreshingNames, setRefreshingNames] = useState(false);
+
+  const onRefreshNames = async () => {
+    const targets = channels.filter((c) => c.kind === "uazapi" && c.status === "connected");
+    if (targets.length === 0) {
+      toast.error("Nenhum canal WhatsApp conectado");
+      return;
+    }
+    setRefreshingNames(true);
+    let total = 0, updated = 0;
+    try {
+      for (const c of targets) {
+        const { data, error } = await supabase.functions.invoke("uazapi-instance", {
+          body: { channel_id: c.id, action: "refresh_contacts" },
+        });
+        if (error) { toast.error(`${c.display_name}: ${error.message}`); continue; }
+        if (data?.error) { toast.error(`${c.display_name}: ${data.error}`); continue; }
+        total += data?.contacts_total ?? 0;
+        updated += data?.contacts_updated ?? 0;
+      }
+      toast.success(`Nomes atualizados: ${updated} de ${total} contatos`);
+      qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
+      qc.invalidateQueries({ queryKey: ["contacts", current?.id] });
+    } finally {
+      setRefreshingNames(false);
+    }
+  };
+
   return (
     <div className="flex h-full">
       <div className="w-80 border-r flex flex-col">
@@ -130,9 +161,22 @@ export default function Inbox() {
               <span className="opacity-50">·</span>
               <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
             </div>
-            <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setNewConvOpen(true)}>
-              <Plus className="h-3.5 w-3.5" /> Nova
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 gap-1 px-2 text-xs"
+                onClick={onRefreshNames}
+                disabled={refreshingNames}
+                title="Buscar nomes dos contatos no WhatsApp e salvar"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshingNames ? "animate-spin" : ""}`} />
+                Nomes
+              </Button>
+              <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setNewConvOpen(true)}>
+                <Plus className="h-3.5 w-3.5" /> Nova
+              </Button>
+            </div>
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
         </div>
