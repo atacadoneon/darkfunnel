@@ -15,6 +15,8 @@ export type ConversationRow = {
   last_message_at: string | null;
   window_expires_at: string | null;
   assigned_user_id: string | null;
+  attribution_source?: string | null;
+
   created_at?: string;
   updated_at?: string;
   last_message_preview?: string | null;
