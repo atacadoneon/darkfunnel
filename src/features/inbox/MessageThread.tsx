@@ -1,8 +1,18 @@
 import { useEffect, useRef } from "react";
-import { format } from "date-fns";
+import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Check, CheckCheck, Clock, FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MessageRow } from "./hooks";
+
+function dayLabel(d: Date): string {
+  if (isToday(d)) return "Hoje";
+  if (isYesterday(d)) return "Ontem";
+  const diff = differenceInCalendarDays(new Date(), d);
+  if (diff < 7) return format(d, "EEEE", { locale: ptBR }).replace(/^./, (c) => c.toUpperCase());
+  return format(d, "dd/MM/yyyy");
+}
+
 
 function StatusIcon({ status }: { status: string }) {
   if (status === "read")
