@@ -5,6 +5,8 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ContactAvatar } from "./ContactAvatar";
+import { getAttribution } from "./attribution";
+
 import type { ConversationRow } from "./hooks";
 
 
