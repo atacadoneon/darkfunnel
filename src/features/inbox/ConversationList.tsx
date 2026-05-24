@@ -33,9 +33,8 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
           const time = c.last_message_at
             ? formatDistanceToNowStrict(new Date(c.last_message_at), { locale: ptBR, addSuffix: false })
             : "";
-          const lm = lastMessages?.[c.id];
-          const previewText = lm?.body ?? "";
-          const previewPrefix = lm?.direction === "out" ? "Você: " : "";
+          const previewText = c.last_message_preview ?? "";
+
           return (
             <button
               key={c.id}
