@@ -4,17 +4,17 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import type { ConversationRow, LastMessagePreview } from "./hooks";
+import type { ConversationRow } from "./hooks";
 
 type Props = {
   conversations: ConversationRow[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  lastMessages?: Record<string, LastMessagePreview>;
 };
 
 
-export function ConversationList({ conversations, selectedId, onSelect, lastMessages }: Props) {
+export function ConversationList({ conversations, selectedId, onSelect }: Props) {
+
   const parentRef = useRef<HTMLDivElement>(null);
   const v = useVirtualizer({
     count: conversations.length,
