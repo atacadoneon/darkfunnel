@@ -1,129 +1,72 @@
-## DarkFunnel — Setup + Sprint 2.1 (Inbox)
+# ONDA D — Plano de implementação
 
-Conectar Supabase externo (você fornece URL/anon/service-role), aplicar as 6 migrations do zip, e construir o shell autenticado + inbox de conversas em tempo real.
+Escopo gigante (≈ 25 arquivos novos + edits). Vou entregar **em 6 etapas commitadas em sequência**, todas em `src/` apenas. Backend (edge functions + tabelas) assumido pronto.
 
----
+## Premissas de schema (confirme se algo divergir)
+- `wallets(workspace_id, balance_cents, low_balance_alert_cents, auto_recharge, auto_recharge_threshold_cents, auto_recharge_amount_cents)`
+- `wallet_transactions(id, workspace_id, type, description, amount_cents, balance_after_cents, created_at)`
+- `calls(id, workspace_id, user_id, contact_id, conversation_id, deal_id, from_number, to_number, direction, channel, status, outcome, duration_seconds, cost_cents, consumes_credit, initiated_at, twilio_sid)`
+- `call_recordings(id, call_id, storage_path, duration_seconds, status)`
+- `call_transcripts(id, call_id, summary, sentiment, key_topics jsonb, action_items jsonb, segments jsonb, translated_text, status)`
+- `phone_numbers(id, workspace_id, e164, uf, type, monthly_cost_cents, active)`
+- `calendar_events(id, workspace_id, title, starts_at, ends_at, attendees jsonb, conference_url, contact_id, deal_id)`
+- `voice_pricing(channel, destination, rate_per_min_cents)`
 
-## Etapa 0 — Conexão Supabase externo
+## Etapas
 
-1. Você cria projeto Supabase vazio e me envia:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (apenas para rodar as migrations; não vai pro frontend)
-2. Aplico em sequência via SQL as 6 migrations do zip:
-   - `0001_core.sql` (workspaces, members, plans, billing, audit)
-   - `0002_channels.sql` (channels, credentials cifradas, throttle, routing)
-   - `0003_messaging.sql` (contacts, conversations, messages, templates)
-   - `0004_engine.sql` (outbound_queue, webhook_log, automations, pipeline)
-   - `0005_rls.sql` (políticas RLS por workspace)
-   - `0006_functions.sql` (helpers: enqueue, assign, window)
-3. Crio cliente Supabase em `src/integrations/supabase/client.ts` usando apenas anon key + variáveis públicas Vite.
-4. Configuro Auth no painel Supabase: Email/Senha + Google OAuth (te entrego o passo-a-passo de Client ID/Secret no Google Cloud + redirect URLs).
+### 1) Sidebar + Header global (`src/components/layout/*`)
+- Reordenar grupos do `AppSidebar.tsx` para: Principal, Comunicação, Gestão, Automação, Ferramentas. Adicionar Agenda (/agenda) e Ligações (/calls). Manter Painel do Parceiro, Ajuda, Tema, Sair no footer.
+- Novo `AppTopbar.tsx` com slots: `<CallPill/>` `<WalletWidget/>` `<AiHelpButton/>` `<NotificationsBell/>` `<UserMenu/>`.
+- Componentes em `src/features/voice/CallPill.tsx`, `src/features/wallet/WalletWidget.tsx`, `src/features/ai/AiHelpDrawer.tsx`.
+- Rotas novas registradas em `App.tsx`: `/calls`, `/agenda`, `/settings/wallet`, aliases `/leads`, `/whatsapp/chat`, `/outreach-flows`, `/automations`, `/tasks`.
 
-> Edge Functions (`webhook-uazapi`, `webhook-whatsapp-cloud`, `send-message`) e o worker Node ficam **fora** desta entrega — pertencem ao destravamento de Onda 1 que você já tem no zip e roda via `supabase functions deploy` + Render. Esta entrega cobre só o frontend do Sprint 2.1.
+### 2) Dialer flutuante + Twilio SDK
+- `index.html`: adicionar `<script src="https://sdk.twilio.com/js/client/v2.0/twilio.min.js">`.
+- `src/hooks/useVoiceDevice.ts`: pega token via `voice-token`, instancia `Twilio.Device`, expõe `device`, `status`, `makeCall`, `hangup`, `sendDigit`, `mute`.
+- `src/components/voice/Dialer.tsx` (montado no root): estados idle/dial/connecting/ringing/in_call/ended, draggable fixed bottom-right, popover 360x520, teclado, BINA dropdown, toggle VoIP/WhatsApp, integra `voice-outbound`.
+- `src/components/voice/CallTimer.tsx` tabular-nums.
+- Store global leve via Zustand ou Context (`VoiceProvider`) para abrir Dialer de qualquer lugar (`useDialer().openWith(contact)`).
+- Modal recarga quando 402 `insufficient_balance`.
 
----
+### 3) Click-to-call universal
+- `src/components/voice/CallButton.tsx` dropdown VoIP / WhatsApp.
+- Wire em:
+  - `src/features/pipeline/DealCard.tsx` (hover icon)
+  - `src/features/inbox/ContactPanel.tsx` QuickActions (5 ícones, Ligar primeiro)
+  - `src/features/contacts/ContactDialog.tsx` header
+  - `src/features/pipeline/LeadEditDialog.tsx` header
+  - `src/features/tasks/TaskDrawer.tsx`
+  - Agenda event modal
 
-## Etapa 1 — Auth + Multi-tenant
+### 4) `/settings/wallet`
+- Page `src/pages/app/Wallet.tsx`: header gradiente, 3 KPIs, grid de recargas (R$50/100/250/500/Outro → `stripe-checkout-wallet`).
+- Tabs: Histórico (`wallet_transactions`), Configurações (auto-recharge form), Números (`phone_numbers` CRUD com modal Adquirir), Tarifas (`voice_pricing` read-only).
+- Realtime via `supabase.channel` em wallets + wallet_transactions.
+- Hooks em `src/features/wallet/hooks.ts`.
 
-- Páginas públicas: `/login`, `/signup`, `/forgot-password`, `/reset-password`.
-- Login com Email/Senha e botão "Continuar com Google".
-- Após signup: criar `workspace` + `workspace_member` (role `owner`) automaticamente via RPC.
-- Hook `useAuth` com `onAuthStateChange` + sessão persistente.
-- Hook `useWorkspace` com workspace ativo salvo em localStorage; switcher na topbar quando o usuário pertencer a mais de um.
-- Guard de rota: tudo dentro de `/app/*` exige sessão + workspace ativo.
+### 5) `/calls`
+- Page `src/pages/app/Calls.tsx`: filtros (data/vendedor/outcome/direction/channel/duração), KPI row, tabela paginada.
+- `src/features/voice/CallDrawer.tsx`: player áudio (signed URL bucket `call-recordings`), tabs Transcrição (segments clicáveis com seek), Sumário IA, Tradução, Detalhes.
+- Botão Exportar XLSX (lazy import xlsx).
+- Empty state com CTA abrir Dialer.
+- Realtime calls/recordings/transcripts.
 
----
+### 6) `/agenda` esqueleto
+- Page `src/pages/app/Agenda.tsx`: calendário mensal/semanal simples (sem libs pesadas — grid CSS).
+- Banner Google Calendar (botão "Em breve" via toast).
+- Modal Nova Reunião gravando em `calendar_events`. Badge "Meet" quando `conference_url`.
 
-## Etapa 2 — Shell do app autenticado
+## Regras gerais aplicadas
+- Tudo via `supabase.functions.invoke` para edge functions.
+- Skeleton no loading, EmptyState quando vazio, toast em erro.
+- Cores via tokens semânticos (`bg-primary`, `text-destructive`, etc.) — sem hex hardcoded.
+- Channel WhatsApp sempre rotulado "grátis", `consumes_credit=false`.
+- Sem mocks; tudo do Supabase.
 
-Layout em `/app`:
+## Riscos / pontos a confirmar
+1. **Twilio Device SDK** roda só com HTTPS + permissão de microfone — testarei em preview.
+2. **Stripe checkout**: depende de a edge function devolver `{ url }` pronto.
+3. **Bucket privado**: signed URL com 1h.
+4. Se algum nome de coluna/tabela divergir do assumido acima, ajusto após primeiro erro 4xx.
 
-```text
-┌─ Topbar ─────────────────────────────────────┐
-│ [≡] DarkFunnel  · Workspace ▾   🔔  👤 menu │
-├─Sidebar──┬───────────────────────────────────┤
-│ Inbox    │                                   │
-│ Contatos │      Área principal (Outlet)      │
-│ Canais   │                                   │
-│ Config   │                                   │
-└──────────┴───────────────────────────────────┘
-```
-
-- shadcn `Sidebar` com `collapsible="icon"` (mini-collapse).
-- Toggle light/dark na topbar (persistido).
-- Code split por rota (lazy + Suspense). Bundle inicial alvo < 200KB gzip.
-- Menu do usuário: perfil, trocar workspace, sair.
-- Mobile: sidebar offcanvas, topbar fixa.
-
-Apenas a rota **Inbox** ganha conteúdo real neste sprint; as outras ficam como placeholders "em breve".
-
----
-
-## Etapa 3 — Inbox (Sprint 2.1)
-
-### 3.1 Lista de conversas (coluna esquerda da Inbox)
-- Query Supabase: `conversations` JOIN `contacts` + última mensagem + contagem de não-lidas, filtrada por `workspace_id` (RLS já garante).
-- Virtualização com `@tanstack/react-virtual` para suportar 1.000+ itens sem lag.
-- Cache TanStack Query + persistência local (IndexedDB via Dexie) → reload mostra cache em < 100ms.
-- Realtime: subscription em `messages` e `conversations` invalida queries em < 500ms.
-- Filtros no topo: Todas / Não lidas / Atribuídas a mim. Busca por nome/telefone.
-- Cada item: avatar, nome, prévia última mensagem, hora, badge de canal (UAZAPI/Cloud), badge de não-lidas.
-
-### 3.2 Thread de mensagens (coluna central)
-- Paginação por cursor (mais antigas ao rolar pra cima), 50 por página.
-- Bubbles inbound/outbound com status `sent → delivered → read` (ícones tipo WhatsApp).
-- Mensagens novas via Realtime aparecem ao vivo; auto-scroll só se já estiver no fim.
-- Suporte a tipos: texto, imagem, áudio, documento (renderização básica; upload completo é Sprint 2.2).
-- Header da thread: nome do contato, telefone, badge de canal, status `window_expires_at` (countdown da janela 24h Cloud).
-
-### 3.3 Compositor
-- Textarea auto-resize, Enter envia, Shift+Enter quebra linha.
-- Botão de anexo (imagem/áudio/doc) — upload básico para Storage Supabase.
-- **Optimistic UI**: mensagem aparece em < 50ms com status `pending`, atualiza quando o backend confirma.
-- Envio chama RPC `send_message` (já existe na migration 0006) que enfileira em `outbound_queue`.
-- **Janela 24h Cloud**: se canal é Cloud e `window_expires_at < now()`, bloqueia texto livre e abre modal "Selecionar template HSM" (UI mínima de seleção; gestão completa de templates é Sprint 2.4).
-- Indicador de canal ativo + status (online / offline / qr_pending) ao lado do compositor.
-
-### 3.4 Painel direito (contato)
-- Card com dados do contato: nome, telefone, tags, atribuído a, criado em.
-- Edição inline de nome e tags.
-- Histórico resumido (últimas conversas, deals abertos — placeholder pra ondas seguintes).
-
----
-
-## Métricas de aceite (DoD do Sprint 2.1)
-
-| Métrica | Alvo |
-|---|---|
-| Abrir conversa (p95) | < 200ms |
-| Enviar mensagem (UI optimistic) | < 50ms |
-| Realtime invalida lista | < 500ms |
-| 1.000 conversas mock sem lag | OK |
-| Reload mostra cache | < 100ms |
-| Lighthouse mobile | > 90 |
-
----
-
-## Detalhes técnicos
-
-- **Stack**: Vite + React 18 + TS strict, TanStack Query v5, shadcn/ui, Tailwind, Supabase JS v2, `@tanstack/react-virtual`, Dexie + `@tanstack/query-persist-client`, `react-router-dom`.
-- **Estrutura**:
-  - `src/integrations/supabase/{client.ts,types.ts}` — cliente + tipos gerados.
-  - `src/features/auth/` — hooks, páginas, guard.
-  - `src/features/workspace/` — provider, switcher, RPC.
-  - `src/features/inbox/` — `ConversationList`, `MessageThread`, `Composer`, `ContactPanel`, hooks de query/realtime.
-  - `src/layouts/AppLayout.tsx` — shell autenticado.
-  - `src/pages/` — Login, Signup, ForgotPassword, ResetPassword, AppHome, Inbox, placeholders.
-- **RLS**: o frontend usa apenas anon key; toda autorização vem das policies do `0005_rls.sql`. Service role nunca aparece no bundle.
-- **Realtime**: canais por `workspace_id` para evitar leak entre tenants.
-- **Tipos**: gerados a partir do schema Supabase após migrations aplicadas.
-
----
-
-## Fora deste plano (próximas iterações)
-
-- Sprint 2.2: mídia/áudio/transcrição Whisper.
-- Sprint 2.3: atribuição automática, tags coloridas, macros, notas internas.
-- Sprint 2.4: gestão completa de templates HSM, broadcasts, warm-up UAZAPI, health-check.
-- Deploy de Edge Functions e do worker Node (você roda manualmente seguindo o README do zip).
+Posso começar pela etapa 1 (Sidebar+Header+rotas) e seguir em ordem? Responda "vai" que executo tudo de ponta a ponta sem interromper, ou diga qual etapa priorizar.
