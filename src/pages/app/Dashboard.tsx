@@ -225,7 +225,7 @@ function AtendimentoView({ conversations, deals, messages, contacts, range, peri
   const peakIdx = m.hours.indexOf(Math.max(...m.hours));
   const hoursData = m.hours.map((v: number, i: number) => ({ h: `${i}h`, v, peak: i === peakIdx }));
 
-  const slaTotal = Object.values(m.buckets).reduce((a: number, b) => a + (b as number), 0);
+  const slaTotal = (Object.values(m.buckets) as number[]).reduce((a, b) => a + b, 0);
   const slaItems: { label: string; value: number; tone: AccentTone }[] = [
     { label: "< 5min", value: m.buckets["<5min"], tone: "success" },
     { label: "5-15min", value: m.buckets["5-15min"], tone: "info" },
