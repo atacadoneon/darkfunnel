@@ -19,26 +19,14 @@ import { useChannels } from "@/features/channels/hooks";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { useTags } from "./filterHooks";
 
-export type SortKey =
-  | "updated_desc"
-  | "updated_asc"
-  | "created_desc"
-  | "created_asc"
-  | "unread_desc"
-  | "unread_asc"
-  | "lastmsg_desc"
-  | "lastmsg_asc";
+export type SortKey = "recent" | "awaiting" | "unread_first";
 
 export const SORT_LABELS: Record<SortKey, string> = {
-  updated_desc: "Atualização (↓ mais novo) — Padrão",
-  updated_asc: "Atualização (↑ mais antigo)",
-  created_desc: "Criação (↓ mais novo)",
-  created_asc: "Criação (↑ mais antigo)",
-  unread_desc: "Não lidas (↓)",
-  unread_asc: "Não lidas (↑)",
-  lastmsg_desc: "Última msg (↓ mais novas)",
-  lastmsg_asc: "Última msg (↑ mais antigas)",
+  recent: "Mais recentes primeiro",
+  awaiting: "Aguardando resposta primeiro",
+  unread_first: "Não lidas primeiro",
 };
+
 
 export const STATUS_OPTIONS = [
   { value: "open", label: "Aberto" },
