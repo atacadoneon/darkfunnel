@@ -109,8 +109,15 @@ export default function Inbox() {
         if (!msgMatchIds || !msgMatchIds.has(c.id)) return false;
       }
       if (!matchesChips(c)) return false;
+      if (filters.sort === "awaiting") {
+        const inAt = c.last_inbound_at ? new Date(c.last_inbound_at).getTime() : 0;
+        const outAt = c.last_outbound_at ? new Date(c.last_outbound_at).getTime() : 0;
+        if (!inAt) return false;
+        if (outAt && outAt >= inAt) return false;
+      }
       return true;
     });
+
     arr = sortConvs(arr, filters.sort);
     return arr;
   }, [conversations, filters, msgMatchIds, tab, quickChips]);
