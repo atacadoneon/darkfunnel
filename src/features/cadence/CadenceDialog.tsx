@@ -41,16 +41,21 @@ export function CadenceDialog({
   const [steps, setSteps] = useState<DraftStep[]>([]);
 
   useEffect(() => {
-    if (open) {
-      setName(cadence?.name ?? "");
-      setDescription(cadence?.description ?? "");
-      setChannelId(cadence?.channel_id ?? null);
-      setTriggerType(cadence?.trigger_type ?? "manual");
-      setSteps(
-        existingSteps.map((s) => ({ type: s.type, content: s.content, delay_minutes: s.delay_minutes })),
-      );
-    }
-  }, [open, cadence, existingSteps]);
+    if (!open) return;
+    setName(cadence?.name ?? "");
+    setDescription(cadence?.description ?? "");
+    setChannelId(cadence?.channel_id ?? null);
+    setTriggerType(cadence?.trigger_type ?? "manual");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, cadence?.id]);
+
+  useEffect(() => {
+    if (!open) return;
+    setSteps(
+      existingSteps.map((s) => ({ type: s.type, content: s.content, delay_minutes: s.delay_minutes })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, cadence?.id, existingSteps.length]);
 
   const addStep = (type: CadenceStepType) => {
     const base: DraftStep = type === "message"

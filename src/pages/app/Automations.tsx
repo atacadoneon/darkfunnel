@@ -22,6 +22,7 @@ const TABS: { value: AutomationCategory | "all"; label: string }[] = [
   { value: "distribution", label: "Distribuição" },
   { value: "pipeline", label: "Pipeline" },
   { value: "notifications", label: "Notificações" },
+  { value: "other", label: "Outras" },
 ];
 
 export default function Automations() {

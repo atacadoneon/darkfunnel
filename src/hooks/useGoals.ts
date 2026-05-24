@@ -109,7 +109,7 @@ export function useGoalMutations() {
     mutationFn: async ({ goal_id, date, amount }: { goal_id: string; date: string; amount: number }) => {
       const { error } = await supabase
         .from("goals_daily_actuals")
-        .upsert({ goal_id, date, amount }, { onConflict: "goal_id,date" });
+        .upsert({ goal_id, date, actual_amount: amount } as any, { onConflict: "goal_id,date" });
       if (error) throw error;
     },
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ["goal-actuals", vars.goal_id] }),
