@@ -330,6 +330,16 @@ export default function Inbox() {
             <p className="mt-1.5 text-sm text-muted-foreground max-w-sm leading-relaxed">
               Selecione uma conversa na lista à esquerda para visualizar as mensagens
             </p>
+            <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
+              <kbd className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-1 font-mono text-[11px] font-medium text-foreground shadow-sm">
+                Ctrl
+              </kbd>
+              <span className="opacity-60">+</span>
+              <kbd className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-1 font-mono text-[11px] font-medium text-foreground shadow-sm">
+                F
+              </kbd>
+              <span>para buscar mensagens</span>
+            </div>
           </div>
         )}
       </div>
