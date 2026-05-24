@@ -2,10 +2,16 @@ import { createContext, useContext, useEffect, useState, type ReactNode, useCall
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/features/auth/AuthProvider";
 
+export type WorkspaceFeatures = {
+  import_history?: boolean;
+  [key: string]: unknown;
+};
+
 export type Workspace = {
   id: string;
   name: string;
   slug: string;
+  features?: WorkspaceFeatures | null;
 };
 
 type WorkspaceCtx = {
@@ -37,7 +43,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const { data, error } = await supabase
       .from("workspaces")
-      .select("id,name,slug")
+      .select("id,name,slug,features")
       .order("created_at", { ascending: true });
     if (!error && data) {
       setWorkspaces(data as Workspace[]);
