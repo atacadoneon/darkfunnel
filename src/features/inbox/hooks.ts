@@ -13,9 +13,12 @@ export type ConversationRow = {
   status: string;
   unread_count: number;
   last_message_at: string | null;
+  last_inbound_at?: string | null;
+  last_outbound_at?: string | null;
   window_expires_at: string | null;
   assigned_user_id: string | null;
   attribution_source?: string | null;
+
 
   created_at?: string;
   updated_at?: string;
