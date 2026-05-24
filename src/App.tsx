@@ -24,6 +24,9 @@ import Dashboard from "@/pages/app/Dashboard";
 import Contacts from "@/pages/app/Contacts";
 import Tasks from "@/pages/app/Tasks";
 import Meetings from "@/pages/app/Meetings";
+import Automations from "@/pages/app/Automations";
+import Cadence from "@/pages/app/Cadence";
+import Goals from "@/pages/app/Goals";
 import AdminFeatures from "@/pages/admin/Features";
 import NotFound from "@/pages/NotFound";
 
@@ -85,12 +88,11 @@ const App = () => (
                   <Route path="funildevendas" element={<Pipeline />} />
                   <Route path="negocios" element={<Navigate to="/funildevendas" replace />} />
                   <Route path="emailmarketing" element={<Placeholder title="Email Marketing" />} />
-                  <Route path="metas" element={<Placeholder title="Metas" />} />
+                  <Route path="metas" element={<Goals />} />
                   <Route path="tarefas" element={<Tasks />} />
                   <Route path="reunioes" element={<Meetings />} />
-                  <Route path="quiz" element={<Placeholder title="Quiz" />} />
-                  <Route path="cadencia" element={<Placeholder title="Fluxo de Cadência" />} />
-                  <Route path="automacoes" element={<Placeholder title="Automações" />} />
+                  <Route path="cadencia" element={<Cadence />} />
+                  <Route path="automacoes" element={<Automations />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="admin/features" element={<AdminFeatures />} />
 

@@ -59,7 +59,6 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Metas", url: "/metas", icon: Target },
       { title: "Tarefas", url: "/tarefas", icon: ListChecks },
       { title: "Reuniões", url: "/reunioes", icon: Calendar },
-      { title: "Quiz", url: "/quiz", icon: ClipboardList },
     ],
   },
   {
