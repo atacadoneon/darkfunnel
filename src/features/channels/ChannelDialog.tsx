@@ -219,7 +219,7 @@ export function ChannelDialog({ open, onOpenChange, channel }: Props) {
     const r = await invokeEdge("uazapi-instance", { channel_id: id, action: "connect" });
     if (r.ok === false) {
       if (allowInit && r.err.status === 400 && /instância não inicializada/i.test(r.err.message)) {
-        await initAndConnect(id, true);
+        await initAndConnect(id, false);
         return;
       }
       setConnectError({ ...r.err, title: r.err.title + " (connect)" });

@@ -214,9 +214,18 @@ async function cleanupDuplicateCredentials(admin: any, channelId: string, keepId
   } catch (_) { /* best-effort */ }
 }
 
+function randomSecret(bytes = 24) {
+  const buf = new Uint8Array(bytes);
+  crypto.getRandomValues(buf);
+  return Array.from(buf).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function saveCredentials(admin: any, channelId: string, values: Record<string, unknown>) {
   const existing = await loadCredentials(admin, channelId);
-  const payload = { channel_id: channelId, ...values, updated_at: new Date().toISOString() };
+  const payload: Record<string, unknown> = { channel_id: channelId, ...values, updated_at: new Date().toISOString() };
+  if (!existing?.webhook_secret && payload.webhook_secret === undefined) {
+    payload.webhook_secret = randomSecret();
+  }
 
   if (existing?.id) {
     const { error } = await admin.from("channel_credentials").update(payload).eq("id", existing.id);
@@ -234,6 +243,46 @@ async function saveCredentials(admin: any, channelId: string, values: Record<str
   const { error } = await admin.from("channel_credentials").insert(payload);
   if (error) throw error;
   return await loadCredentials(admin, channelId);
+}
+
+async function configureWebhook(projectUrl: string, channelId: string, host: string, token: string, webhookSecret: string) {
+  const webhook = `${projectUrl}/functions/v1/uazapi-webhook?secret=${webhookSecret}&channel=${channelId}`;
+  const payload = {
+    url: webhook,
+    enabled: true,
+    events: ["messages", "messages_update", "connection", "contacts", "groups"],
+    excludeMessages: [] as string[],
+    addUrlEvents: false,
+    addUrlTypesMessages: false,
+  };
+  let result = await uaz(host, "/webhook", { method: "POST", token, body: JSON.stringify(payload) });
+  if (!result.ok) {
+    const fallback = await uaz(host, "/instance/webhook", { method: "POST", token, body: JSON.stringify(payload) });
+    if (fallback.ok) result = fallback;
+  }
+  return result;
+}
+
+async function attachExistingCredentialsForChannel(admin: any, channel: any, channelId: string, projectUrl: string) {
+  const host = (Deno.env.get("UAZAPI_HOST") || "").trim();
+  const adminToken = (Deno.env.get("UAZAPI_ADMIN_TOKEN") || "").trim();
+  if (!host || !adminToken) return null;
+
+  const existing = await findExistingUazInstance(host, adminToken, channel.display_name);
+  if (!existing?.token) return null;
+
+  const saved = await saveCredentials(admin, channelId, {
+    host,
+    admin_token: adminToken,
+    instance_token: existing.token,
+    instance_id: existing.id ?? null,
+  });
+
+  if (saved?.webhook_secret) {
+    await configureWebhook(projectUrl, channelId, host, existing.token, saved.webhook_secret);
+  }
+  await admin.from("channels").update({ status: "pending" }).eq("id", channelId);
+  return saved;
 }
 
 async function claimInitLock(admin: any, channel: any, channelId: string) {
@@ -354,15 +403,9 @@ Deno.serve(async (req) => {
           instance_id: existingId,
         });
         await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
-        const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
-        const webhookResult = await uaz(existingHost, "/webhook", {
-          method: "POST", token: existingToken,
-          body: JSON.stringify({
-            url: webhook, enabled: true,
-            events: ["messages", "messages_update", "connection", "contacts", "groups"],
-            excludeMessages: [], addUrlEvents: false, addUrlTypesMessages: false,
-          }),
-        });
+        const webhookResult = saved?.webhook_secret
+          ? await configureWebhook(url, body.channel_id, existingHost, existingToken, saved.webhook_secret)
+          : { ok: false };
         return { ok: true, instance_id: existingId, reused: true, webhook_configured: webhookResult.ok };
       };
 
@@ -421,15 +464,9 @@ Deno.serve(async (req) => {
       });
       await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
 
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
-      const webhookResult = await uaz(host, "/webhook", {
-        method: "POST", token: instance_token,
-        body: JSON.stringify({
-          url: webhook, enabled: true,
-          events: ["messages", "messages_update", "connection", "contacts", "groups"],
-          excludeMessages: [], addUrlEvents: false, addUrlTypesMessages: false,
-        }),
-      });
+      const webhookResult = saved?.webhook_secret
+        ? await configureWebhook(url, body.channel_id, host, instance_token, saved.webhook_secret)
+        : { ok: false, data: "webhook_secret ausente" };
 
       return json({ ok: true, instance_id, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
       } finally {
@@ -452,19 +489,9 @@ Deno.serve(async (req) => {
         instance_id: body.instance_id?.trim() || creds?.instance_id || null,
       });
 
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
-      const webhookResult = await uaz(host, "/webhook", {
-        method: "POST",
-        token: instanceToken,
-        body: JSON.stringify({
-          url: webhook,
-          enabled: true,
-          events: ["messages", "messages_update", "connection", "contacts", "groups"],
-          excludeMessages: [],
-          addUrlEvents: false,
-          addUrlTypesMessages: false,
-        }),
-      });
+      const webhookResult = saved?.webhook_secret
+        ? await configureWebhook(url, body.channel_id, host, instanceToken, saved.webhook_secret)
+        : { ok: false, data: "webhook_secret ausente" };
 
       const status = statusFrom(statusCheck.data);
       const phone = phoneFrom(statusCheck.data);
@@ -475,8 +502,32 @@ Deno.serve(async (req) => {
       return json({ ok: true, status, phone, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
     }
 
-    if (!creds) {
+    if (body.action === "save_n8n") {
+      const n = body.n8n ?? { enabled: false };
+      await saveCredentials(admin, body.channel_id, {
+        n8n_enabled: !!n.enabled,
+        n8n_webhook_url: n.url ?? null,
+        n8n_webhook_secret: n.secret ?? null,
+      });
+      return json({ ok: true });
+    }
+
+    if (body.action === "generate_api_key") {
+      const key = randomSecret();
+      await saveCredentials(admin, body.channel_id, { send_api_key: key });
+      return json({ ok: true, api_key: key });
+    }
+
+    if (!creds?.instance_token) {
+      const attached = await attachExistingCredentialsForChannel(admin, channel, body.channel_id, url);
+      if (attached?.instance_token) {
+        creds = attached;
+      }
+    }
+
+    if (!creds?.instance_token) {
       if (body.action === "delete") {
+        await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
         await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
         return json({ ok: true, no_instance: true });
       }
@@ -487,28 +538,7 @@ Deno.serve(async (req) => {
       const c3 = await loadCredentials(admin, body.channel_id);
       if (!c3?.webhook_secret) return json({ error: "webhook_secret ausente; reconecte o canal" }, 400);
       const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c3.webhook_secret}&channel=${body.channel_id}`;
-      const payload = {
-        url: webhook,
-        enabled: true,
-        events: ["messages", "messages_update", "connection", "contacts", "groups"],
-        excludeMessages: [] as string[],
-        addUrlEvents: false,
-        addUrlTypesMessages: false,
-      };
-      let r = await uaz(creds.host, "/webhook", {
-        method: "POST",
-        token: creds.instance_token,
-        body: JSON.stringify(payload),
-      });
-      // fallback: algumas versões da uazapi expõem em /instance/webhook
-      if (!r.ok) {
-        const r2 = await uaz(creds.host, "/instance/webhook", {
-          method: "POST",
-          token: creds.instance_token,
-          body: JSON.stringify(payload),
-        });
-        if (r2.ok) r = r2;
-      }
+      const r = await configureWebhook(url, body.channel_id, creds.host, creds.instance_token, c3.webhook_secret);
       if (!r.ok) {
         const detailStr = typeof r.data === "string" ? r.data : JSON.stringify(r.data);
         return json({ error: `uazapi webhook falhou: ${detailStr?.slice(0, 300)}`, detail: r.data }, 502);
@@ -532,17 +562,7 @@ Deno.serve(async (req) => {
       try {
         const cw = await loadCredentials(admin, body.channel_id);
         if (cw?.webhook_secret) {
-          const webhook = `${url}/functions/v1/uazapi-webhook?secret=${cw.webhook_secret}&channel=${body.channel_id}`;
-          const payload = {
-            url: webhook,
-            enabled: true,
-            events: ["messages", "messages_update", "connection", "contacts", "groups"],
-            excludeMessages: [] as string[],
-            addUrlEvents: false,
-            addUrlTypesMessages: false,
-          };
-          const rw = await uaz(creds.host, "/webhook", { method: "POST", token: creds.instance_token, body: JSON.stringify(payload) });
-          if (!rw.ok) await uaz(creds.host, "/instance/webhook", { method: "POST", token: creds.instance_token, body: JSON.stringify(payload) });
+          await configureWebhook(url, body.channel_id, creds.host, creds.instance_token, cw.webhook_secret);
         }
       } catch (_) { /* best-effort */ }
       return json({ ok: true, qr, paircode, status });
@@ -608,25 +628,6 @@ Deno.serve(async (req) => {
       const r = await uaz(creds.host, "/profile/privacy", { method: "POST", token: creds.instance_token, body: JSON.stringify(body.privacy) });
       if (!r.ok) return json({ error: "uazapi privacy set failed", detail: r.data }, 502);
       return json({ ok: true });
-    }
-
-    if (body.action === "save_n8n") {
-      const n = body.n8n ?? { enabled: false };
-      await admin.from("channel_credentials").update({
-        n8n_enabled: !!n.enabled,
-        n8n_webhook_url: n.url ?? null,
-        n8n_webhook_secret: n.secret ?? null,
-        updated_at: new Date().toISOString(),
-      }).eq("channel_id", body.channel_id);
-      return json({ ok: true });
-    }
-
-    if (body.action === "generate_api_key") {
-      const bytes = new Uint8Array(24);
-      crypto.getRandomValues(bytes);
-      const key = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-      await admin.from("channel_credentials").update({ send_api_key: key, updated_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
-      return json({ ok: true, api_key: key });
     }
 
     if (body.action === "sync_history") {
