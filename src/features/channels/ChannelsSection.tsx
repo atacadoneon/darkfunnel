@@ -266,6 +266,15 @@ export function ChannelsSection() {
 
       <ChannelDialog open={dialogOpen} onOpenChange={setDialogOpen} channel={editing} />
 
+      {importing && (
+        <ImportHistoryDialog
+          open={!!importing}
+          onOpenChange={(o) => { if (!o) setImporting(null); }}
+          channelId={importing.id}
+          channelName={importing.display_name}
+        />
+      )}
+
       <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) { setDeleting(null); setDeleteConversations(false); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
