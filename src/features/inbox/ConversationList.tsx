@@ -19,9 +19,10 @@ export function ConversationList({ conversations, selectedId, onSelect, lastMess
   const v = useVirtualizer({
     count: conversations.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 72,
+    estimateSize: () => 84,
     overscan: 8,
   });
+
 
   return (
     <div ref={parentRef} className="h-full overflow-y-auto overscroll-contain scrollbar-hide">
