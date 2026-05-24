@@ -107,11 +107,29 @@ export default function Inbox() {
       if (filters.message.trim().length >= 2) {
         if (!msgMatchIds || !msgMatchIds.has(c.id)) return false;
       }
+      if (!matchesChips(c)) return false;
       return true;
     });
     arr = sortConvs(arr, filters.sort);
     return arr;
-  }, [conversations, filters, msgMatchIds, tab]);
+  }, [conversations, filters, msgMatchIds, tab, quickChips]);
+
+  // counts dos chips dentro do tab atual (sem aplicar os chips para não zerar)
+  const inTab = useMemo(
+    () => conversations.filter((c) => (tab === "open" ? c.status === "open" : c.status === "resolved" || c.status === "archived")),
+    [conversations, tab]
+  );
+  const unreadChipCount = useMemo(() => inTab.filter((c) => c.unread_count > 0).length, [inTab]);
+  const noReplyChipCount = useMemo(
+    () =>
+      inTab.filter((c) => {
+        const inAt = c.last_inbound_at ? new Date(c.last_inbound_at).getTime() : 0;
+        const outAt = c.last_outbound_at ? new Date(c.last_outbound_at).getTime() : 0;
+        return inAt > 0 && (!outAt || outAt < inAt);
+      }).length,
+    [inTab]
+  );
+
 
   const openTotal = useMemo(() => conversations.filter((c) => c.status === "open").length, [conversations]);
   const closedTotal = useMemo(
