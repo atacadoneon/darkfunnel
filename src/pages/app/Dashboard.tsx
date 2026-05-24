@@ -25,7 +25,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import {
   useDashboardConversations, useDashboardDeals, useDashboardContacts,
-  useDashboardStages, useDashboardLossReasons, useDashboardMessages, useDashboardProfiles,
+  useDashboardStages, useDashboardMessages, useDashboardProfiles,
   buildAtendimentoMetrics, buildRankingAtendentes, buildPerformanceMetrics,
   buildSellerRanking, buildConversoesMetrics, buildAdsMetrics, filterDealsByPipeline,
 } from "@/features/dashboard/hooks";
