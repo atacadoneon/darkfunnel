@@ -192,7 +192,7 @@ export function useLastMessagesByConversation(conversationIds: string[]) {
             conversation_id: r.conversation_id,
             direction: r.direction,
             type: r.type,
-            body: previewFromPayload(r.type, r.payload),
+            body: previewBodyFromPayload(r.type, r.payload),
             created_at: r.created_at,
           };
         }
