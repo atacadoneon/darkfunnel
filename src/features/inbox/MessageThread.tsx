@@ -125,7 +125,7 @@ function renderBody(m: MessageRow, query: string) {
     return (
       <div className="space-y-1">
         <MediaWithRefresh
-          messageId={m.id}
+          messageId={m.id} conversationId={m.conversation_id}
           url={mediaUrl}
           render={(u, onError) => (
             <a href={u} target="_blank" rel="noreferrer">
@@ -144,7 +144,7 @@ function renderBody(m: MessageRow, query: string) {
     return (
       <div className="space-y-1">
         <MediaWithRefresh
-          messageId={m.id}
+          messageId={m.id} conversationId={m.conversation_id}
           url={mediaUrl}
           render={(u, onError) => (
             <audio controls preload="metadata" src={u} onError={onError} className="h-10 w-full max-w-[280px]" />
@@ -160,7 +160,7 @@ function renderBody(m: MessageRow, query: string) {
     return (
       <div className="space-y-1">
         <MediaWithRefresh
-          messageId={m.id}
+          messageId={m.id} conversationId={m.conversation_id}
           url={mediaUrl}
           render={(u, onError) => (
             <video controls preload="metadata" src={u} onError={onError} className="max-h-80 w-full max-w-[320px] rounded" />
@@ -177,7 +177,7 @@ function renderBody(m: MessageRow, query: string) {
     const mime = (p.mime as string | undefined) || "";
     return (
       <MediaWithRefresh
-        messageId={m.id}
+        messageId={m.id} conversationId={m.conversation_id}
         url={mediaUrl}
         render={(u) => (
           <a
@@ -202,7 +202,7 @@ function renderBody(m: MessageRow, query: string) {
     if (!mediaUrl) return unavailable(ImageIcon, "sticker");
     return (
       <MediaWithRefresh
-        messageId={m.id}
+        messageId={m.id} conversationId={m.conversation_id}
         url={mediaUrl}
         render={(u, onError) => (
           <img src={u} onError={onError} className="h-32 w-32 rounded object-contain" alt="sticker" />
