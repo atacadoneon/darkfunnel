@@ -1,9 +1,69 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Check, CheckCheck, Clock, FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon } from "lucide-react";
+import { Check, CheckCheck, Clock, FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import type { MessageRow } from "./hooks";
+
+function RefreshMediaButton({ messageId, onRefreshed }: { messageId: string; onRefreshed: (url: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={loading}
+      onClick={async () => {
+        setLoading(true);
+        const { data, error } = await supabase.functions.invoke("refresh-media", { body: { message_id: messageId } });
+        setLoading(false);
+        if (error || !data?.media_url) {
+          toast.error("Não foi possível recarregar a mídia");
+          return;
+        }
+        onRefreshed(data.media_url as string);
+      }}
+    >
+      <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
+      Recarregar mídia
+    </Button>
+  );
+}
+
+function MediaWithRefresh({
+  messageId,
+  url,
+  render,
+}: {
+  messageId: string;
+  url: string;
+  render: (currentUrl: string, onError: () => void) => React.ReactNode;
+}) {
+  const [currentUrl, setCurrentUrl] = useState(url);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setCurrentUrl(url); setFailed(false); }, [url]);
+  // HEAD check for 404/410
+  useEffect(() => {
+    let cancelled = false;
+    fetch(currentUrl, { method: "HEAD" })
+      .then((r) => { if (!cancelled && (r.status === 404 || r.status === 410)) setFailed(true); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentUrl]);
+  if (failed) {
+    return (
+      <div className="flex flex-col items-start gap-2 rounded-md border bg-background/40 p-2">
+        <span className="text-xs opacity-70">Mídia expirada ou indisponível.</span>
+        <RefreshMediaButton messageId={messageId} onRefreshed={(u) => { setCurrentUrl(u); setFailed(false); }} />
+      </div>
+    );
+  }
+  return <>{render(currentUrl, () => setFailed(true))}</>;
+}
+
 
 function dayLabel(d: Date): string {
   if (isToday(d)) return "Hoje";
