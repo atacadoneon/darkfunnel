@@ -3,7 +3,7 @@ export type MessageDirection = "in" | "out";
 const TYPE_LABEL: Record<string, string> = {
   image: "📷 Imagem",
   video: "🎥 Vídeo",
-  audio: "🎤 Áudio",
+  audio: "🎙 Áudio",
   ptt: "🎤 Mensagem de voz",
   document: "📄 Documento",
   sticker: "Figurinha",
