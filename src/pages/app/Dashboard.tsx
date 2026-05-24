@@ -108,7 +108,7 @@ export default function Dashboard() {
   const msgsQ = useDashboardMessages(range);
 
   const anyError = convQ.error || dealsQ.error || contactsQ.error || msgsQ.error;
-  useMemo(() => { if (anyError) toast.error("Erro ao carregar métricas do dashboard"); }, [anyError]);
+  useEffect(() => { if (anyError) toast.error("Erro ao carregar métricas do dashboard"); }, [anyError]);
 
   const conversations = convQ.data ?? [];
   const allDeals = dealsQ.data ?? [];
