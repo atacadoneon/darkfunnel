@@ -64,6 +64,19 @@ export default function Inbox() {
   const { data: msgMatchIds } = useConversationIdsByMessageSearch(filters.message);
 
   const [tab, setTab] = useState<"open" | "closed">("open");
+  const [quickChips, setQuickChips] = useState<{ unread: boolean; noReply: boolean }>({ unread: false, noReply: false });
+
+  const matchesChips = (c: typeof conversations[number]) => {
+    if (quickChips.unread && !(c.unread_count > 0)) return false;
+    if (quickChips.noReply) {
+      const inAt = c.last_inbound_at ? new Date(c.last_inbound_at).getTime() : 0;
+      const outAt = c.last_outbound_at ? new Date(c.last_outbound_at).getTime() : 0;
+      if (!inAt) return false;
+      if (outAt && outAt >= inAt) return false;
+    }
+    return true;
+  };
+
 
   const filtered = useMemo(() => {
     const q = filters.text.trim().toLowerCase();
