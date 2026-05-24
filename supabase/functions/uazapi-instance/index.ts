@@ -489,19 +489,9 @@ Deno.serve(async (req) => {
         instance_id: body.instance_id?.trim() || creds?.instance_id || null,
       });
 
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
-      const webhookResult = await uaz(host, "/webhook", {
-        method: "POST",
-        token: instanceToken,
-        body: JSON.stringify({
-          url: webhook,
-          enabled: true,
-          events: ["messages", "messages_update", "connection", "contacts", "groups"],
-          excludeMessages: [],
-          addUrlEvents: false,
-          addUrlTypesMessages: false,
-        }),
-      });
+      const webhookResult = saved?.webhook_secret
+        ? await configureWebhook(url, body.channel_id, host, instanceToken, saved.webhook_secret)
+        : { ok: false, data: "webhook_secret ausente" };
 
       const status = statusFrom(statusCheck.data);
       const phone = phoneFrom(statusCheck.data);
@@ -510,6 +500,13 @@ Deno.serve(async (req) => {
       await admin.from("channels").update(channelUpdate).eq("id", body.channel_id);
 
       return json({ ok: true, status, phone, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
+    }
+
+    if (!creds) {
+      const attached = await attachExistingCredentialsForChannel(admin, channel, body.channel_id, url);
+      if (attached?.instance_token) {
+        creds = attached;
+      }
     }
 
     if (!creds) {
