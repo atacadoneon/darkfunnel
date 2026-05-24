@@ -280,7 +280,7 @@ export function Composer({ conversation }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKey}
-          placeholder={windowExpired ? "Selecione um template..." : attachment ? "Caption (opcional)…" : "Digite uma mensagem..."}
+          placeholder={windowExpired ? "Selecione um template..." : attachment ? "Caption (opcional)…" : "Digite uma mensagem... (/ para atalhos)"}
           disabled={windowExpired || recording}
           rows={1}
           className="resize-none min-h-[40px] max-h-32"
