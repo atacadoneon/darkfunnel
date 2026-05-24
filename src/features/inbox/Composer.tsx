@@ -337,6 +337,36 @@ export function Composer({ conversation }: Props) {
             <Paperclip className="h-4 w-4" />
           </Button>
         )}
+        <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="icon" disabled={windowExpired || recording} title="Emoji">
+              <Smile className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 border-0" align="end">
+            <EmojiPicker
+              theme={Theme.AUTO}
+              emojiStyle={EmojiStyle.NATIVE}
+              onEmojiClick={(e) => {
+                const el = ref.current;
+                const emoji = e.emoji;
+                if (el) {
+                  const start = el.selectionStart ?? text.length;
+                  const end = el.selectionEnd ?? text.length;
+                  const next = text.slice(0, start) + emoji + text.slice(end);
+                  setText(next);
+                  setTimeout(() => {
+                    el.focus();
+                    const pos = start + emoji.length;
+                    el.setSelectionRange(pos, pos);
+                  }, 0);
+                } else {
+                  setText(text + emoji);
+                }
+              }}
+            />
+          </PopoverContent>
+        </Popover>
         {isUazapi && (
           <Button
             variant={recording ? "destructive" : "outline"}
