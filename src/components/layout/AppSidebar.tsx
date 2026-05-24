@@ -265,25 +265,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-              type="button"
-              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
-            >
-              <LifeBuoy className="h-3.5 w-3.5" />
-              Suporte
-            </button>
-            <span className="truncate">{userName}</span>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-1">
-            <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Ajuda">
-              <HelpCircle className="h-4 w-4" />
-            </button>
-            <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Suporte">
-              <LifeBuoy className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </SidebarFooter>
-    </Sidebar>
-  );
-}
