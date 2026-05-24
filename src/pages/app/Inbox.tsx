@@ -25,25 +25,26 @@ import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 
 function sortConvs<T extends {
   last_message_at: string | null;
+  last_inbound_at?: string | null;
+  last_outbound_at?: string | null;
   unread_count: number;
-  updated_at?: string;
-  created_at?: string;
 }>(arr: T[], sort: SortKey): T[] {
-  const get = (c: T, k: "updated_at" | "created_at" | "last_message_at") =>
-    c[k] ? new Date(c[k] as string).getTime() : 0;
+  const t = (v: string | null | undefined) => (v ? new Date(v).getTime() : 0);
   const cp = [...arr];
   switch (sort) {
-    case "updated_desc": cp.sort((a, b) => get(b, "updated_at") - get(a, "updated_at")); break;
-    case "updated_asc":  cp.sort((a, b) => get(a, "updated_at") - get(b, "updated_at")); break;
-    case "created_desc": cp.sort((a, b) => get(b, "created_at") - get(a, "created_at")); break;
-    case "created_asc":  cp.sort((a, b) => get(a, "created_at") - get(b, "created_at")); break;
-    case "unread_desc":  cp.sort((a, b) => b.unread_count - a.unread_count); break;
-    case "unread_asc":   cp.sort((a, b) => a.unread_count - b.unread_count); break;
-    case "lastmsg_desc": cp.sort((a, b) => get(b, "last_message_at") - get(a, "last_message_at")); break;
-    case "lastmsg_asc":  cp.sort((a, b) => get(a, "last_message_at") - get(b, "last_message_at")); break;
+    case "recent":
+      cp.sort((a, b) => t(b.last_message_at) - t(a.last_message_at));
+      break;
+    case "awaiting":
+      cp.sort((a, b) => t(b.last_inbound_at) - t(a.last_inbound_at));
+      break;
+    case "unread_first":
+      cp.sort((a, b) => (b.unread_count - a.unread_count) || (t(b.last_message_at) - t(a.last_message_at)));
+      break;
   }
   return cp;
 }
+
 
 export default function Inbox() {
   const { data: conversations = [], isLoading } = useConversations();
