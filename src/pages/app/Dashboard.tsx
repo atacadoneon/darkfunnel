@@ -104,7 +104,7 @@ export default function Dashboard() {
   const dealsQ = useDashboardDeals();
   const contactsQ = useDashboardContacts();
   const stagesQ = useDashboardStages();
-  const lossQ = useDashboardLossReasons();
+  
   const msgsQ = useDashboardMessages(range);
 
   const anyError = convQ.error || dealsQ.error || contactsQ.error || msgsQ.error;
