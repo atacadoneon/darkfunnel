@@ -326,7 +326,7 @@ export default function Inbox() {
               strokeWidth={1.25}
               aria-hidden
             />
-            <h3 className="mt-4 text-base font-semibold text-foreground">Nenhuma conversa selecionada</h3>
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">DarkFunnel Inbox</h2>
             <p className="mt-1.5 text-sm text-muted-foreground max-w-sm leading-relaxed">
               Escolha uma conversa na lista ao lado para visualizar as mensagens e responder.
             </p>
