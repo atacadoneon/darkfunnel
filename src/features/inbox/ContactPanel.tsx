@@ -13,6 +13,8 @@ import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ContactAvatar } from "./ContactAvatar";
+
 import type { ConversationRow } from "./hooks";
 
 export function ContactPanel({ conversation }: { conversation: ConversationRow }) {
