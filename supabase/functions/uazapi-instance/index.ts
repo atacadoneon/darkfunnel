@@ -502,15 +502,32 @@ Deno.serve(async (req) => {
       return json({ ok: true, status, phone, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
     }
 
-    if (!creds) {
+    if (body.action === "save_n8n") {
+      const n = body.n8n ?? { enabled: false };
+      await saveCredentials(admin, body.channel_id, {
+        n8n_enabled: !!n.enabled,
+        n8n_webhook_url: n.url ?? null,
+        n8n_webhook_secret: n.secret ?? null,
+      });
+      return json({ ok: true });
+    }
+
+    if (body.action === "generate_api_key") {
+      const key = randomSecret();
+      await saveCredentials(admin, body.channel_id, { send_api_key: key });
+      return json({ ok: true, api_key: key });
+    }
+
+    if (!creds?.instance_token) {
       const attached = await attachExistingCredentialsForChannel(admin, channel, body.channel_id, url);
       if (attached?.instance_token) {
         creds = attached;
       }
     }
 
-    if (!creds) {
+    if (!creds?.instance_token) {
       if (body.action === "delete") {
+        await admin.from("channel_credentials").delete().eq("channel_id", body.channel_id);
         await admin.from("channels").update({ status: "disconnected" }).eq("id", body.channel_id);
         return json({ ok: true, no_instance: true });
       }
