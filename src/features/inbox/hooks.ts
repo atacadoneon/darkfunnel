@@ -158,23 +158,6 @@ export type LastMessagePreview = {
   created_at: string;
 };
 
-function previewFromPayload(type: string, payload: Record<string, unknown> | null): string {
-  const p = (payload ?? {}) as Record<string, unknown>;
-  const body = typeof p.body === "string" ? p.body : "";
-  if (body) return body;
-  switch (type) {
-    case "image": return "📷 Foto";
-    case "video": return "🎥 Vídeo";
-    case "audio": return "🎤 Áudio";
-    case "ptt": return "🎤 Mensagem de voz";
-    case "document": return "📄 Documento";
-    case "sticker": return "Figurinha";
-    case "location": return "📍 Localização";
-    case "contact":
-    case "vcard": return "👤 Contato";
-    default: return "";
-  }
-}
 
 export function useLastMessagesByConversation(conversationIds: string[]) {
   const { current } = useWorkspace();
