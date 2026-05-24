@@ -4,8 +4,9 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContactAvatar } from "./ContactAvatar";
 import type { ConversationRow } from "./hooks";
+
 
 
 type Props = {
@@ -47,14 +48,8 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
               )}
               style={{ top: vi.start, height: vi.size }}
             >
-              <Avatar className="h-10 w-10 shrink-0">
-                {c.contacts?.profile_pic_url && (
-                  <AvatarImage src={c.contacts.profile_pic_url} alt={name} />
-                )}
-                <AvatarFallback className="text-sm font-medium">
-                  {name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <ContactAvatar contact={c.contacts} size={40} />
+
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
