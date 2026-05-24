@@ -9,8 +9,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import type { MessageRow } from "./hooks";
 
-function RefreshMediaButton({ messageId, onRefreshed }: { messageId: string; onRefreshed: (url: string) => void }) {
+function RefreshMediaButton({ messageId, conversationId, onRefreshed }: { messageId: string; conversationId: string; onRefreshed: (url: string) => void }) {
   const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
   return (
     <Button
       type="button"
@@ -21,11 +22,13 @@ function RefreshMediaButton({ messageId, onRefreshed }: { messageId: string; onR
         setLoading(true);
         const { data, error } = await supabase.functions.invoke("refresh-media", { body: { message_id: messageId } });
         setLoading(false);
-        if (error || !data?.media_url) {
+        if (error || !data?.ok || !data?.media_url) {
           toast.error("Não foi possível recarregar a mídia");
           return;
         }
         onRefreshed(data.media_url as string);
+        qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+        toast.success(data.persisted_in_storage ? "Mídia recarregada e armazenada" : "Mídia recarregada");
       }}
     >
       <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
