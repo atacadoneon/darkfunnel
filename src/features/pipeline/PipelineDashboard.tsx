@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from "recharts";
 import { TrendingUp, TrendingDown, Trophy, Target, DollarSign, Users, Clock, Activity } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import type { Deal, Stage } from "./hooks";
 import { formatMoney } from "./hooks";
 import type { WorkspaceMember } from "@/features/workspace/permissions";
@@ -122,13 +123,11 @@ export function PipelineDashboard({ deals, stages, members, origins }: Props) {
   if (deals.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center p-10">
-        <Card className="p-10 text-center max-w-md">
-          <Activity className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <h3 className="font-semibold">Sem dados ainda</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Crie leads no funil para ver as métricas e gráficos aqui.
-          </p>
-        </Card>
+        <EmptyState
+          icon={Activity}
+          title="Sem dados ainda"
+          description="Crie leads no funil para ver métricas, gráficos e o ranking de vendedores aqui."
+        />
       </div>
     );
   }

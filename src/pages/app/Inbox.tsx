@@ -16,7 +16,8 @@ import { ConversationHeader } from "@/features/inbox/ConversationHeader";
 import { MessageSearchBar } from "@/features/inbox/MessageSearchBar";
 import { NewConversationDialog } from "@/features/inbox/NewConversationDialog";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, MessagesSquare } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { useChannels } from "@/features/channels/hooks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -319,8 +320,12 @@ export default function Inbox() {
             <Composer conversation={selected} />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Selecione uma conversa
+          <div className="flex-1 flex items-center justify-center">
+            <EmptyState
+              icon={MessagesSquare}
+              title="Nenhuma conversa selecionada"
+              description="Escolha uma conversa na lista ao lado para visualizar as mensagens e responder."
+            />
           </div>
         )}
       </div>
