@@ -16,6 +16,7 @@ import {
   LifeBuoy,
   UserCheck,
   Building2,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,6 +34,7 @@ import {
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 
 type Item = { title: string; url: string; icon: any };
@@ -76,6 +78,7 @@ export function AppSidebar() {
   const { current } = useWorkspace();
   const { user } = useAuth();
   const canSeeSettings = useIsManagerOrAdmin();
+  const { data: isPlatformAdmin } = usePlatformAdmin();
 
   const visibleSections = sections
     .map((s) => ({
@@ -138,6 +141,23 @@ export function AppSidebar() {
                   <SidebarMenuButton className="text-emerald-500">
                     <UserCheck className="h-4 w-4" />
                     <span>Disponível</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        {isPlatformAdmin && (
+          <SidebarGroup className="py-1">
+            {!collapsed && <SidebarGroupLabel>Plataforma</SidebarGroupLabel>}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin")}>
+                    <NavLink to="/admin/features" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      {!collapsed && <span>Admin</span>}
+                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog } from "lucide-react";
+import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog, History } from "lucide-react";
+import { ImportHistoryDialog } from "@/features/channels/ImportHistoryDialog";
+import { isFeatureEnabled } from "@/lib/workspace-features";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +44,8 @@ export function ChannelsSection() {
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [importing, setImporting] = useState<ChannelRow | null>(null);
+  const importHistoryEnabled = isFeatureEnabled(current?.features as Record<string, any> | null | undefined, "import_history");
   const autoEnabledRef = useRef<Set<string>>(new Set());
 
   // Garante que grupos estejam sempre habilitados nos canais conectados
@@ -227,6 +231,17 @@ export function ChannelsSection() {
                       )}
                       Atualizar contatos
                     </Button>
+                    {importHistoryEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setImporting(c)}
+                        title="Importar histórico de mensagens com opções avançadas"
+                      >
+                        <History className="h-4 w-4 mr-2" />
+                        Importar Histórico
+                      </Button>
+                    )}
                   </>
                 )}
                 <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
@@ -250,6 +265,15 @@ export function ChannelsSection() {
       </Card>
 
       <ChannelDialog open={dialogOpen} onOpenChange={setDialogOpen} channel={editing} />
+
+      {importing && (
+        <ImportHistoryDialog
+          open={!!importing}
+          onOpenChange={(o) => { if (!o) setImporting(null); }}
+          channelId={importing.id}
+          channelName={importing.display_name}
+        />
+      )}
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => { if (!o) { setDeleting(null); setDeleteConversations(false); } }}>
         <AlertDialogContent>
