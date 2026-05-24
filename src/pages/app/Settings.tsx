@@ -1,6 +1,7 @@
 import { Navigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { PreferencesSection } from "@/features/settings/PreferencesSection";
 import { ChannelsSection } from "@/features/channels/ChannelsSection";
 import { TagsAdminSection, LossReasonsAdminSection } from "@/features/workspace/CatalogsAdmin";
 import { UsersSection } from "@/features/workspace/UsersSection";
