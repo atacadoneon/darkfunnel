@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music } from "lucide-react";
+import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music, Smile } from "lucide-react";
+import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 import { useQuickReplies, useScheduledMessages } from "./inboxFeatureHooks";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +64,7 @@ export function Composer({ conversation }: Props) {
   const [sending, setSending] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [recording, setRecording] = useState(false);
   const [recSeconds, setRecSeconds] = useState(0);
@@ -336,6 +338,36 @@ export function Composer({ conversation }: Props) {
             <Paperclip className="h-4 w-4" />
           </Button>
         )}
+        <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="icon" disabled={windowExpired || recording} title="Emoji">
+              <Smile className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 border-0" align="end">
+            <EmojiPicker
+              theme={Theme.AUTO}
+              emojiStyle={EmojiStyle.NATIVE}
+              onEmojiClick={(e) => {
+                const el = ref.current;
+                const emoji = e.emoji;
+                if (el) {
+                  const start = el.selectionStart ?? text.length;
+                  const end = el.selectionEnd ?? text.length;
+                  const next = text.slice(0, start) + emoji + text.slice(end);
+                  setText(next);
+                  setTimeout(() => {
+                    el.focus();
+                    const pos = start + emoji.length;
+                    el.setSelectionRange(pos, pos);
+                  }, 0);
+                } else {
+                  setText(text + emoji);
+                }
+              }}
+            />
+          </PopoverContent>
+        </Popover>
         {isUazapi && (
           <Button
             variant={recording ? "destructive" : "outline"}
