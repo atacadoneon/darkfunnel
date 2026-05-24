@@ -63,9 +63,16 @@ export default function Inbox() {
 
   const { data: msgMatchIds } = useConversationIdsByMessageSearch(filters.message);
 
+  const [tab, setTab] = useState<"open" | "closed">("open");
+
   const filtered = useMemo(() => {
     const q = filters.text.trim().toLowerCase();
     let arr = conversations.filter((c) => {
+      if (tab === "open") {
+        if (c.status !== "open") return false;
+      } else {
+        if (c.status !== "resolved" && c.status !== "archived") return false;
+      }
       if (q) {
         const n = (c.contacts?.display_name ?? "").toLowerCase();
         const p = (c.contacts?.phone_e164 ?? "").toLowerCase();
@@ -91,7 +98,14 @@ export default function Inbox() {
     });
     arr = sortConvs(arr, filters.sort);
     return arr;
-  }, [conversations, filters, msgMatchIds]);
+  }, [conversations, filters, msgMatchIds, tab]);
+
+  const openTotal = useMemo(() => conversations.filter((c) => c.status === "open").length, [conversations]);
+  const closedTotal = useMemo(
+    () => conversations.filter((c) => c.status === "resolved" || c.status === "archived").length,
+    [conversations]
+  );
+
 
 
   const selected = filtered.find((c) => c.id === selectedId) ?? null;
