@@ -172,31 +172,41 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
         const grouped = prev && prev.direction === m.direction;
         const isActive = m.id === activeMatchId;
         const isMedia = MEDIA_TYPES.has(m.type);
+        const curDate = new Date(m.created_at);
+        const showDay = !prev || differenceInCalendarDays(curDate, new Date(prev.created_at)) !== 0;
         return (
-          <div
-            key={m.id}
-            ref={(el) => { itemRefs.current[m.id] = el; }}
-            className={cn("flex", out ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
-          >
+          <div key={m.id}>
+            {showDay && (
+              <div className="flex justify-center my-3">
+                <span className="px-2.5 py-0.5 rounded-md bg-white/80 dark:bg-[#202c33]/80 text-[11px] text-[#54656f] dark:text-white/70 shadow-sm">
+                  {dayLabel(curDate)}
+                </span>
+              </div>
+            )}
             <div
-              className={cn(
-                "relative max-w-[75%] rounded-lg text-sm shadow-sm transition-shadow",
-                isMedia ? "p-1.5" : "px-2.5 py-1.5",
-                out
-                  ? "bg-[#d9fdd3] text-[#111b21] dark:bg-[#005c4b] dark:text-white"
-                  : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-white",
-                isActive && "ring-2 ring-yellow-400 ring-offset-1"
-              )}
+              ref={(el) => { itemRefs.current[m.id] = el; }}
+              className={cn("flex", out ? "justify-end" : "justify-start", grouped && !showDay ? "mt-0.5" : "mt-2")}
             >
-              <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
               <div
                 className={cn(
-                  "float-right -mb-0.5 ml-2 mt-1 flex items-center gap-1 text-[10px]",
-                  out ? "text-[#667781] dark:text-white/60" : "text-[#667781] dark:text-white/50"
+                  "relative max-w-[75%] rounded-lg text-sm shadow-sm transition-shadow",
+                  isMedia ? "p-1.5" : "px-2.5 py-1.5",
+                  out
+                    ? "bg-[#d9fdd3] text-[#111b21] dark:bg-[#005c4b] dark:text-white"
+                    : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-white",
+                  isActive && "ring-2 ring-yellow-400 ring-offset-1"
                 )}
               >
-                <span>{format(new Date(m.created_at), "HH:mm")}</span>
-                {out && <StatusIcon status={m.status} />}
+                <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
+                <div
+                  className={cn(
+                    "float-right -mb-0.5 ml-2 mt-1 flex items-center gap-1 text-[10px]",
+                    out ? "text-[#667781] dark:text-white/60" : "text-[#667781] dark:text-white/50"
+                  )}
+                >
+                  <span>{format(curDate, "HH:mm")}</span>
+                  {out && <StatusIcon status={m.status} />}
+                </div>
               </div>
             </div>
           </div>
@@ -210,3 +220,4 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
     </div>
   );
 }
+
