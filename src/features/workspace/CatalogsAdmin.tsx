@@ -137,7 +137,11 @@ export function useLossReasons(activeOnly = false) {
     queryKey: ["loss-reasons", current?.id, activeOnly],
     enabled: !!current,
     queryFn: async (): Promise<LossReason[]> => {
-      let query = supabase.from("loss_reasons").select("*").order("name", { ascending: true });
+      let query = supabase
+        .from("loss_reasons")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
       if (activeOnly) query = query.eq("active", true);
       const { data, error } = await query;
       if (error) throw error;

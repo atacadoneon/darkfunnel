@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { format, getDay, getDaysInMonth, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Target, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,78 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useGoal, useGoalActuals, useGoalMutations } from "@/hooks/useGoals";
-import { DAY_LABELS, type GoalScope } from "@/types/goal";
+import { DAY_LABELS, type Goal, type GoalDailyActual, type GoalScope } from "@/types/goal";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const YEARS = [2024, 2025, 2026, 2027];
+const DAY_SHORT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 
 const brl = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+
+type DailyRow = {
+  date: Date;
+  iso: string;
+  dayLabel: string;
+  isWorkingDay: boolean;
+  metaBase: number | null;
+  metaAjustada: number | null;
+  realizado: number | null;
+  deficit: number | null;
+  isToday: boolean;
+};
+
+function isoLocal(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+function buildDailyRows(
+  goal: { year: number; month: number; target_amount: number; working_days_mask: number; holidays: string[] | null },
+  actuals: GoalDailyActual[],
+): DailyRow[] {
+  const { year, month, target_amount, working_days_mask, holidays } = goal;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const holidaysSet = new Set((holidays || []).map((h) => String(h).slice(0, 10)));
+  const isWD = (d: Date) => {
+    const mask = 1 << d.getDay();
+    if ((working_days_mask & mask) === 0) return false;
+    return !holidaysSet.has(isoLocal(d));
+  };
+
+  const allDays = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month - 1, i + 1));
+  const workingDays = allDays.filter(isWD);
+  const metaBase = workingDays.length > 0 ? Number(target_amount) / workingDays.length : 0;
+  const actualByDate = new Map(
+    (actuals || []).map((a) => {
+      const amt = (a as any).actual_amount ?? (a as any).amount ?? 0;
+      return [a.date, Number(amt)] as const;
+    }),
+  );
+  let acum = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return allDays.map((date) => {
+    const iso = isoLocal(date);
+    const dayLabel = DAY_SHORT[date.getDay()];
+    const isToday = +date === +today;
+    if (!isWD(date)) {
+      return { date, iso, dayLabel, isWorkingDay: false, metaBase: null, metaAjustada: null, realizado: null, deficit: null, isToday };
+    }
+    const remaining = workingDays.filter((d) => d >= date).length;
+    const metaAjustada = metaBase + (remaining > 0 ? acum / remaining : 0);
+    const realizado = actualByDate.get(iso) ?? 0;
+    const deficit = Math.max(metaAjustada - realizado, 0);
+    if (date <= today) acum += deficit;
+    return { date, iso, dayLabel, isWorkingDay: true, metaBase, metaAjustada, realizado, deficit, isToday };
+  });
+}
 
 export default function Goals() {
   const { current } = useWorkspace();
@@ -33,49 +96,50 @@ export default function Goals() {
   const { upsertGoal, upsertActual } = useGoalMutations();
 
   const [target, setTarget] = useState<number>(0);
-  const [mask, setMask] = useState<number>(0b0111110); // Seg-Sex
+  const [mask, setMask] = useState<number>(0b0111110);
   const [holidays, setHolidays] = useState<string[]>([]);
   const [newHoliday, setNewHoliday] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setTarget(goal?.target_amount ?? 0);
+    setTarget(Number(goal?.target_amount ?? 0));
     setMask(goal?.working_days_mask ?? 0b0111110);
     setHolidays(goal?.holidays ?? []);
+    setDrafts({});
   }, [goal?.id]);
 
   const toggleDay = (d: number) => setMask((m) => m ^ (1 << d));
   const dayChecked = (d: number) => (mask & (1 << d)) !== 0;
 
-  const days = useMemo(() => {
-    const total = getDaysInMonth(new Date(year, month - 1, 1));
-    return Array.from({ length: total }, (_, i) => {
-      const date = new Date(year, month - 1, i + 1);
-      const iso = format(date, "yyyy-MM-dd");
-      const dow = getDay(date);
-      const isHoliday = holidays.includes(iso);
-      const isWorking = dayChecked(dow) && !isHoliday;
-      return { date, iso, dow, isWorking };
+  // Build rows using either persisted goal config or current local draft (so it renders even before first save)
+  const rows = useMemo(() => {
+    const effectiveGoal = {
+      year,
+      month,
+      target_amount: goal?.target_amount ?? target,
+      working_days_mask: goal?.working_days_mask ?? mask,
+      holidays: goal?.holidays ?? holidays,
+    };
+    // Merge drafts into actuals for live calculation
+    const merged: GoalDailyActual[] = [...actuals];
+    Object.entries(drafts).forEach(([date, v]) => {
+      const amount = Number(v);
+      if (Number.isNaN(amount)) return;
+      const i = merged.findIndex((a) => a.date === date);
+      const row = { id: "draft", goal_id: goal?.id ?? "", date, amount, created_at: "", updated_at: "" } as any;
+      row.actual_amount = amount;
+      if (i >= 0) merged[i] = row;
+      else merged.push(row);
     });
-  }, [year, month, mask, holidays]);
+    return buildDailyRows(effectiveGoal, merged);
+  }, [year, month, goal, target, mask, holidays, actuals, drafts]);
 
-  const workingDays = days.filter((d) => d.isWorking).length;
-  const baseTarget = workingDays > 0 ? target / workingDays : 0;
-
-  const actualsMap = useMemo(() => {
-    const m: Record<string, number> = {};
-    actuals.forEach((a) => { m[a.date] = Number(a.amount); });
-    return m;
-  }, [actuals]);
-
-  const totalRealizado = useMemo(
-    () => Object.values(actualsMap).reduce((s, v) => s + v, 0),
-    [actualsMap],
-  );
-  const faltaRealizar = Math.max(0, target - totalRealizado);
-
-  const today = format(now, "yyyy-MM-dd");
-  const remainingWorkingDays = days.filter((d) => d.isWorking && d.iso >= today).length;
+  const workingDays = rows.filter((r) => r.isWorkingDay).length;
+  const totalRealizado = rows.reduce((s, r) => s + (r.realizado ?? 0), 0);
+  const totalTarget = Number(goal?.target_amount ?? target ?? 0);
+  const faltaRealizar = Math.max(0, totalTarget - totalRealizado);
+  const todayIso = isoLocal(now);
+  const remainingWorkingDays = rows.filter((r) => r.isWorkingDay && r.iso >= todayIso).length;
   const ritmoNecessario = remainingWorkingDays > 0 ? faltaRealizar / remainingWorkingDays : 0;
 
   const handleSaveConfig = async () => {
@@ -234,36 +298,39 @@ export default function Goals() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {days.map((d, idx) => {
-              const realizado = drafts[d.iso] !== undefined
-                ? Number(drafts[d.iso]) || 0
-                : actualsMap[d.iso] ?? 0;
-              const metaAjustada = d.isWorking ? baseTarget : 0;
-              const deficit = metaAjustada - realizado;
-              return (
-                <TableRow key={d.iso} className={idx % 2 === 0 ? "bg-muted/30" : ""}>
-                  <TableCell className="font-mono text-xs">{format(d.date, "dd/MM/yyyy")}</TableCell>
-                  <TableCell className="text-xs">
-                    {format(d.date, "EEEE", { locale: ptBR })}
-                    {!d.isWorking && <span className="ml-2 text-muted-foreground">(folga)</span>}
-                  </TableCell>
-                  <TableCell className="text-right text-xs">{brl(baseTarget)}</TableCell>
-                  <TableCell className="text-right text-xs">{brl(metaAjustada)}</TableCell>
-                  <TableCell className="text-right">
+            {rows.map((r) => (
+              <TableRow key={r.iso} className={cn(r.isToday && "bg-accent/30")}>
+                <TableCell className="font-mono text-xs">{format(r.date, "dd/MM/yyyy")}</TableCell>
+                <TableCell className="text-xs">
+                  {r.dayLabel}
+                  {!r.isWorkingDay && <span className="ml-2 text-muted-foreground">(folga)</span>}
+                </TableCell>
+                <TableCell className="text-right text-xs">
+                  {r.isWorkingDay ? brl(r.metaBase!) : <span className="text-muted-foreground">—</span>}
+                </TableCell>
+                <TableCell className="text-right text-xs">
+                  {r.isWorkingDay ? brl(r.metaAjustada!) : <span className="text-muted-foreground">—</span>}
+                </TableCell>
+                <TableCell className="text-right">
+                  {r.isWorkingDay ? (
                     <Input
                       type="number"
                       className="h-8 w-32 ml-auto text-right"
-                      value={drafts[d.iso] ?? (actualsMap[d.iso] ?? "")}
-                      onChange={(e) => setDrafts({ ...drafts, [d.iso]: e.target.value })}
-                      disabled={!d.isWorking}
+                      value={drafts[r.iso] ?? (r.realizado ? String(r.realizado) : "")}
+                      onChange={(e) => setDrafts({ ...drafts, [r.iso]: e.target.value })}
                     />
-                  </TableCell>
-                  <TableCell className={`text-right text-xs ${deficit > 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}`}>
-                    {brl(deficit)}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell className={cn(
+                  "text-right text-xs",
+                  r.isWorkingDay && (r.deficit! > 0 ? "text-destructive font-medium" : "text-emerald-600 dark:text-emerald-400"),
+                )}>
+                  {r.isWorkingDay ? brl(r.deficit!) : <span className="text-muted-foreground">—</span>}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </Card>
