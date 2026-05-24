@@ -115,7 +115,7 @@ export default function Dashboard() {
   const deals = useMemo(() => filterDealsByPipeline(allDeals, pipelineId), [allDeals, pipelineId]);
   const contacts = contactsQ.data ?? [];
   const stages = stagesQ.data ?? [];
-  const lossReasons = lossQ.data ?? [];
+  
   const messages = msgsQ.data ?? [];
 
   const periodLabel = PERIOD_OPTIONS.find((p) => p.v === periodPreset)?.l ?? "Personalizado";
