@@ -28,6 +28,7 @@ import Automations from "@/pages/app/Automations";
 import Cadence from "@/pages/app/Cadence";
 import Goals from "@/pages/app/Goals";
 import AdminFeatures from "@/pages/admin/Features";
+import EmailMarketing from "@/pages/app/EmailMarketing";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
