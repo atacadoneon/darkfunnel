@@ -5,6 +5,7 @@ import { Check, CheckCheck, Clock, FileText, Download, MapPin, Image as ImageIco
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import type { MessageRow } from "./hooks";
 
