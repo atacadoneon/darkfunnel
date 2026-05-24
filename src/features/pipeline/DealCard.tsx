@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { formatMoney, type Deal } from "./hooks";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
+import { ConversationPopup } from "@/features/inbox/ConversationPopup";
 
 type Props = {
   deal: Deal & { last_interaction_at?: string | null; has_proposal?: boolean; origin_id?: string | null };
@@ -32,6 +34,7 @@ function colorFromName(name: string): string {
 export function DealCard({ deal, onClick, overlay }: Props) {
   const { user } = useAuth();
   const { data: members = [] } = useWorkspaceMembers();
+  const [chatOpen, setChatOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id, data: { type: "deal", deal } });
 
@@ -45,6 +48,7 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const assigneeInitial = (assigneeName ?? "?").charAt(0).toUpperCase();
 
   return (
+    <>
     <Card
       ref={setNodeRef}
       style={style}
@@ -59,8 +63,15 @@ export function DealCard({ deal, onClick, overlay }: Props) {
     >
       <div className="flex items-start gap-2">
         <h4 className="font-semibold text-sm flex-1 truncate">{contactLabel}</h4>
-        <div className="flex items-center gap-1 shrink-0">
-          <button className="text-muted-foreground hover:text-foreground" title="Abrir conversa">
+        <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+          <button
+            className="text-muted-foreground hover:text-foreground"
+            title="Abrir conversa"
+            onClick={(e) => {
+              e.stopPropagation();
+              setChatOpen(true);
+            }}
+          >
             <MessageCircle className="h-3.5 w-3.5" />
           </button>
           <button className="text-muted-foreground hover:text-foreground" title="Detalhes">
@@ -103,5 +114,12 @@ export function DealCard({ deal, onClick, overlay }: Props) {
         </div>
       )}
     </Card>
+    <ConversationPopup
+      open={chatOpen}
+      onOpenChange={setChatOpen}
+      contactId={deal.contact_id ?? null}
+      contactLabel={contactLabel}
+    />
+    </>
   );
 }
