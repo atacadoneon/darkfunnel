@@ -6,7 +6,7 @@ const TYPE_LABEL: Record<string, string> = {
   audio: "🎙 Áudio",
   ptt: "🎤 Mensagem de voz",
   document: "📄 Documento",
-  sticker: "Figurinha",
+  sticker: "🃏 Sticker",
   location: "📍 Localização",
   contact: "👤 Contato",
   vcard: "👤 Contato",
