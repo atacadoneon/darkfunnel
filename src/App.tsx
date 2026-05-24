@@ -88,7 +88,8 @@ const App = () => (
                   <Route path="chats" element={<Inbox />} />
                   <Route path="funildevendas" element={<Pipeline />} />
                   <Route path="negocios" element={<Navigate to="/funildevendas" replace />} />
-                  <Route path="emailmarketing" element={<Placeholder title="Email Marketing" />} />
+                  <Route path="emailmarketing" element={<EmailMarketing />} />
+                  <Route path="email-marketing" element={<Navigate to="/emailmarketing" replace />} />
                   <Route path="metas" element={<Goals />} />
                   <Route path="tarefas" element={<Tasks />} />
                   <Route path="reunioes" element={<Meetings />} />
