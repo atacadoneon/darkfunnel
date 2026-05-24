@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music } from "lucide-react";
+import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music, Smile } from "lucide-react";
+import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 import { useQuickReplies, useScheduledMessages } from "./inboxFeatureHooks";
 import { Badge } from "@/components/ui/badge";
