@@ -630,25 +630,6 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
-    if (body.action === "save_n8n") {
-      const n = body.n8n ?? { enabled: false };
-      await admin.from("channel_credentials").update({
-        n8n_enabled: !!n.enabled,
-        n8n_webhook_url: n.url ?? null,
-        n8n_webhook_secret: n.secret ?? null,
-        updated_at: new Date().toISOString(),
-      }).eq("channel_id", body.channel_id);
-      return json({ ok: true });
-    }
-
-    if (body.action === "generate_api_key") {
-      const bytes = new Uint8Array(24);
-      crypto.getRandomValues(bytes);
-      const key = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-      await admin.from("channel_credentials").update({ send_api_key: key, updated_at: new Date().toISOString() }).eq("channel_id", body.channel_id);
-      return json({ ok: true, api_key: key });
-    }
-
     if (body.action === "sync_history") {
       const chatLimit = Math.min(body.chat_limit ?? 200, 500);
       const perChatLimit = Math.min(body.per_chat_limit ?? 100, 300);
