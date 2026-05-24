@@ -34,6 +34,7 @@ import {
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 
 type Item = { title: string; url: string; icon: any };
@@ -77,6 +78,7 @@ export function AppSidebar() {
   const { current } = useWorkspace();
   const { user } = useAuth();
   const canSeeSettings = useIsManagerOrAdmin();
+  const { data: isPlatformAdmin } = usePlatformAdmin();
 
   const visibleSections = sections
     .map((s) => ({
