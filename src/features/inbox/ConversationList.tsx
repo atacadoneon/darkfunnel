@@ -40,7 +40,8 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
           const time = c.last_message_at
             ? formatDistanceToNowStrict(new Date(c.last_message_at), { locale: ptBR, addSuffix: false })
             : "";
-          const previewText = c.last_message_preview ?? "";
+          const rawPreview = c.last_message_preview ?? "";
+          const previewText = rawPreview.length > 60 ? rawPreview.slice(0, 60) + "…" : rawPreview;
 
           return (
             <button
