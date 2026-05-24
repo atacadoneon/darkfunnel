@@ -63,9 +63,16 @@ export default function Inbox() {
 
   const { data: msgMatchIds } = useConversationIdsByMessageSearch(filters.message);
 
+  const [tab, setTab] = useState<"open" | "closed">("open");
+
   const filtered = useMemo(() => {
     const q = filters.text.trim().toLowerCase();
     let arr = conversations.filter((c) => {
+      if (tab === "open") {
+        if (c.status !== "open") return false;
+      } else {
+        if (c.status !== "resolved" && c.status !== "archived") return false;
+      }
       if (q) {
         const n = (c.contacts?.display_name ?? "").toLowerCase();
         const p = (c.contacts?.phone_e164 ?? "").toLowerCase();
@@ -91,7 +98,14 @@ export default function Inbox() {
     });
     arr = sortConvs(arr, filters.sort);
     return arr;
-  }, [conversations, filters, msgMatchIds]);
+  }, [conversations, filters, msgMatchIds, tab]);
+
+  const openTotal = useMemo(() => conversations.filter((c) => c.status === "open").length, [conversations]);
+  const closedTotal = useMemo(
+    () => conversations.filter((c) => c.status === "resolved" || c.status === "archived").length,
+    [conversations]
+  );
+
 
 
   const selected = filtered.find((c) => c.id === selectedId) ?? null;
@@ -171,6 +185,33 @@ export default function Inbox() {
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
         </div>
+        <div className="flex border-b text-xs">
+          {([
+            { id: "open" as const, label: "Abertas", count: openTotal },
+            { id: "closed" as const, label: "Fechadas", count: closedTotal },
+          ]).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setTab(t.id);
+                qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
+              }}
+              className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
+                tab === t.id
+                  ? "border-primary text-foreground font-medium"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+              <span className={`px-1.5 rounded-full text-[10px] ${
+                tab === t.id ? "bg-primary text-primary-foreground" : "bg-muted"
+              }`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 min-h-0 overflow-hidden">
           {isLoading ? (
             <div className="p-4 text-sm text-muted-foreground">Carregando...</div>
