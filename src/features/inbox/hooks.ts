@@ -2,6 +2,8 @@ import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { formatLastMessagePreview, previewBodyFromPayload } from "./messagePreview";
+
 
 
 export type ConversationRow = {
@@ -49,14 +51,9 @@ export function useConversations() {
       const rows = (data ?? []) as unknown as Array<ConversationRow & { messages?: Array<{ direction: "in" | "out"; type: string; payload: Record<string, unknown> | null; created_at: string }> }>;
       for (const r of rows) {
         const m = r.messages?.[0];
-        if (m) {
-          const body = typeof m.payload?.body === "string" ? (m.payload!.body as string) : "";
-          const fallback = ({ image: "📷 Foto", video: "🎥 Vídeo", audio: "🎤 Áudio", ptt: "🎤 Mensagem de voz", document: "📄 Documento", sticker: "Figurinha", location: "📍 Localização", contact: "👤 Contato", vcard: "👤 Contato" } as Record<string, string>)[m.type] ?? "";
-          r.last_message_preview = `${m.direction === "out" ? "Você: " : ""}${body || fallback}`;
-        } else {
-          r.last_message_preview = null;
-        }
+        r.last_message_preview = m ? formatLastMessagePreview(m.direction, m.type, m.payload) : null;
       }
+
       return rows;
 
     },
@@ -161,23 +158,6 @@ export type LastMessagePreview = {
   created_at: string;
 };
 
-function previewFromPayload(type: string, payload: Record<string, unknown> | null): string {
-  const p = (payload ?? {}) as Record<string, unknown>;
-  const body = typeof p.body === "string" ? p.body : "";
-  if (body) return body;
-  switch (type) {
-    case "image": return "📷 Foto";
-    case "video": return "🎥 Vídeo";
-    case "audio": return "🎤 Áudio";
-    case "ptt": return "🎤 Mensagem de voz";
-    case "document": return "📄 Documento";
-    case "sticker": return "Figurinha";
-    case "location": return "📍 Localização";
-    case "contact":
-    case "vcard": return "👤 Contato";
-    default: return "";
-  }
-}
 
 export function useLastMessagesByConversation(conversationIds: string[]) {
   const { current } = useWorkspace();
@@ -212,7 +192,7 @@ export function useLastMessagesByConversation(conversationIds: string[]) {
             conversation_id: r.conversation_id,
             direction: r.direction,
             type: r.type,
-            body: previewFromPayload(r.type, r.payload),
+            body: previewBodyFromPayload(r.type, r.payload),
             created_at: r.created_at,
           };
         }
