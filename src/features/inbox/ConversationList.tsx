@@ -33,6 +33,9 @@ export function ConversationList({ conversations, selectedId, onSelect, lastMess
           const time = c.last_message_at
             ? formatDistanceToNowStrict(new Date(c.last_message_at), { locale: ptBR, addSuffix: false })
             : "";
+          const lm = lastMessages?.[c.id];
+          const previewText = lm?.body ?? "";
+          const previewPrefix = lm?.direction === "out" ? "Você: " : "";
           return (
             <button
               key={c.id}
@@ -43,7 +46,7 @@ export function ConversationList({ conversations, selectedId, onSelect, lastMess
               )}
               style={{ top: vi.start, height: vi.size }}
             >
-              <div className="h-9 w-9 rounded-full bg-muted shrink-0 flex items-center justify-center text-sm font-medium">
+              <div className="h-10 w-10 rounded-full bg-muted shrink-0 flex items-center justify-center text-sm font-medium">
                 {name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -51,20 +54,29 @@ export function ConversationList({ conversations, selectedId, onSelect, lastMess
                   <span className="font-medium text-sm truncate">{name}</span>
                   <span className="text-[10px] text-muted-foreground shrink-0">{time}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="h-4 px-1 text-[9px] font-normal">
+                <div className="flex items-center justify-between gap-2 mt-0.5">
+                  <span className={cn(
+                    "text-xs truncate flex-1 min-w-0",
+                    c.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                  )}>
+                    {previewText ? `${previewPrefix}${previewText}` : <span className="italic opacity-60">Sem mensagens</span>}
+                  </span>
+                  {c.unread_count > 0 && (
+                    <Badge className="h-4 px-1.5 text-[10px] shrink-0">{c.unread_count}</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Badge variant="outline" className="h-3.5 px-1 text-[9px] font-normal">
                     {c.channels?.kind === "whatsapp_cloud" ? "Cloud" : "UAZAPI"}
                   </Badge>
-                  {c.unread_count > 0 && (
-                    <Badge className="h-4 px-1.5 text-[10px]">{c.unread_count}</Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground truncate">
+                  <span className="text-[10px] text-muted-foreground truncate">
                     {c.contacts?.phone_e164 ?? ""}
                   </span>
                 </div>
               </div>
             </button>
           );
+
         })}
       </div>
       {conversations.length === 0 && (
