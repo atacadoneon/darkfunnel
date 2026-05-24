@@ -7,6 +7,8 @@ import {
   Target,
   ListChecks,
   Calendar,
+  CalendarDays,
+  Phone,
   MessageSquare,
   Workflow,
   Settings,
@@ -17,6 +19,7 @@ import {
   Building2,
   Shield,
   LogOut,
+  Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -47,8 +50,14 @@ const sections: { label: string; items: Item[] }[] = [
     label: "Principal",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
+      { title: "CRM & Leads", url: "/leads", icon: Users },
       { title: "Funil de Vendas", url: "/funildevendas", icon: Users },
-      { title: "Chats", url: "/chats", icon: MessageCircle },
+    ],
+  },
+  {
+    label: "Comunicação",
+    items: [
+      { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
     ],
   },
@@ -58,6 +67,8 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Metas", url: "/metas", icon: Target },
       { title: "Tarefas", url: "/tarefas", icon: ListChecks },
       { title: "Reuniões", url: "/reunioes", icon: Calendar },
+      { title: "Agenda", url: "/agenda", icon: CalendarDays },
+      { title: "Ligações", url: "/calls", icon: Phone },
     ],
   },
   {
@@ -69,7 +80,10 @@ const sections: { label: string; items: Item[] }[] = [
   },
   {
     label: "Ferramentas",
-    items: [{ title: "Configurações", url: "/settings", icon: Settings }],
+    items: [
+      { title: "Prospecção", url: "/settings?tab=prospects", icon: Search },
+      { title: "Configurações", url: "/settings", icon: Settings },
+    ],
   },
 ];
 
