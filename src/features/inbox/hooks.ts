@@ -39,12 +39,26 @@ export function useConversations() {
       const { data, error } = await supabase
         .from("conversations")
         .select(
-          "id,contact_id,channel_id,status,unread_count,last_message_at,window_expires_at,assigned_user_id,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,contact_tags(tag_id)),channels(kind,display_name)"
+          "id,contact_id,channel_id,status,unread_count,last_message_at,window_expires_at,assigned_user_id,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,contact_tags(tag_id)),channels(kind,display_name),messages(direction,type,payload,created_at)"
         )
         .order("last_message_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { foreignTable: "messages", ascending: false })
+        .limit(1, { foreignTable: "messages" })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as unknown as ConversationRow[];
+      const rows = (data ?? []) as unknown as Array<ConversationRow & { messages?: Array<{ direction: "in" | "out"; type: string; payload: Record<string, unknown> | null; created_at: string }> }>;
+      for (const r of rows) {
+        const m = r.messages?.[0];
+        if (m) {
+          const body = typeof m.payload?.body === "string" ? (m.payload!.body as string) : "";
+          const fallback = ({ image: "📷 Foto", video: "🎥 Vídeo", audio: "🎤 Áudio", ptt: "🎤 Mensagem de voz", document: "📄 Documento", sticker: "Figurinha", location: "📍 Localização", contact: "👤 Contato", vcard: "👤 Contato" } as Record<string, string>)[m.type] ?? "";
+          r.last_message_preview = `${m.direction === "out" ? "Você: " : ""}${body || fallback}`;
+        } else {
+          r.last_message_preview = null;
+        }
+      }
+      return rows;
+
     },
     staleTime: 30_000,
   });
