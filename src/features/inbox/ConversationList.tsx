@@ -4,17 +4,17 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import type { ConversationRow, LastMessagePreview } from "./hooks";
+import type { ConversationRow } from "./hooks";
 
 type Props = {
   conversations: ConversationRow[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  lastMessages?: Record<string, LastMessagePreview>;
 };
 
 
-export function ConversationList({ conversations, selectedId, onSelect, lastMessages }: Props) {
+export function ConversationList({ conversations, selectedId, onSelect }: Props) {
+
   const parentRef = useRef<HTMLDivElement>(null);
   const v = useVirtualizer({
     count: conversations.length,
@@ -33,9 +33,8 @@ export function ConversationList({ conversations, selectedId, onSelect, lastMess
           const time = c.last_message_at
             ? formatDistanceToNowStrict(new Date(c.last_message_at), { locale: ptBR, addSuffix: false })
             : "";
-          const lm = lastMessages?.[c.id];
-          const previewText = lm?.body ?? "";
-          const previewPrefix = lm?.direction === "out" ? "Você: " : "";
+          const previewText = c.last_message_preview ?? "";
+
           return (
             <button
               key={c.id}
@@ -59,7 +58,7 @@ export function ConversationList({ conversations, selectedId, onSelect, lastMess
                     "text-xs truncate flex-1 min-w-0",
                     c.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"
                   )}>
-                    {previewText ? `${previewPrefix}${previewText}` : <span className="italic opacity-60">Sem mensagens</span>}
+                    {previewText ? previewText : <span className="italic opacity-60">Sem mensagens</span>}
                   </span>
                   {c.unread_count > 0 && (
                     <Badge className="h-4 px-1.5 text-[10px] shrink-0">{c.unread_count}</Badge>
