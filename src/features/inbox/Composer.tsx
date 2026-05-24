@@ -364,6 +364,7 @@ export function Composer({ conversation }: Props) {
           <Send className="h-4 w-4" />
         </Button>
       </div>
+      <div className="text-xs opacity-50 mt-1">Shift+Enter quebra linha · / atalhos · @ menciona vendedor</div>
 
       <ScheduleMessageDialog
         open={scheduleOpen}
