@@ -61,7 +61,7 @@ export default function Settings() {
         </TabsList>
 
         <TabsContent value="preferences" className="mt-6">
-          <Empty title="Preferências" desc="Idioma, fuso horário, notificações e tema — em breve." />
+          <PreferencesSection />
         </TabsContent>
         <TabsContent value="channels" className="mt-6">
           <ChannelsSection />
