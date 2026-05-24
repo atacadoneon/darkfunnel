@@ -521,28 +521,7 @@ Deno.serve(async (req) => {
       const c3 = await loadCredentials(admin, body.channel_id);
       if (!c3?.webhook_secret) return json({ error: "webhook_secret ausente; reconecte o canal" }, 400);
       const webhook = `${url}/functions/v1/uazapi-webhook?secret=${c3.webhook_secret}&channel=${body.channel_id}`;
-      const payload = {
-        url: webhook,
-        enabled: true,
-        events: ["messages", "messages_update", "connection", "contacts", "groups"],
-        excludeMessages: [] as string[],
-        addUrlEvents: false,
-        addUrlTypesMessages: false,
-      };
-      let r = await uaz(creds.host, "/webhook", {
-        method: "POST",
-        token: creds.instance_token,
-        body: JSON.stringify(payload),
-      });
-      // fallback: algumas versões da uazapi expõem em /instance/webhook
-      if (!r.ok) {
-        const r2 = await uaz(creds.host, "/instance/webhook", {
-          method: "POST",
-          token: creds.instance_token,
-          body: JSON.stringify(payload),
-        });
-        if (r2.ok) r = r2;
-      }
+      const r = await configureWebhook(url, body.channel_id, creds.host, creds.instance_token, c3.webhook_secret);
       if (!r.ok) {
         const detailStr = typeof r.data === "string" ? r.data : JSON.stringify(r.data);
         return json({ error: `uazapi webhook falhou: ${detailStr?.slice(0, 300)}`, detail: r.data }, 502);
@@ -566,17 +545,7 @@ Deno.serve(async (req) => {
       try {
         const cw = await loadCredentials(admin, body.channel_id);
         if (cw?.webhook_secret) {
-          const webhook = `${url}/functions/v1/uazapi-webhook?secret=${cw.webhook_secret}&channel=${body.channel_id}`;
-          const payload = {
-            url: webhook,
-            enabled: true,
-            events: ["messages", "messages_update", "connection", "contacts", "groups"],
-            excludeMessages: [] as string[],
-            addUrlEvents: false,
-            addUrlTypesMessages: false,
-          };
-          const rw = await uaz(creds.host, "/webhook", { method: "POST", token: creds.instance_token, body: JSON.stringify(payload) });
-          if (!rw.ok) await uaz(creds.host, "/instance/webhook", { method: "POST", token: creds.instance_token, body: JSON.stringify(payload) });
+          await configureWebhook(url, body.channel_id, creds.host, creds.instance_token, cw.webhook_secret);
         }
       } catch (_) { /* best-effort */ }
       return json({ ok: true, qr, paircode, status });
