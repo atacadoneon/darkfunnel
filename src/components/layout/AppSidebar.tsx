@@ -7,7 +7,7 @@ import {
   Target,
   ListChecks,
   Calendar,
-  ClipboardList,
+  Calendar,
   MessageSquare,
   Workflow,
   Settings,
