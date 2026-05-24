@@ -179,7 +179,6 @@ export default function Inbox() {
               conversations={filtered}
               selectedId={selectedId}
               onSelect={setSelectedId}
-              lastMessages={lastMessages}
 
             />
           )}
