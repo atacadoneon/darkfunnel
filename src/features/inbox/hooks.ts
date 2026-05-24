@@ -138,3 +138,89 @@ export function useMessages(conversationId: string | null) {
 
   return query;
 }
+
+export type LastMessagePreview = {
+  conversation_id: string;
+  direction: "in" | "out";
+  type: string;
+  body: string;
+  created_at: string;
+};
+
+function previewFromPayload(type: string, payload: Record<string, unknown> | null): string {
+  const p = (payload ?? {}) as Record<string, unknown>;
+  const body = typeof p.body === "string" ? p.body : "";
+  if (body) return body;
+  switch (type) {
+    case "image": return "📷 Foto";
+    case "video": return "🎥 Vídeo";
+    case "audio": return "🎤 Áudio";
+    case "ptt": return "🎤 Mensagem de voz";
+    case "document": return "📄 Documento";
+    case "sticker": return "Figurinha";
+    case "location": return "📍 Localização";
+    case "contact":
+    case "vcard": return "👤 Contato";
+    default: return "";
+  }
+}
+
+export function useLastMessagesByConversation(conversationIds: string[]) {
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+  const ids = useMemo(() => [...conversationIds].sort(), [conversationIds]);
+  const key = ids.join(",");
+
+  const query = useQuery({
+    queryKey: ["last-messages", current?.id, key],
+    enabled: !!current && ids.length > 0,
+    queryFn: async (): Promise<Record<string, LastMessagePreview>> => {
+      const map: Record<string, LastMessagePreview> = {};
+      const chunkSize = 100;
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const { data, error } = await supabase
+          .from("messages")
+          .select("conversation_id,direction,type,payload,created_at")
+          .in("conversation_id", chunk)
+          .order("created_at", { ascending: false })
+          .limit(chunk.length * 8);
+        if (error) throw error;
+        for (const r of (data ?? []) as Array<{
+          conversation_id: string;
+          direction: "in" | "out";
+          type: string;
+          payload: Record<string, unknown> | null;
+          created_at: string;
+        }>) {
+          if (map[r.conversation_id]) continue;
+          map[r.conversation_id] = {
+            conversation_id: r.conversation_id,
+            direction: r.direction,
+            type: r.type,
+            body: previewFromPayload(r.type, r.payload),
+            created_at: r.created_at,
+          };
+        }
+      }
+      return map;
+    },
+    staleTime: 10_000,
+  });
+
+  useEffect(() => {
+    if (!current) return;
+    const ch = supabase
+      .channel(`last-msg:${current.id}:${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `workspace_id=eq.${current.id}` },
+        () => qc.invalidateQueries({ queryKey: ["last-messages", current.id] })
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [current, qc]);
+
+  return query;
+}
+
