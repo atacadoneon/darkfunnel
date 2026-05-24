@@ -64,6 +64,19 @@ export default function Inbox() {
   const { data: msgMatchIds } = useConversationIdsByMessageSearch(filters.message);
 
   const [tab, setTab] = useState<"open" | "closed">("open");
+  const [quickChips, setQuickChips] = useState<{ unread: boolean; noReply: boolean }>({ unread: false, noReply: false });
+
+  const matchesChips = (c: typeof conversations[number]) => {
+    if (quickChips.unread && !(c.unread_count > 0)) return false;
+    if (quickChips.noReply) {
+      const inAt = c.last_inbound_at ? new Date(c.last_inbound_at).getTime() : 0;
+      const outAt = c.last_outbound_at ? new Date(c.last_outbound_at).getTime() : 0;
+      if (!inAt) return false;
+      if (outAt && outAt >= inAt) return false;
+    }
+    return true;
+  };
+
 
   const filtered = useMemo(() => {
     const q = filters.text.trim().toLowerCase();
@@ -94,11 +107,29 @@ export default function Inbox() {
       if (filters.message.trim().length >= 2) {
         if (!msgMatchIds || !msgMatchIds.has(c.id)) return false;
       }
+      if (!matchesChips(c)) return false;
       return true;
     });
     arr = sortConvs(arr, filters.sort);
     return arr;
-  }, [conversations, filters, msgMatchIds, tab]);
+  }, [conversations, filters, msgMatchIds, tab, quickChips]);
+
+  // counts dos chips dentro do tab atual (sem aplicar os chips para não zerar)
+  const inTab = useMemo(
+    () => conversations.filter((c) => (tab === "open" ? c.status === "open" : c.status === "resolved" || c.status === "archived")),
+    [conversations, tab]
+  );
+  const unreadChipCount = useMemo(() => inTab.filter((c) => c.unread_count > 0).length, [inTab]);
+  const noReplyChipCount = useMemo(
+    () =>
+      inTab.filter((c) => {
+        const inAt = c.last_inbound_at ? new Date(c.last_inbound_at).getTime() : 0;
+        const outAt = c.last_outbound_at ? new Date(c.last_outbound_at).getTime() : 0;
+        return inAt > 0 && (!outAt || outAt < inAt);
+      }).length,
+    [inTab]
+  );
+
 
   const openTotal = useMemo(() => conversations.filter((c) => c.status === "open").length, [conversations]);
   const closedTotal = useMemo(
@@ -184,7 +215,35 @@ export default function Inbox() {
             </div>
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {([
+              { id: "unread" as const, label: "Não lidas", count: unreadChipCount },
+              { id: "noReply" as const, label: "Sem resposta", count: noReplyChipCount },
+            ]).map((chip) => {
+              const active = quickChips[chip.id];
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setQuickChips((p) => ({ ...p, [chip.id]: !p[chip.id] }))}
+                  className={`inline-flex items-center gap-1 h-6 px-2 rounded-full text-[11px] border transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-input hover:bg-muted"
+                  }`}
+                >
+                  {chip.label}
+                  <span className={`px-1 rounded-full text-[10px] ${
+                    active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground"
+                  }`}>
+                    {chip.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+
         <div className="flex border-b text-xs">
           {([
             { id: "open" as const, label: "Abertas", count: openTotal },

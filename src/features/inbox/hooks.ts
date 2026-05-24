@@ -13,9 +13,12 @@ export type ConversationRow = {
   status: string;
   unread_count: number;
   last_message_at: string | null;
+  last_inbound_at?: string | null;
+  last_outbound_at?: string | null;
   window_expires_at: string | null;
   assigned_user_id: string | null;
   attribution_source?: string | null;
+
 
   created_at?: string;
   updated_at?: string;
@@ -45,7 +48,7 @@ export function useConversations() {
       const { data, error } = await supabase
         .from("conversations")
         .select(
-          "id,contact_id,channel_id,status,unread_count,last_message_at,window_expires_at,assigned_user_id,attribution_source,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,profile_pic_preview_url,contact_tags(tag_id)),channels(kind,display_name),messages(direction,type,payload,created_at)"
+          "id,contact_id,channel_id,status,unread_count,last_message_at,last_inbound_at,last_outbound_at,window_expires_at,assigned_user_id,attribution_source,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,profile_pic_preview_url,contact_tags(tag_id)),channels(kind,display_name),messages(direction,type,payload,created_at)"
         )
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .order("created_at", { foreignTable: "messages", ascending: false })
