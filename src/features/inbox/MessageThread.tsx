@@ -1,9 +1,69 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Check, CheckCheck, Clock, FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon } from "lucide-react";
+import { Check, CheckCheck, Clock, FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import type { MessageRow } from "./hooks";
+
+function RefreshMediaButton({ messageId, onRefreshed }: { messageId: string; onRefreshed: (url: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={loading}
+      onClick={async () => {
+        setLoading(true);
+        const { data, error } = await supabase.functions.invoke("refresh-media", { body: { message_id: messageId } });
+        setLoading(false);
+        if (error || !data?.media_url) {
+          toast.error("Não foi possível recarregar a mídia");
+          return;
+        }
+        onRefreshed(data.media_url as string);
+      }}
+    >
+      <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
+      Recarregar mídia
+    </Button>
+  );
+}
+
+function MediaWithRefresh({
+  messageId,
+  url,
+  render,
+}: {
+  messageId: string;
+  url: string;
+  render: (currentUrl: string, onError: () => void) => React.ReactNode;
+}) {
+  const [currentUrl, setCurrentUrl] = useState(url);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setCurrentUrl(url); setFailed(false); }, [url]);
+  // HEAD check for 404/410
+  useEffect(() => {
+    let cancelled = false;
+    fetch(currentUrl, { method: "HEAD" })
+      .then((r) => { if (!cancelled && (r.status === 404 || r.status === 410)) setFailed(true); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentUrl]);
+  if (failed) {
+    return (
+      <div className="flex flex-col items-start gap-2 rounded-md border bg-background/40 p-2">
+        <span className="text-xs opacity-70">Mídia expirada ou indisponível.</span>
+        <RefreshMediaButton messageId={messageId} onRefreshed={(u) => { setCurrentUrl(u); setFailed(false); }} />
+      </div>
+    );
+  }
+  return <>{render(currentUrl, () => setFailed(true))}</>;
+}
+
 
 function dayLabel(d: Date): string {
   if (isToday(d)) return "Hoje";
@@ -55,9 +115,15 @@ function renderBody(m: MessageRow, query: string) {
     if (!mediaUrl) return unavailable(ImageIcon, "📷 imagem");
     return (
       <div className="space-y-1">
-        <a href={mediaUrl} target="_blank" rel="noreferrer">
-          <img src={mediaUrl} loading="lazy" className="max-h-80 w-full rounded object-cover" alt={caption || "imagem"} />
-        </a>
+        <MediaWithRefresh
+          messageId={m.id}
+          url={mediaUrl}
+          render={(u, onError) => (
+            <a href={u} target="_blank" rel="noreferrer">
+              <img src={u} loading="lazy" onError={onError} className="max-h-80 w-full rounded object-cover" alt={caption || "imagem"} />
+            </a>
+          )}
+        />
         {caption && <div className="px-1 text-sm whitespace-pre-wrap break-words">{highlight(caption, query)}</div>}
       </div>
     );
@@ -68,7 +134,13 @@ function renderBody(m: MessageRow, query: string) {
     const seconds = p.seconds as number | undefined;
     return (
       <div className="space-y-1">
-        <audio controls preload="metadata" src={mediaUrl} className="h-10 w-full max-w-[280px]" />
+        <MediaWithRefresh
+          messageId={m.id}
+          url={mediaUrl}
+          render={(u, onError) => (
+            <audio controls preload="metadata" src={u} onError={onError} className="h-10 w-full max-w-[280px]" />
+          )}
+        />
         <div className="px-1 text-xs opacity-70">🎙 áudio{seconds ? ` · ${seconds}s` : ""}</div>
       </div>
     );
@@ -78,7 +150,13 @@ function renderBody(m: MessageRow, query: string) {
     if (!mediaUrl) return unavailable(VideoIcon, "🎬 vídeo");
     return (
       <div className="space-y-1">
-        <video controls preload="metadata" src={mediaUrl} className="max-h-80 w-full max-w-[320px] rounded" />
+        <MediaWithRefresh
+          messageId={m.id}
+          url={mediaUrl}
+          render={(u, onError) => (
+            <video controls preload="metadata" src={u} onError={onError} className="max-h-80 w-full max-w-[320px] rounded" />
+          )}
+        />
         {caption && <div className="px-1 text-sm whitespace-pre-wrap break-words">{highlight(caption, query)}</div>}
       </div>
     );
@@ -89,26 +167,41 @@ function renderBody(m: MessageRow, query: string) {
     const filename = (p.filename as string | undefined) || "arquivo";
     const mime = (p.mime as string | undefined) || "";
     return (
-      <a
-        href={mediaUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-2 rounded-md border bg-background/40 p-2 hover:bg-background/60 max-w-[300px]"
-      >
-        <FileText className="h-6 w-6 shrink-0 opacity-80" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{filename}</div>
-          {mime && <div className="truncate text-xs opacity-60">{mime}</div>}
-        </div>
-        <Download className="h-4 w-4 shrink-0 opacity-70" />
-      </a>
+      <MediaWithRefresh
+        messageId={m.id}
+        url={mediaUrl}
+        render={(u) => (
+          <a
+            href={u}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 rounded-md border bg-background/40 p-2 hover:bg-background/60 max-w-[300px]"
+          >
+            <FileText className="h-6 w-6 shrink-0 opacity-80" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{filename}</div>
+              {mime && <div className="truncate text-xs opacity-60">{mime}</div>}
+            </div>
+            <Download className="h-4 w-4 shrink-0 opacity-70" />
+          </a>
+        )}
+      />
     );
   }
 
   if (m.type === "sticker") {
     if (!mediaUrl) return unavailable(ImageIcon, "sticker");
-    return <img src={mediaUrl} className="h-32 w-32 rounded object-contain" alt="sticker" />;
+    return (
+      <MediaWithRefresh
+        messageId={m.id}
+        url={mediaUrl}
+        render={(u, onError) => (
+          <img src={u} onError={onError} className="h-32 w-32 rounded object-contain" alt="sticker" />
+        )}
+      />
+    );
   }
+
 
   if (m.type === "location") {
     const lat = p.lat as number | undefined;
