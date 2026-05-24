@@ -14,7 +14,7 @@ type Props = {
 };
 
 
-export function ConversationList({ conversations, selectedId, onSelect }: Props) {
+export function ConversationList({ conversations, selectedId, onSelect, lastMessages }: Props) {
   const parentRef = useRef<HTMLDivElement>(null);
   const v = useVirtualizer({
     count: conversations.length,
