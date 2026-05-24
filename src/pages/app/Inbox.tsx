@@ -328,7 +328,7 @@ export default function Inbox() {
             />
             <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground">DarkFunnel Inbox</h2>
             <p className="mt-1.5 text-sm text-muted-foreground max-w-sm leading-relaxed">
-              Escolha uma conversa na lista ao lado para visualizar as mensagens e responder.
+              Selecione uma conversa na lista à esquerda para visualizar as mensagens
             </p>
           </div>
         )}
