@@ -54,7 +54,7 @@ export const DEFAULT_FILTERS: InboxFilters = {
   assignee: null,
   tagId: null,
   status: null,
-  sort: "updated_desc",
+  sort: "recent",
 };
 
 type Props = {
