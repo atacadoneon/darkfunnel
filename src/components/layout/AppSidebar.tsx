@@ -147,6 +147,23 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+        {isPlatformAdmin && (
+          <SidebarGroup className="py-1">
+            {!collapsed && <SidebarGroupLabel>Plataforma</SidebarGroupLabel>}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin")}>
+                    <NavLink to="/admin/features" className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      {!collapsed && <span>Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
         {visibleSections.map((section) => (
           <SidebarGroup key={section.label} className="py-1">
             {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
