@@ -51,14 +51,9 @@ export function useConversations() {
       const rows = (data ?? []) as unknown as Array<ConversationRow & { messages?: Array<{ direction: "in" | "out"; type: string; payload: Record<string, unknown> | null; created_at: string }> }>;
       for (const r of rows) {
         const m = r.messages?.[0];
-        if (m) {
-          const body = typeof m.payload?.body === "string" ? (m.payload!.body as string) : "";
-          const fallback = ({ image: "📷 Foto", video: "🎥 Vídeo", audio: "🎤 Áudio", ptt: "🎤 Mensagem de voz", document: "📄 Documento", sticker: "Figurinha", location: "📍 Localização", contact: "👤 Contato", vcard: "👤 Contato" } as Record<string, string>)[m.type] ?? "";
-          r.last_message_preview = `${m.direction === "out" ? "Você: " : ""}${body || fallback}`;
-        } else {
-          r.last_message_preview = null;
-        }
+        r.last_message_preview = m ? formatLastMessagePreview(m.direction, m.type, m.payload) : null;
       }
+
       return rows;
 
     },
