@@ -242,9 +242,9 @@ export function Dialer() {
                 size="lg"
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
                 onClick={startCall}
-                disabled={submitting || mode === "connecting"}
+                disabled={submitting}
               >
-                <Phone className="h-4 w-4" /> {submitting || mode === "connecting" ? "Conectando…" : "Ligar"}
+                <Phone className="h-4 w-4" /> {submitting ? "Conectando…" : "Ligar"}
               </Button>
             </>
           )}
