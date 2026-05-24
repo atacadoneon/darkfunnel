@@ -39,17 +39,18 @@ function RefreshMediaButton({ messageId, conversationId, onRefreshed }: { messag
 
 function MediaWithRefresh({
   messageId,
+  conversationId,
   url,
   render,
 }: {
   messageId: string;
+  conversationId: string;
   url: string;
   render: (currentUrl: string, onError: () => void) => React.ReactNode;
 }) {
   const [currentUrl, setCurrentUrl] = useState(url);
   const [failed, setFailed] = useState(false);
   useEffect(() => { setCurrentUrl(url); setFailed(false); }, [url]);
-  // HEAD check for 404/410
   useEffect(() => {
     let cancelled = false;
     fetch(currentUrl, { method: "HEAD" })
@@ -61,7 +62,11 @@ function MediaWithRefresh({
     return (
       <div className="flex flex-col items-start gap-2 rounded-md border bg-background/40 p-2">
         <span className="text-xs opacity-70">Mídia expirada ou indisponível.</span>
-        <RefreshMediaButton messageId={messageId} onRefreshed={(u) => { setCurrentUrl(u); setFailed(false); }} />
+        <RefreshMediaButton
+          messageId={messageId}
+          conversationId={conversationId}
+          onRefreshed={(u) => { setCurrentUrl(u); setFailed(false); }}
+        />
       </div>
     );
   }
