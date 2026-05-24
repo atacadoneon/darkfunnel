@@ -16,6 +16,7 @@ import {
   LifeBuoy,
   UserCheck,
   Building2,
+  Shield,
 } from "lucide-react";
 import {
   Sidebar,

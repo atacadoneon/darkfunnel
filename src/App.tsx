@@ -22,6 +22,7 @@ import Pipeline from "@/pages/app/Pipeline";
 import Placeholder from "@/pages/app/Placeholder";
 import Dashboard from "@/pages/app/Dashboard";
 import Contacts from "@/pages/app/Contacts";
+import AdminFeatures from "@/pages/admin/Features";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -89,6 +90,7 @@ const App = () => (
                   <Route path="cadencia" element={<Placeholder title="Fluxo de Cadência" />} />
                   <Route path="automacoes" element={<Placeholder title="Automações" />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="admin/features" element={<AdminFeatures />} />
 
                   {/* Redirects de rotas antigas em inglês */}
                   <Route path="inbox" element={<Navigate to="/chats" replace />} />
