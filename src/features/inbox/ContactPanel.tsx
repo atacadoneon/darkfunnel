@@ -73,18 +73,8 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
       </div>
 
       <div className="p-4 flex flex-col items-center text-center border-b">
-        {c?.profile_pic_url ? (
-          <img
-            src={c.profile_pic_url}
-            alt={c.display_name ?? "Avatar"}
-            className="h-16 w-16 rounded-full object-cover"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
-        ) : (
-          <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-medium">
-            {(c?.display_name ?? c?.phone_e164 ?? "?").charAt(0).toUpperCase()}
-          </div>
-        )}
+        <ContactAvatar contact={c} size={64} />
+
         {editingName ? (
           <Input
             autoFocus value={name} onChange={(e) => setName(e.target.value)}
