@@ -2,10 +2,12 @@ import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { formatDistanceToNowStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ContactAvatar } from "./ContactAvatar";
 import { getAttribution } from "./attribution";
+import { EmptyState } from "@/components/EmptyState";
 
 import type { ConversationRow } from "./hooks";
 
@@ -93,9 +95,11 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
         })}
       </div>
       {conversations.length === 0 && (
-        <div className="p-8 text-center text-sm text-muted-foreground">
-          Nenhuma conversa ainda.
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title="Nenhuma conversa por aqui"
+          description="Quando novas mensagens chegarem ou você iniciar uma conversa, ela aparecerá nesta lista."
+        />
       )}
     </div>
   );
