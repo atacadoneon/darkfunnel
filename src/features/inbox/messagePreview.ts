@@ -20,11 +20,13 @@ export function previewBodyFromPayload(
 ): string {
   const p = (payload ?? {}) as Record<string, unknown>;
   const body = typeof p.body === "string" ? p.body : "";
-  if (body) return body;
+  if (type === "text") return body.slice(0, 60);
+  if (body) return body.slice(0, 60);
   const caption = typeof p.caption === "string" ? p.caption : "";
-  if (caption) return caption;
+  if (caption) return caption.slice(0, 60);
   return TYPE_FALLBACK[type] ?? "";
 }
+
 
 export function formatLastMessagePreview(
   direction: MessageDirection | undefined,
