@@ -48,6 +48,7 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const assigneeInitial = (assigneeName ?? "?").charAt(0).toUpperCase();
 
   return (
+    <>
     <Card
       ref={setNodeRef}
       style={style}
@@ -113,5 +114,12 @@ export function DealCard({ deal, onClick, overlay }: Props) {
         </div>
       )}
     </Card>
+    <ConversationPopup
+      open={chatOpen}
+      onOpenChange={setChatOpen}
+      contactId={deal.contact_id ?? null}
+      contactLabel={contactLabel}
+    />
+    </>
   );
 }
