@@ -93,8 +93,6 @@ export default function Inbox() {
     return arr;
   }, [conversations, filters, msgMatchIds]);
 
-  const conversationIds = useMemo(() => filtered.map((c) => c.id), [filtered]);
-  const { data: lastMessages } = useLastMessagesByConversation(conversationIds);
 
   const selected = filtered.find((c) => c.id === selectedId) ?? null;
 
