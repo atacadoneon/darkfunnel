@@ -403,15 +403,9 @@ Deno.serve(async (req) => {
           instance_id: existingId,
         });
         await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
-        const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
-        const webhookResult = await uaz(existingHost, "/webhook", {
-          method: "POST", token: existingToken,
-          body: JSON.stringify({
-            url: webhook, enabled: true,
-            events: ["messages", "messages_update", "connection", "contacts", "groups"],
-            excludeMessages: [], addUrlEvents: false, addUrlTypesMessages: false,
-          }),
-        });
+        const webhookResult = saved?.webhook_secret
+          ? await configureWebhook(url, body.channel_id, existingHost, existingToken, saved.webhook_secret)
+          : { ok: false };
         return { ok: true, instance_id: existingId, reused: true, webhook_configured: webhookResult.ok };
       };
 
@@ -470,15 +464,9 @@ Deno.serve(async (req) => {
       });
       await admin.from("channels").update({ status: "pending" }).eq("id", body.channel_id);
 
-      const webhook = `${url}/functions/v1/uazapi-webhook?secret=${saved?.webhook_secret}&channel=${body.channel_id}`;
-      const webhookResult = await uaz(host, "/webhook", {
-        method: "POST", token: instance_token,
-        body: JSON.stringify({
-          url: webhook, enabled: true,
-          events: ["messages", "messages_update", "connection", "contacts", "groups"],
-          excludeMessages: [], addUrlEvents: false, addUrlTypesMessages: false,
-        }),
-      });
+      const webhookResult = saved?.webhook_secret
+        ? await configureWebhook(url, body.channel_id, host, instance_token, saved.webhook_secret)
+        : { ok: false, data: "webhook_secret ausente" };
 
       return json({ ok: true, instance_id, webhook_configured: webhookResult.ok, webhook_detail: webhookResult.ok ? undefined : webhookResult.data });
       } finally {
