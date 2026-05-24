@@ -17,7 +17,11 @@ import {
   UserCheck,
   Building2,
   Shield,
+  LogOut,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Sidebar,
   SidebarContent,
@@ -79,6 +83,16 @@ export function AppSidebar() {
   const { user } = useAuth();
   const canSeeSettings = useIsManagerOrAdmin();
   const { data: isPlatformAdmin } = usePlatformAdmin();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Erro ao sair");
+      return;
+    }
+    navigate("/login", { replace: true });
+  };
 
   const visibleSections = sections
     .map((s) => ({
@@ -204,6 +218,14 @@ export function AppSidebar() {
                 <ArrowLeft className="h-4 w-4" />
                 Painel do Parceiro
               </button>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="w-full flex items-center justify-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
@@ -214,6 +236,35 @@ export function AppSidebar() {
         {!collapsed ? (
           <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs text-muted-foreground">
             <button
+              type="button"
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+            >
+              <LifeBuoy className="h-3.5 w-3.5" />
+              Suporte
+            </button>
+            <span className="truncate">{userName}</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-1">
+            <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Ajuda">
+              <HelpCircle className="h-4 w-4" />
+            </button>
+            <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Suporte">
+              <LifeBuoy className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="h-9 w-9 rounded-md flex items-center justify-center text-destructive hover:bg-destructive/10"
+              aria-label="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
               type="button"
               className="flex items-center gap-1.5 hover:text-foreground transition-colors"
             >
