@@ -58,7 +58,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
                     "text-xs truncate flex-1 min-w-0",
                     c.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"
                   )}>
-                    {previewText ? `${previewPrefix}${previewText}` : <span className="italic opacity-60">Sem mensagens</span>}
+                    {previewText ? previewText : <span className="italic opacity-60">Sem mensagens</span>}
                   </span>
                   {c.unread_count > 0 && (
                     <Badge className="h-4 px-1.5 text-[10px] shrink-0">{c.unread_count}</Badge>
