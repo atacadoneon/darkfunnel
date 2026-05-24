@@ -26,7 +26,7 @@ export function Dialer() {
   const { data: activeCalls = [] } = useActiveCalls();
   const device = useVoiceDevice(isOpen);
 
-  const [mode, setMode] = useState<Mode>("idle");
+  const [mode, setMode] = useState<Mode>("idle"); void open;
   const [phone, setPhone] = useState("");
   const [channel, setChannel] = useState<"pstn" | "whatsapp">("pstn");
   const [bina, setBina] = useState<string>("");
