@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useConversations, useMessages, useLastMessagesByConversation } from "@/features/inbox/hooks";
+import { useConversations, useMessages } from "@/features/inbox/hooks";
 import { useConversationIdsByMessageSearch } from "@/features/inbox/filterHooks";
 import {
   InboxFilters,
