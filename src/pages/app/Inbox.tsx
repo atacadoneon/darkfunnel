@@ -215,7 +215,35 @@ export default function Inbox() {
             </div>
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {([
+              { id: "unread" as const, label: "Não lidas", count: unreadChipCount },
+              { id: "noReply" as const, label: "Sem resposta", count: noReplyChipCount },
+            ]).map((chip) => {
+              const active = quickChips[chip.id];
+              return (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => setQuickChips((p) => ({ ...p, [chip.id]: !p[chip.id] }))}
+                  className={`inline-flex items-center gap-1 h-6 px-2 rounded-full text-[11px] border transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-input hover:bg-muted"
+                  }`}
+                >
+                  {chip.label}
+                  <span className={`px-1 rounded-full text-[10px] ${
+                    active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground"
+                  }`}>
+                    {chip.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+
         <div className="flex border-b text-xs">
           {([
             { id: "open" as const, label: "Abertas", count: openTotal },
