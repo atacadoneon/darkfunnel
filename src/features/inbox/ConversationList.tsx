@@ -71,10 +71,19 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
                   <Badge variant="outline" className="h-3.5 px-1 text-[9px] font-normal">
                     {c.channels?.kind === "whatsapp_cloud" ? "Cloud" : "UAZAPI"}
                   </Badge>
+                  {(() => {
+                    const attr = getAttribution(c.attribution_source);
+                    return attr ? (
+                      <Badge variant="outline" className={cn("h-3.5 px-1 text-[9px] font-normal", attr.className)}>
+                        {attr.label}
+                      </Badge>
+                    ) : null;
+                  })()}
                   <span className="text-[10px] text-muted-foreground truncate">
                     {c.contacts?.phone_e164 ?? ""}
                   </span>
                 </div>
+
               </div>
             </button>
           );
