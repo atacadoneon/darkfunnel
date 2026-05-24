@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit2, Mail, Building2, Tag as TagIcon, MapPin, DollarSign, User, Calendar, RefreshCw } from "lucide-react";
+import { Edit2, Mail, Building2, Tag as TagIcon, MapPin, DollarSign, User, Calendar, RefreshCw, ListChecks, Bell, StickyNote } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ContactAvatar } from "./ContactAvatar";
+import { CallButton } from "@/features/voice/CallButton";
 
 import type { ConversationRow } from "./hooks";
 
@@ -96,6 +97,22 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
           Conversa {conversation.status}
         </Badge>
       </div>
+      <div className="px-4 py-3 border-b flex items-center justify-around gap-1">
+        <CallButton
+          iconOnly
+          variant="ghost"
+          phone={c?.phone_e164 ?? null}
+          contactId={conversation.contact_id}
+          contactName={c?.display_name ?? null}
+          contactAvatar={c?.profile_pic_preview_url ?? null}
+          conversationId={conversation.id}
+        />
+        <Button size="icon" variant="ghost" className="h-8 w-8" title="Tarefa"><ListChecks className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8" title="Email"><Mail className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8" title="Lembrete"><Bell className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8" title="Nota"><StickyNote className="h-4 w-4" /></Button>
+      </div>
+
 
       <div className="p-4 border-b space-y-2">
         <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">

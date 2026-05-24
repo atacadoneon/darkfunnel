@@ -8,6 +8,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import { ConversationPopup } from "@/features/inbox/ConversationPopup";
+import { CallButton } from "@/features/voice/CallButton";
 
 type Props = {
   deal: Deal & { last_interaction_at?: string | null; has_proposal?: boolean; origin_id?: string | null };
@@ -64,6 +65,14 @@ export function DealCard({ deal, onClick, overlay }: Props) {
       <div className="flex items-start gap-2">
         <h4 className="font-semibold text-sm flex-1 truncate">{contactLabel}</h4>
         <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
+          <CallButton
+            iconOnly
+            phone={deal.contact?.phone_e164 ?? null}
+            contactId={deal.contact_id ?? null}
+            contactName={deal.contact?.display_name ?? null}
+            dealId={deal.id}
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+          />
           <button
             className="text-muted-foreground hover:text-foreground"
             title="Abrir conversa"

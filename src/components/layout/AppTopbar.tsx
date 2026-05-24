@@ -1,4 +1,4 @@
-import { Moon, Sun, LogOut } from "lucide-react";
+import { Moon, Sun, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -11,6 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CallPill } from "@/features/voice/CallPill";
+import { WalletWidget } from "@/features/wallet/WalletWidget";
+import { AiHelpButton } from "@/features/ai/AiHelpButton";
 
 export function AppTopbar() {
   const { theme, toggle } = useTheme();
@@ -20,7 +23,13 @@ export function AppTopbar() {
     <header className="h-14 shrink-0 border-b flex items-center gap-3 px-3">
       <SidebarTrigger />
       <span className="font-semibold tracking-tight">DarkFunnel</span>
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-2">
+        <CallPill />
+        <WalletWidget />
+        <AiHelpButton />
+        <Button variant="ghost" size="icon" aria-label="Notificações">
+          <Bell className="h-4 w-4" />
+        </Button>
         <Button variant="ghost" size="icon" onClick={toggle} aria-label="Tema">
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
