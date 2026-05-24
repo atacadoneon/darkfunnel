@@ -32,6 +32,16 @@ export function previewBodyFromPayload(
     return body.slice(0, 60);
   }
 
+  if (type === "document") {
+    const filename =
+      (typeof p.filename === "string" && p.filename) ||
+      (typeof p.file_name === "string" && p.file_name) ||
+      (typeof p.name === "string" && p.name) ||
+      "Documento";
+    return `📎 ${String(filename).slice(0, 60)}`;
+  }
+
+
   const label = TYPE_LABEL[type];
   if (label) {
     const caption = pickCaption(p).slice(0, 60);
