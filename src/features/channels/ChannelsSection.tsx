@@ -231,6 +231,17 @@ export function ChannelsSection() {
                       )}
                       Atualizar contatos
                     </Button>
+                    {importHistoryEnabled && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setImporting(c)}
+                        title="Importar histórico de mensagens com opções avançadas"
+                      >
+                        <History className="h-4 w-4 mr-2" />
+                        Importar Histórico
+                      </Button>
+                    )}
                   </>
                 )}
                 <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
