@@ -319,8 +319,12 @@ export default function Inbox() {
             <Composer conversation={selected} />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-            Selecione uma conversa
+          <div className="flex-1 flex items-center justify-center">
+            <EmptyState
+              icon={MessagesSquare}
+              title="Nenhuma conversa selecionada"
+              description="Escolha uma conversa na lista ao lado para visualizar as mensagens e responder."
+            />
           </div>
         )}
       </div>
