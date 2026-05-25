@@ -103,6 +103,7 @@ const App = () => (
                     <Route path="automacoes" element={<Automations />} />
                     <Route path="automations" element={<Automations />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
