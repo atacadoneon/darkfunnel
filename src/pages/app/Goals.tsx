@@ -167,19 +167,11 @@ export default function Goals() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="rounded-2xl bg-gradient-to-br from-blue-100 via-sky-50 to-cyan-50 dark:from-blue-950/40 dark:via-sky-950/30 dark:to-cyan-950/30 border p-6">
-        <div className="flex items-start gap-3">
-          <div className="h-12 w-12 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-300 flex items-center justify-center">
-            <Target className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Metas de Faturamento</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {current?.name ?? "Workspace"} — Gerencie e acompanhe as metas da sua organização
-            </p>
-          </div>
-        </div>
+    <div className="p-3 space-y-3">
+      <div className="h-10 flex items-center gap-2 border-b">
+        <Target className="h-4 w-4 text-muted-foreground" />
+        <h1 className="text-sm font-semibold">Metas de Faturamento</h1>
+        <span className="text-[11px] text-muted-foreground">· {current?.name ?? "Workspace"}</span>
       </div>
 
       <Tabs value={scope} onValueChange={(v) => setScope(v as GoalScope)}>
