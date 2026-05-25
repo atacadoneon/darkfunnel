@@ -90,7 +90,7 @@ const sections: { label: string; items: Item[] }[] = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; onTogglePin?: () => void } = {}) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
