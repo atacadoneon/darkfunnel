@@ -262,7 +262,7 @@ export default function Inbox() {
                 setTab(t.id);
                 qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
               }}
-              className={`flex-1 px-3 py-2 flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
+              className={`flex-1 px-3 py-1.5 flex items-center justify-center gap-1.5 border-b-2 text-[11px] transition-colors ${
                 tab === t.id
                   ? "border-primary text-foreground font-medium"
                   : "border-transparent text-muted-foreground hover:text-foreground"
