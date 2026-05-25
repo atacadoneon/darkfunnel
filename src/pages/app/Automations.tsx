@@ -43,31 +43,19 @@ export default function Automations() {
   }, [items, tab, search]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 border p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-3">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Zap className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">Automações</h1>
-                <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30">Beta</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Configure regras automáticas para otimizar seu fluxo de vendas
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Sparkles className="h-4 w-4 mr-2" /> Templates
-            </Button>
-            <Button size="sm" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4 mr-2" /> Nova Automação
-            </Button>
-          </div>
+    <div className="p-3 space-y-3">
+      <div className="h-10 flex items-center gap-2 border-b">
+        <Zap className="h-4 w-4 text-muted-foreground" />
+        <h1 className="text-sm font-semibold">Automações</h1>
+        <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] h-4">Beta</Badge>
+        <span className="text-[11px] text-muted-foreground hidden sm:inline">Regras automáticas pro fluxo de vendas</span>
+        <div className="ml-auto flex items-center gap-1">
+          <Button variant="outline" size="sm" className="h-7 text-xs">
+            <Sparkles className="h-3 w-3 mr-1" /> Templates
+          </Button>
+          <Button size="sm" className="h-7 text-xs" onClick={() => setCreating(true)}>
+            <Plus className="h-3 w-3 mr-1" /> Nova Automação
+          </Button>
         </div>
       </div>
 

@@ -59,45 +59,45 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
   const ownerLabel = owner?.display_name || owner?.email || "—";
 
   return (
-    <aside className="w-80 shrink-0 border-l flex-col overflow-y-auto overscroll-contain bg-card hidden min-h-0 lg:flex">
-      <div className="p-4 border-b flex items-center justify-between">
-        <h3 className="font-semibold text-sm">Lead</h3>
+    <aside className="w-72 shrink-0 border-l flex-col overflow-y-auto overscroll-contain bg-card hidden min-h-0 lg:flex">
+      <div className="px-3 h-10 border-b flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lead</h3>
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 gap-1 px-2 text-xs"
+          className="h-6 gap-1 px-1.5 text-[11px]"
           onClick={refreshContact}
           disabled={refreshing}
           title="Buscar nome, foto e status atualizados no WhatsApp"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
       </div>
 
-      <div className="p-4 flex flex-col items-center text-center border-b">
-        <ContactAvatar contact={c} size={64} />
+      <div className="p-3 flex flex-col items-center text-center border-b">
+        <ContactAvatar contact={c} size={56} />
 
         {editingName ? (
           <Input
             autoFocus value={name} onChange={(e) => setName(e.target.value)}
             onBlur={saveName} onKeyDown={(e) => e.key === "Enter" && saveName()}
-            className="mt-2 h-8 text-sm text-center"
+            className="mt-1.5 h-7 text-xs text-center"
           />
         ) : (
-          <button className="mt-2 inline-flex items-center gap-1 font-semibold hover:text-primary" onClick={() => setEditingName(true)}>
+          <button className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium hover:text-primary" onClick={() => setEditingName(true)}>
             {c?.display_name ?? "Sem nome"} <Edit2 className="h-3 w-3 opacity-60" />
           </button>
         )}
-        <p className="text-xs text-muted-foreground mt-0.5">{c?.phone_e164 ?? "—"}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{c?.phone_e164 ?? "—"}</p>
         {c?.bio && (
-          <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2" title={c.bio}>{c.bio}</p>
+          <p className="text-[11px] text-muted-foreground mt-1 italic line-clamp-2" title={c.bio}>{c.bio}</p>
         )}
-        <Badge className="mt-2 capitalize" variant={conversation.status === "open" ? "default" : "secondary"}>
+        <Badge className="mt-1.5 text-[10px] h-4 capitalize" variant={conversation.status === "open" ? "default" : "secondary"}>
           Conversa {conversation.status}
         </Badge>
       </div>
-      <div className="px-4 py-3 border-b flex items-center justify-around gap-1">
+      <div className="px-3 py-2 border-b flex items-center justify-around gap-1">
         <CallButton
           iconOnly
           variant="ghost"
@@ -107,33 +107,35 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
           contactAvatar={c?.profile_pic_preview_url ?? null}
           conversationId={conversation.id}
         />
-        <Button size="icon" variant="ghost" className="h-8 w-8" title="Tarefa"><ListChecks className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" title="Email"><Mail className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" title="Lembrete"><Bell className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" title="Nota"><StickyNote className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Tarefa"><ListChecks className="h-3.5 w-3.5" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Email"><Mail className="h-3.5 w-3.5" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Lembrete"><Bell className="h-3.5 w-3.5" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Nota"><StickyNote className="h-3.5 w-3.5" /></Button>
       </div>
 
 
-      <div className="p-4 border-b space-y-2">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <TagIcon className="h-3.5 w-3.5" /> Tags
+
+
+      <div className="p-3 border-b space-y-1.5">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <TagIcon className="h-3 w-3" /> Tags
         </div>
         {(c?.contact_tags?.length ?? 0) === 0 ? (
-          <p className="text-xs text-muted-foreground italic">Nenhuma tag</p>
+          <p className="text-[11px] text-muted-foreground italic">Nenhuma tag</p>
         ) : (
           <div className="flex flex-wrap gap-1">
-            {c!.contact_tags!.map((t) => <Badge key={t.tag_id} variant="outline" className="text-[10px]">{t.tag_id.slice(0, 6)}</Badge>)}
+            {c!.contact_tags!.map((t) => <Badge key={t.tag_id} variant="outline" className="text-[10px] h-4">{t.tag_id.slice(0, 6)}</Badge>)}
           </div>
         )}
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <User className="h-3.5 w-3.5" /> Lead Vinculado
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <User className="h-3 w-3" /> Deal Vinculado
           </div>
           {deal && (
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setOpenDeal(true)}>
+            <Button size="sm" variant="ghost" className="h-5 text-[10px] px-1.5" onClick={() => setOpenDeal(true)}>
               Editar
             </Button>
           )}

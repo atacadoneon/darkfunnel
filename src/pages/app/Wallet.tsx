@@ -65,17 +65,15 @@ export default function Wallet() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border-b">
-        <div className="max-w-6xl mx-auto p-6 flex items-start gap-4">
-          <div className="h-12 w-12 rounded-xl bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
-            <WalletIcon className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Wallet</h1>
-            <p className="text-sm text-muted-foreground">Gerencie créditos, recargas e números BINA.</p>
-          </div>
+      <div className="border-b">
+        <div className="max-w-6xl mx-auto h-10 flex items-center gap-2 px-3">
+          <WalletIcon className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-semibold">Wallet</h1>
+          <span className="text-[11px] text-muted-foreground hidden sm:inline">Créditos, recargas e números BINA</span>
         </div>
       </div>
+
+
 
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

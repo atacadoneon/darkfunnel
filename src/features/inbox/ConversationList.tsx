@@ -26,7 +26,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
   const v = useVirtualizer({
     count: conversations.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 96,
+    estimateSize: () => 76,
     overscan: 8,
   });
 
@@ -48,12 +48,12 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
               key={c.id}
               onClick={() => onSelect(c.id)}
               className={cn(
-                "absolute left-0 right-0 px-3 py-2 flex gap-3 items-center text-left border-b hover:bg-muted/50 transition-colors",
+                "absolute left-0 right-0 px-2 py-1.5 flex gap-2 items-center text-left border-b hover:bg-muted/50 transition-colors",
                 selectedId === c.id && "bg-muted"
               )}
               style={{ top: vi.start, height: vi.size }}
             >
-              <ContactAvatar contact={c.contacts} size={40} />
+              <ContactAvatar contact={c.contacts} size={28} />
 
 
               <div className="flex-1 min-w-0">

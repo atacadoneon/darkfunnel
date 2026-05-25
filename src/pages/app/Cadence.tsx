@@ -18,25 +18,15 @@ export default function Cadence() {
   const count = useMemo(() => items.length, [items]);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="rounded-2xl bg-gradient-to-br from-purple-100 via-fuchsia-50 to-indigo-50 dark:from-purple-950/40 dark:via-fuchsia-950/30 dark:to-indigo-950/30 border p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-3">
-            <div className="h-12 w-12 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-300 flex items-center justify-center">
-              <MessageSquare className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Fluxo de Cadência</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Envio automático de mensagens em sequência programada
-              </p>
-              <Badge variant="outline" className="mt-2">{count} cadência{count === 1 ? "" : "s"}</Badge>
-            </div>
-          </div>
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Nova Cadência
-          </Button>
-        </div>
+    <div className="p-3 space-y-3">
+      <div className="h-10 flex items-center gap-2 border-b">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        <h1 className="text-sm font-semibold">Fluxo de Cadência</h1>
+        <Badge variant="outline" className="text-[10px] h-4">{count}</Badge>
+        <span className="text-[11px] text-muted-foreground hidden sm:inline">Envio automático em sequência</span>
+        <Button size="sm" className="ml-auto h-7 text-xs" onClick={() => setCreating(true)}>
+          <Plus className="h-3 w-3 mr-1" /> Nova Cadência
+        </Button>
       </div>
 
       {isLoading ? (
