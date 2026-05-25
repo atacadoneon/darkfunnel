@@ -34,6 +34,9 @@ import Wallet from "@/pages/app/Wallet";
 import Calls from "@/pages/app/Calls";
 import Agenda from "@/pages/app/Agenda";
 import Prospeccao from "@/pages/app/Prospeccao";
+import EquipeOnline from "@/pages/app/EquipeOnline";
+import Admin from "@/pages/admin/Admin";
+import GoogleCallback from "@/pages/auth/GoogleCallback";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
