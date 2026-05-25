@@ -100,6 +100,11 @@ export function useConversations() {
       )
       .on(
         "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `workspace_id=eq.${current.id}` },
+        () => qc.invalidateQueries({ queryKey: ["conversations", current.id] })
+      )
+      .on(
+        "postgres_changes",
         { event: "UPDATE", schema: "public", table: "contacts", filter: `workspace_id=eq.${current.id}` },
         () => {
           qc.invalidateQueries({ queryKey: ["conversations", current.id] });
