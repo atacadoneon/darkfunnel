@@ -127,7 +127,7 @@ export default function Inbox() {
 
   // counts dos chips dentro do tab atual (sem aplicar os chips para não zerar)
   const inTab = useMemo(
-    () => conversations.filter((c) => (tab === "open" ? c.status === "open" : c.status === "resolved" || c.status === "archived")),
+    () => conversations.filter((c) => (tab === "open" ? ["open","in_progress","waiting"].includes(c.status) : ["resolved","closed","archived"].includes(c.status))),
     [conversations, tab]
   );
   const unreadChipCount = useMemo(() => inTab.filter((c) => c.unread_count > 0).length, [inTab]);
