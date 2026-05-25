@@ -247,6 +247,25 @@ export function useAssignConversation() {
   });
 }
 
+/* ------------------ Atualizar status da conversa ------------------ */
+export function useUpdateConversationStatus() {
+  const qc = useQueryClient();
+  const { current } = useWorkspace();
+  return useMutation({
+    mutationFn: async (v: { conversation_id: string; status: string }) => {
+      const { error } = await supabase
+        .from("conversations")
+        .update({ status: v.status })
+        .eq("id", v.conversation_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 /* ------------------ Análise IA ------------------ */
 export type AIAnalysis = {
   id: string;

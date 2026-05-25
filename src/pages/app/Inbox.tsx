@@ -83,10 +83,12 @@ export default function Inbox() {
   const filtered = useMemo(() => {
     const q = filters.text.trim().toLowerCase();
     let arr = conversations.filter((c) => {
+      const openStatuses = ["open", "in_progress", "waiting"];
+      const closedStatuses = ["resolved", "closed", "archived"];
       if (tab === "open") {
-        if (c.status !== "open") return false;
+        if (!openStatuses.includes(c.status)) return false;
       } else {
-        if (c.status !== "resolved" && c.status !== "archived") return false;
+        if (!closedStatuses.includes(c.status)) return false;
       }
       if (q) {
         const n = (c.contacts?.display_name ?? "").toLowerCase();
@@ -125,7 +127,7 @@ export default function Inbox() {
 
   // counts dos chips dentro do tab atual (sem aplicar os chips para não zerar)
   const inTab = useMemo(
-    () => conversations.filter((c) => (tab === "open" ? c.status === "open" : c.status === "resolved" || c.status === "archived")),
+    () => conversations.filter((c) => (tab === "open" ? ["open","in_progress","waiting"].includes(c.status) : ["resolved","closed","archived"].includes(c.status))),
     [conversations, tab]
   );
   const unreadChipCount = useMemo(() => inTab.filter((c) => c.unread_count > 0).length, [inTab]);
@@ -140,9 +142,9 @@ export default function Inbox() {
   );
 
 
-  const openTotal = useMemo(() => conversations.filter((c) => c.status === "open").length, [conversations]);
+  const openTotal = useMemo(() => conversations.filter((c) => ["open","in_progress","waiting"].includes(c.status)).length, [conversations]);
   const closedTotal = useMemo(
-    () => conversations.filter((c) => c.status === "resolved" || c.status === "archived").length,
+    () => conversations.filter((c) => ["resolved","closed","archived"].includes(c.status)).length,
     [conversations]
   );
 
