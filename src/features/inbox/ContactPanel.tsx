@@ -116,26 +116,26 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
 
 
 
-      <div className="p-4 border-b space-y-2">
-        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <TagIcon className="h-3.5 w-3.5" /> Tags
+      <div className="p-3 border-b space-y-1.5">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <TagIcon className="h-3 w-3" /> Tags
         </div>
         {(c?.contact_tags?.length ?? 0) === 0 ? (
-          <p className="text-xs text-muted-foreground italic">Nenhuma tag</p>
+          <p className="text-[11px] text-muted-foreground italic">Nenhuma tag</p>
         ) : (
           <div className="flex flex-wrap gap-1">
-            {c!.contact_tags!.map((t) => <Badge key={t.tag_id} variant="outline" className="text-[10px]">{t.tag_id.slice(0, 6)}</Badge>)}
+            {c!.contact_tags!.map((t) => <Badge key={t.tag_id} variant="outline" className="text-[10px] h-4">{t.tag_id.slice(0, 6)}</Badge>)}
           </div>
         )}
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <User className="h-3.5 w-3.5" /> Lead Vinculado
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <User className="h-3 w-3" /> Deal Vinculado
           </div>
           {deal && (
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setOpenDeal(true)}>
+            <Button size="sm" variant="ghost" className="h-5 text-[10px] px-1.5" onClick={() => setOpenDeal(true)}>
               Editar
             </Button>
           )}
