@@ -83,10 +83,12 @@ export default function Inbox() {
   const filtered = useMemo(() => {
     const q = filters.text.trim().toLowerCase();
     let arr = conversations.filter((c) => {
+      const openStatuses = ["open", "in_progress", "waiting"];
+      const closedStatuses = ["resolved", "closed", "archived"];
       if (tab === "open") {
-        if (c.status !== "open") return false;
+        if (!openStatuses.includes(c.status)) return false;
       } else {
-        if (c.status !== "resolved" && c.status !== "archived") return false;
+        if (!closedStatuses.includes(c.status)) return false;
       }
       if (q) {
         const n = (c.contacts?.display_name ?? "").toLowerCase();
