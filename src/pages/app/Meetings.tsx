@@ -71,17 +71,13 @@ export default function Meetings() {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="border-b bg-background/50 px-4 md:px-6 py-3 flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5 text-primary" />
-          <div>
-            <div className="text-xs text-muted-foreground">{meetings.length} eventos</div>
-            <h1 className="text-lg font-semibold leading-tight">Reuniões e Eventos</h1>
-          </div>
-        </div>
+      <div className="border-b px-3 h-10 flex items-center gap-2">
+        <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+        <h1 className="text-sm font-medium">Reuniões</h1>
+        <span className="text-[11px] text-muted-foreground">· {meetings.length}</span>
         <div className="flex-1" />
-        <Button size="sm" onClick={() => handleNew()}>
-          <Plus className="h-4 w-4 mr-1.5" /> Novo Evento
+        <Button size="sm" className="h-7 text-xs" onClick={() => handleNew()}>
+          <Plus className="h-3 w-3 mr-1" /> Novo
         </Button>
       </div>
 

@@ -81,48 +81,28 @@ export default function Contacts() {
   };
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 md:p-6">
-      <Card>
-        <CardContent className="p-4 md:p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Banco unificado
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight">Contatos & Leads</h1>
-                <p className="text-sm text-muted-foreground">
-                  {total} contato{total === 1 ? "" : "s"} · {withChannels} com canais · criados automaticamente pelo atendimento
-                </p>
-              </div>
-            </div>
-            <div className="hidden items-center gap-2 md:flex">
-              <Badge variant="outline" className="text-[11px]">
-                Base unificada · Atendimento + CRM
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2">
-              <Switch id="show-arch" checked={showArchived} onCheckedChange={setShowArchived} />
-              <Label htmlFor="show-arch" className="text-xs cursor-pointer whitespace-nowrap">Arquivados</Label>
-            </div>
-          </div>
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="border-b px-3 h-10 flex items-center gap-2 shrink-0">
+        <Users className="h-3.5 w-3.5 text-primary" />
+        <h1 className="text-sm font-medium">Contatos</h1>
+        <span className="text-[11px] text-muted-foreground">· {total} · {withChannels} c/ canais</span>
+        <div className="flex-1" />
+        <div className="relative w-56">
+          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar…"
+            className="pl-7 h-7 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Switch id="show-arch" checked={showArchived} onCheckedChange={setShowArchived} />
+          <Label htmlFor="show-arch" className="text-[11px] cursor-pointer">Arquivados</Label>
+        </div>
+      </div>
 
-          <div className="mt-4 flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nome ou telefone…"
-                className="pl-9"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex-1 overflow-y-auto p-3">
 
       <Card>
         <CardContent className="p-0">
@@ -279,6 +259,7 @@ export default function Contacts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }
