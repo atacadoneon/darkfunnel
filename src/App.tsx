@@ -75,6 +75,7 @@ const App = () => (
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
                   <Route path="/app/*" element={<Navigate to="/dashboard" replace />} />
 
