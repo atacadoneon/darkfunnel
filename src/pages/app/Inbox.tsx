@@ -142,9 +142,9 @@ export default function Inbox() {
   );
 
 
-  const openTotal = useMemo(() => conversations.filter((c) => c.status === "open").length, [conversations]);
+  const openTotal = useMemo(() => conversations.filter((c) => ["open","in_progress","waiting"].includes(c.status)).length, [conversations]);
   const closedTotal = useMemo(
-    () => conversations.filter((c) => c.status === "resolved" || c.status === "archived").length,
+    () => conversations.filter((c) => ["resolved","closed","archived"].includes(c.status)).length,
     [conversations]
   );
 
