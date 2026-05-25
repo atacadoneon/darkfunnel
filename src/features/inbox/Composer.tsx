@@ -13,6 +13,8 @@ import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { ConversationRow } from "./hooks";
+import { makeOptimistic, optimisticStore } from "./optimisticMessages";
+
 
 type Props = {
   conversation: ConversationRow;
@@ -157,6 +159,18 @@ export function Composer({ conversation }: Props) {
     const att = attachment;
     setText("");
     setAttachment(null);
+
+    // 1) Insert optimistic message immediately
+    const optimistic = makeOptimistic({
+      conversationId: conversation.id,
+      type: att ? att.type : "text",
+      body: body || (att ? att.file.name : ""),
+      extraPayload: att
+        ? { filename: att.file.name, mime: att.file.type, ptt: att.ptt ?? false }
+        : undefined,
+    });
+    optimisticStore.add(conversation.id, optimistic);
+
     try {
       if (att) {
         if (!isUazapi) throw new Error("Mídia disponível só em UAZAPI por enquanto");
@@ -169,7 +183,7 @@ export function Composer({ conversation }: Props) {
           .from("darkfunnel-media")
           .createSignedUrl(path, 7 * 24 * 3600);
         if (signed.error || !signed.data?.signedUrl) throw new Error(signed.error?.message || "signed url failed");
-        const { error } = await supabase.functions.invoke("uazapi-send", {
+        const { data, error } = await supabase.functions.invoke("uazapi-send", {
           body: {
             conversation_id: conversation.id,
             type: att.type,
@@ -180,12 +194,20 @@ export function Composer({ conversation }: Props) {
           },
         });
         if (error) throw new Error(error.message);
+        optimisticStore.update(conversation.id, optimistic.id, {
+          status: "sent",
+          _externalId: (data as { external_id?: string } | null)?.external_id ?? null,
+        });
       } else if (isUazapi) {
         const { data, error } = await supabase.functions.invoke("uazapi-send", {
           body: { conversation_id: conversation.id, type: "text", text: body },
         });
         console.log("[Composer] uazapi-send response:", { data, error });
         if (error) throw new Error(error.message);
+        optimisticStore.update(conversation.id, optimistic.id, {
+          status: "sent",
+          _externalId: (data as { external_id?: string } | null)?.external_id ?? null,
+        });
       } else {
         const { error } = await supabase.rpc("enqueue_outbound", {
           p_workspace: current.id,
@@ -197,11 +219,13 @@ export function Composer({ conversation }: Props) {
           p_conversation: conversation.id,
         });
         if (error) throw error;
+        optimisticStore.update(conversation.id, optimistic.id, { status: "sent" });
       }
-      await qc.invalidateQueries({ queryKey: ["messages", conversation.id] });
+      // Defensive: refetch after a delay so the real DB row replaces the optimistic
       setTimeout(() => qc.invalidateQueries({ queryKey: ["messages", conversation.id] }), 1500);
       setTimeout(() => qc.invalidateQueries({ queryKey: ["messages", conversation.id] }), 4000);
     } catch (err) {
+      optimisticStore.remove(conversation.id, optimistic.id);
       toast.error((err as Error).message);
       setText(body);
       if (att) setAttachment(att);
@@ -210,6 +234,7 @@ export function Composer({ conversation }: Props) {
       ref.current?.focus();
     }
   };
+
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
