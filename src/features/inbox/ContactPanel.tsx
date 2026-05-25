@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Edit2, Mail, Building2, Tag as TagIcon, MapPin, DollarSign, User, Calendar, RefreshCw, ListChecks, Bell, StickyNote } from "lucide-react";
+import { Edit2, Mail, Building2, Tag as TagIcon, MapPin, DollarSign, User, Calendar, RefreshCw, ListChecks, Bell, StickyNote, History, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format } from "date-fns";
 import { useStages, formatMoney } from "@/features/pipeline/hooks";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
@@ -60,15 +61,15 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
 
   return (
     <aside className="w-72 shrink-0 border-l flex-col overflow-y-auto overscroll-contain bg-card hidden min-h-0 lg:flex">
-      <div className="px-3 h-10 border-b flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lead</h3>
+      <div className="px-3 h-10 border-b flex items-center justify-between shrink-0">
+        <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Lead</h3>
         <Button
           size="sm"
           variant="ghost"
-          className="h-6 gap-1 px-1.5 text-[11px]"
+          className="h-6 gap-1 px-1.5 text-[10px]"
           onClick={refreshContact}
           disabled={refreshing}
-          title="Buscar nome, foto e status atualizados no WhatsApp"
+          title="Atualizar do WhatsApp"
         >
           <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
           Atualizar
@@ -77,7 +78,6 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
 
       <div className="p-3 flex flex-col items-center text-center border-b">
         <ContactAvatar contact={c} size={56} />
-
         {editingName ? (
           <Input
             autoFocus value={name} onChange={(e) => setName(e.target.value)}
@@ -90,17 +90,15 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
           </button>
         )}
         <p className="text-[11px] text-muted-foreground mt-0.5">{c?.phone_e164 ?? "—"}</p>
-        {c?.bio && (
-          <p className="text-[11px] text-muted-foreground mt-1 italic line-clamp-2" title={c.bio}>{c.bio}</p>
-        )}
+        {c?.bio && <p className="text-[11px] text-muted-foreground mt-1 italic line-clamp-2">{c.bio}</p>}
         <Badge className="mt-1.5 text-[10px] h-4 capitalize" variant={conversation.status === "open" ? "default" : "secondary"}>
           Conversa {conversation.status}
         </Badge>
       </div>
-      <div className="px-3 py-2 border-b flex items-center justify-around gap-1">
+
+      <div className="px-3 py-2 border-b flex items-center justify-around gap-1 shrink-0">
         <CallButton
-          iconOnly
-          variant="ghost"
+          iconOnly variant="ghost"
           phone={c?.phone_e164 ?? null}
           contactId={conversation.contact_id}
           contactName={c?.display_name ?? null}
@@ -113,82 +111,91 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
         <Button size="icon" variant="ghost" className="h-7 w-7" title="Nota"><StickyNote className="h-3.5 w-3.5" /></Button>
       </div>
 
-
-
-
-      <div className="p-3 border-b space-y-1.5">
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          <TagIcon className="h-3 w-3" /> Tags
-        </div>
-        {(c?.contact_tags?.length ?? 0) === 0 ? (
-          <p className="text-[11px] text-muted-foreground italic">Nenhuma tag</p>
-        ) : (
-          <div className="flex flex-wrap gap-1">
-            {c!.contact_tags!.map((t) => <Badge key={t.tag_id} variant="outline" className="text-[10px] h-4">{t.tag_id.slice(0, 6)}</Badge>)}
-          </div>
-        )}
-      </div>
-
-      <div className="p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <User className="h-3 w-3" /> Deal Vinculado
-          </div>
-          {deal && (
-            <Button size="sm" variant="ghost" className="h-5 text-[10px] px-1.5" onClick={() => setOpenDeal(true)}>
-              Editar
+      <Accordion type="multiple" defaultValue={["deal", "contato"]} className="px-1">
+        <Section value="deal" icon={<DollarSign className="h-3 w-3" />} label="Deal">
+          {!deal ? (
+            <Button size="sm" variant="outline" className="w-full h-7 text-[11px]" onClick={() => setOpenDeal(true)}>
+              + Criar lead vinculado
             </Button>
-          )}
-        </div>
-
-        {!deal ? (
-          <Button size="sm" variant="outline" className="w-full" onClick={() => setOpenDeal(true)}>
-            + Criar lead vinculado
-          </Button>
-        ) : (
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="font-medium truncate">{deal.title}</span>
-              {stage && (
-                <Badge style={{ background: stage.color + "22", color: stage.color, borderColor: stage.color + "55" }} variant="outline" className="text-[10px]">
-                  {stage.name}
-                </Badge>
-              )}
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-xs font-medium truncate">{deal.title}</span>
+                {stage && (
+                  <Badge style={{ background: stage.color + "22", color: stage.color, borderColor: stage.color + "55" }} variant="outline" className="text-[10px] h-4">
+                    {stage.name}
+                  </Badge>
+                )}
+              </div>
+              <Field label="Valor" value={formatMoney(deal.value_cents, deal.currency)} />
+              <Field label="Status" value={deal.status} />
+              <Button size="sm" variant="ghost" className="w-full h-6 text-[10px]" onClick={() => setOpenDeal(true)}>Editar Lead</Button>
             </div>
+          )}
+        </Section>
 
-            <Field icon={<Mail className="h-3 w-3" />} label="Email" value="—" />
-            <Field icon={<Building2 className="h-3 w-3" />} label="Empresa" value="—" />
-            <Field icon={<DollarSign className="h-3 w-3" />} label="Valor" value={formatMoney(deal.value_cents, deal.currency)} />
-            <Field icon={<MapPin className="h-3 w-3" />} label="Status" value={deal.status} />
-            <Field icon={<User className="h-3 w-3" />} label="Responsável" value={ownerLabel} />
-            <Field icon={<Calendar className="h-3 w-3" />} label="Entrada" value={format(new Date(conversation.created_at ?? Date.now()), "dd/MM/yyyy")} />
+        <Section value="contato" icon={<User className="h-3 w-3" />} label="Contato">
+          <Field label="Telefone" value={c?.phone_e164 ?? "—"} />
+          <Field label="Email" value="—" />
+          <Field label="Empresa" value="—" />
+        </Section>
 
-            <Button size="sm" className="w-full mt-2" onClick={() => setOpenDeal(true)}>
-              Editar Lead Completo
-            </Button>
-          </div>
-        )}
-      </div>
+        <Section value="tags" icon={<TagIcon className="h-3 w-3" />} label="Tags">
+          {(c?.contact_tags?.length ?? 0) === 0 ? (
+            <p className="text-[11px] text-muted-foreground italic">Nenhuma tag</p>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {c!.contact_tags!.map((t) => <Badge key={t.tag_id} variant="outline" className="text-[10px] h-4">{t.tag_id.slice(0, 6)}</Badge>)}
+            </div>
+          )}
+        </Section>
+
+        <Section value="vendedor" icon={<User className="h-3 w-3" />} label="Vendedor">
+          <Field label="Responsável" value={ownerLabel} />
+          <Field label="Entrada" value={format(new Date(conversation.created_at ?? Date.now()), "dd/MM/yyyy")} />
+        </Section>
+
+        <Section value="historico" icon={<History className="h-3 w-3" />} label="Histórico">
+          <p className="text-[11px] text-muted-foreground italic">Sem eventos recentes</p>
+        </Section>
+
+        <Section value="conversas" icon={<MessageSquare className="h-3 w-3" />} label="Conversas">
+          <p className="text-[11px] text-muted-foreground italic">Apenas esta conversa</p>
+        </Section>
+
+        <Section value="notas" icon={<StickyNote className="h-3 w-3" />} label="Notas">
+          <p className="text-[11px] text-muted-foreground italic">Nenhuma nota</p>
+        </Section>
+      </Accordion>
 
       {openDeal && deal && (
         <LeadEditDialog open={openDeal} onOpenChange={setOpenDeal} dealId={deal.id} />
       )}
       {openDeal && !deal && (
-        <DealDialog
-          open={openDeal} onOpenChange={setOpenDeal} stages={stages}
-          deal={null}
-          defaultStageId={stages[0]?.id}
-        />
+        <DealDialog open={openDeal} onOpenChange={setOpenDeal} stages={stages} deal={null} defaultStageId={stages[0]?.id} />
       )}
     </aside>
   );
 }
 
-function Field({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Section({ value, icon, label, children }: { value: string; icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <Label className="text-[10px] text-muted-foreground inline-flex items-center gap-1">{icon} {label}</Label>
-      <div className="text-sm truncate">{value}</div>
+    <AccordionItem value={value} className="border-b last:border-b-0">
+      <AccordionTrigger className="py-2 px-2 hover:no-underline hover:bg-muted/40 rounded text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="flex items-center gap-1.5">{icon}{label}</span>
+      </AccordionTrigger>
+      <AccordionContent className="px-2 pb-2 pt-0 space-y-1.5">
+        {children}
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 text-[11px]">
+      <Label className="text-[10px] text-muted-foreground">{label}</Label>
+      <div className="truncate text-right">{value}</div>
     </div>
   );
 }
