@@ -210,21 +210,19 @@ export default function Inbox() {
   return (
     <div className="flex h-full min-h-0 overflow-hidden">
       <div className="w-80 shrink-0 border-r flex min-h-0 flex-col overflow-hidden">
-        <div className="p-3 border-b">
-          <div className="flex items-center justify-between gap-2 mb-2 px-0.5">
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span><span className="font-semibold text-foreground">{openCount}</span> abertas</span>
+        <div className="px-2 py-1.5 border-b space-y-1.5">
+          <div className="flex items-center justify-between gap-2 px-0.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span><span className="font-medium text-foreground">{openCount}</span> abertas</span>
               <span className="opacity-50">·</span>
-              <span><span className="font-semibold text-foreground">{unreadCount}</span> não lidas</span>
+              <span><span className="font-medium text-foreground">{unreadCount}</span> não lidas</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Button size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => setNewConvOpen(true)}>
-                <Plus className="h-3.5 w-3.5" /> Nova
-              </Button>
-            </div>
+            <Button size="sm" className="h-6 gap-1 px-2 text-[11px]" onClick={() => setNewConvOpen(true)}>
+              <Plus className="h-3 w-3" /> Nova
+            </Button>
           </div>
           <InboxFilters filters={filters} onChange={setFilters} resultCount={filtered.length} />
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             {([
               { id: "unread" as const, label: "Não lidas", count: unreadChipCount },
               { id: "noReply" as const, label: "Sem resposta", count: noReplyChipCount },
@@ -235,14 +233,14 @@ export default function Inbox() {
                   key={chip.id}
                   type="button"
                   onClick={() => setQuickChips((p) => ({ ...p, [chip.id]: !p[chip.id] }))}
-                  className={`inline-flex items-center gap-1 h-6 px-2 rounded-full text-[11px] border transition-colors ${
+                  className={`inline-flex items-center gap-1 h-5 px-1.5 rounded-full text-[10px] border transition-colors ${
                     active
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background text-muted-foreground border-input hover:bg-muted"
                   }`}
                 >
                   {chip.label}
-                  <span className={`px-1 rounded-full text-[10px] ${
+                  <span className={`px-1 rounded-full text-[9px] ${
                     active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-foreground"
                   }`}>
                     {chip.count}
