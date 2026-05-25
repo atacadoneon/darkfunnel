@@ -55,22 +55,25 @@ export function useConversations() {
       const { data, error } = await supabase
         .from("conversations")
         .select(
-          "id,contact_id,channel_id,status,unread_count,last_message_at,last_inbound_at,last_outbound_at,window_expires_at,assigned_user_id,attribution_source,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,profile_pic_preview_url,contact_tags(tag_id)),channels(kind,display_name),messages(direction,type,payload,created_at)"
+          "id,contact_id,channel_id,status,unread_count,last_message_at,last_inbound_at,last_outbound_at,window_expires_at,assigned_user_id,attribution_source,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,profile_pic_preview_url,contact_tags(tag_id),deals(id,value_cents,title,status,pipeline_stages(name,color))),channels(kind,display_name),messages(direction,type,payload,created_at)"
         )
         .order("last_message_at", { ascending: false, nullsFirst: false })
         .order("created_at", { foreignTable: "messages", ascending: false })
         .limit(1, { foreignTable: "messages" })
         .limit(500);
       if (error) throw error;
-      const rows = (data ?? []) as unknown as Array<ConversationRow & { messages?: Array<{ direction: "in" | "out"; type: string; payload: Record<string, unknown> | null; created_at: string }> }>;
+      const rows = (data ?? []) as unknown as Array<ConversationRow & { messages?: Array<{ direction: "in" | "out"; type: string; payload: Record<string, unknown> | null; created_at: string }>; contacts: (NonNullable<ConversationRow["contacts"]> & { deals?: Array<{ id: string; value_cents: number | null; title: string | null; status: string | null; pipeline_stages: { name: string | null; color: string | null } | null }> }) | null }>;
       for (const r of rows) {
         const m = r.messages?.[0];
         r.last_message_preview = m ? formatLastMessagePreview(m.direction, m.type, m.payload) : null;
+        const openDeals = (r.contacts?.deals ?? []).filter((d) => d.status === "open");
+        r.open_deals = openDeals.length ? openDeals.map((d) => ({ id: d.id, value_cents: d.value_cents, title: d.title, pipeline_stages: d.pipeline_stages })) : null;
       }
 
       return rows;
 
     },
+
     staleTime: 30_000,
   });
 
