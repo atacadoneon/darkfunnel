@@ -83,7 +83,7 @@ const sections: { label: string; items: Item[] }[] = [
   {
     label: "Ferramentas",
     items: [
-      { title: "Prospecção", url: "/settings?tab=prospects", icon: Search },
+      { title: "Prospecção", url: "/prospeccao", icon: Search },
       { title: "Configurações", url: "/settings", icon: Settings },
     ],
   },
