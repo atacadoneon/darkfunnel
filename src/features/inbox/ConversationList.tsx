@@ -23,6 +23,7 @@ import {
 import { useUpdateConversationStatus } from "./inboxFeatureHooks";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { usePresenceMap, type PresenceStatus } from "./usePresence";
+import { MessageStatusIcon } from "@/components/messages/MessageStatusIcon";
 
 import type { ConversationRow } from "./hooks";
 
