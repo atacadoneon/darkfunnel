@@ -1,5 +1,5 @@
 import { Outlet, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopbar } from "@/components/layout/AppTopbar";
@@ -45,19 +45,64 @@ function CreateWorkspacePrompt() {
   );
 }
 
+const PIN_KEY = "sidebar:pinned";
+
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
+  const [pinned, setPinned] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(PIN_KEY) === "1";
+  });
+  const [open, setOpen] = useState<boolean>(pinned);
+  const closeTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem(PIN_KEY, pinned ? "1" : "0");
+    if (pinned) setOpen(true);
+  }, [pinned]);
+
+  const handleEnter = () => {
+    if (closeTimer.current) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpen(true);
+  };
+  const handleLeave = () => {
+    if (pinned) return;
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setOpen(false), 200);
+  };
+
+  useEffect(() => {
+    if (pinned) return;
+    const onMove = (e: MouseEvent) => {
+      if (e.clientX < 56) handleEnter();
+      else if (e.clientX > 280) handleLeave();
+    };
+    document.addEventListener("mousemove", onMove);
+    return () => document.removeEventListener("mousemove", onMove);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinned]);
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center text-muted-foreground">Carregando...</div>;
+    return (
+      <div className="flex h-svh w-full">
+        <div className="w-14 border-r bg-sidebar" />
+        <div className="flex-1 flex flex-col">
+          <div className="h-12 border-b" />
+          <div className="flex-1 animate-pulse bg-muted/20" />
+        </div>
+      </div>
+    );
   }
   if (workspaces.length === 0) return <CreateWorkspacePrompt />;
   if (!current) return <Navigate to="/dashboard" replace />;
 
   return (
-    <SidebarProvider>
-      <div className="flex h-svh w-full overflow-hidden">
-        <AppSidebar />
+    <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={pinned}>
+      <div className={`flex h-svh w-full overflow-hidden ${pinned ? "" : "rail-mode"}`}>
+        <AppSidebar pinned={pinned} onTogglePin={() => setPinned((p) => !p)} />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-hidden">
@@ -68,3 +113,4 @@ export default function AppLayout() {
     </SidebarProvider>
   );
 }
+
