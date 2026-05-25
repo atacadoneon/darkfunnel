@@ -61,6 +61,24 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
                   <span className="font-medium text-sm truncate">{name}</span>
                   <span className="text-[10px] text-muted-foreground shrink-0">{time}</span>
                 </div>
+                {c.open_deals?.[0] && (
+                  <div className="text-[11px] font-medium flex items-center gap-1 mt-0.5 truncate">
+                    <span className="text-emerald-600">
+                      R$ {((c.open_deals[0].value_cents ?? 0) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </span>
+                    {c.open_deals[0].pipeline_stages?.name && (
+                      <>
+                        <span className="text-muted-foreground">·</span>
+                        <span
+                          className="truncate"
+                          style={{ color: c.open_deals[0].pipeline_stages.color ?? undefined }}
+                        >
+                          {c.open_deals[0].pipeline_stages.name}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-2 mt-0.5">
                   <span className={cn(
                     "text-xs truncate flex-1 min-w-0",
@@ -90,6 +108,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
                 </div>
 
               </div>
+
             </button>
           );
 
