@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Check, CheckCheck, Clock, FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw } from "lucide-react";
+import { FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MessageStatusIcon } from "@/components/messages/MessageStatusIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -83,17 +84,6 @@ function dayLabel(d: Date): string {
 }
 
 
-function StatusIcon({ status }: { status: string }) {
-  if (status === "read")
-    return <CheckCheck className="h-3.5 w-3.5 text-[#53bdeb]" strokeWidth={2.5} />;
-  if (status === "delivered")
-    return <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={2.5} />;
-  if (status === "sent")
-    return <Check className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={2.5} />;
-  if (status === "failed")
-    return <span className="text-destructive text-[10px] font-bold">!</span>;
-  return <Clock className="h-3 w-3 opacity-60" />;
-}
 
 function highlight(text: string, query: string) {
   if (!query || query.length < 2) return text;
@@ -309,7 +299,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   )}
                 >
                   <span>{format(curDate, "HH:mm")}</span>
-                  {out && <StatusIcon status={m.status} />}
+                  {out && <MessageStatusIcon status={m.status} />}
                 </div>
               </div>
             </div>
