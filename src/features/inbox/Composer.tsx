@@ -229,7 +229,8 @@ export function Composer({ conversation }: Props) {
     : FileText;
 
   return (
-    <div className="border-t bg-card p-3">
+    <div className="border-t bg-card px-2 py-1.5">
+
       {windowExpired && (
         <div className="mb-2 text-xs text-amber-600 dark:text-amber-400">
           Janela 24h da Cloud API expirou — apenas templates HSM são permitidos.
