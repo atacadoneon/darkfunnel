@@ -132,6 +132,7 @@ export type MessageRow = {
 export function useMessages(conversationId: string | null) {
   const { current } = useWorkspace();
   const qc = useQueryClient();
+  const optimistic = useOptimisticMessages(conversationId);
 
   const query = useQuery({
     queryKey: ["messages", conversationId],
@@ -151,6 +152,28 @@ export function useMessages(conversationId: string | null) {
     refetchIntervalInBackground: false,
   });
 
+  // Reconcile optimistic store with server data: drop any optimistic that has matched
+  useEffect(() => {
+    if (!conversationId) return;
+    const server = query.data ?? [];
+    const current = optimisticStore.get(conversationId);
+    if (!current.length) return;
+    for (const o of current) {
+      const oBody = (o.payload as Record<string, unknown> | null)?.body ?? null;
+      const oExt = o._externalId ?? null;
+      const matched = server.some((s) => {
+        const sPayload = (s.payload ?? {}) as Record<string, unknown>;
+        if (oExt && sPayload.external_id === oExt) return true;
+        if (s.direction !== "out") return false;
+        if (s.type !== o.type) return false;
+        if ((sPayload.body ?? "") !== (oBody ?? "")) return false;
+        const dt = Math.abs(+new Date(s.created_at) - +new Date(o.created_at));
+        return dt < 30_000;
+      });
+      if (matched) optimisticStore.remove(conversationId, o.id);
+    }
+  }, [conversationId, query.data]);
+
   useEffect(() => {
     if (!conversationId || !current) return;
     const ch = supabase
@@ -166,8 +189,14 @@ export function useMessages(conversationId: string | null) {
     };
   }, [conversationId, current, qc]);
 
-  return query;
+  const merged = useMemo(
+    () => mergeWithOptimistic(query.data ?? [], optimistic),
+    [query.data, optimistic]
+  );
+
+  return { ...query, data: merged } as typeof query;
 }
+
 
 export type LastMessagePreview = {
   conversation_id: string;
