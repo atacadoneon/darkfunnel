@@ -74,8 +74,18 @@ export default function AppLayout() {
     closeTimer.current = window.setTimeout(() => setOpen(false), 200);
   };
 
+  useEffect(() => {
+    if (pinned) return;
+    const onMove = (e: MouseEvent) => {
+      if (e.clientX < 56) handleEnter();
+      else if (e.clientX > 280) handleLeave();
+    };
+    document.addEventListener("mousemove", onMove);
+    return () => document.removeEventListener("mousemove", onMove);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinned]);
+
   if (loading) {
-    // App shell instantâneo: render skeleton instead of blocking
     return (
       <div className="flex h-svh w-full">
         <div className="w-14 border-r bg-sidebar" />
@@ -92,9 +102,7 @@ export default function AppLayout() {
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={pinned}>
       <div className={`flex h-svh w-full overflow-hidden ${pinned ? "" : "rail-mode"}`}>
-        <div onMouseEnter={handleEnter} onMouseLeave={handleLeave} className="contents">
-          <AppSidebar pinned={pinned} onTogglePin={() => setPinned((p) => !p)} />
-        </div>
+        <AppSidebar pinned={pinned} onTogglePin={() => setPinned((p) => !p)} />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-hidden">
@@ -105,3 +113,4 @@ export default function AppLayout() {
     </SidebarProvider>
   );
 }
+
