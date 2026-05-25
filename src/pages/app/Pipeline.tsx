@@ -169,55 +169,38 @@ export default function Pipeline() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-4 md:px-6 pt-4 md:pt-6">
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-primary/5 via-background to-background">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shrink-0">
-              {wsName.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{wsName}</h1>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border">
-                  {totalLeads} {totalLeads === 1 ? "lead" : "leads"}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                <Users className="h-3 w-3" /> CRM · Gestão de Leads
-              </p>
-            </div>
-
-            <div className="hidden md:flex items-center gap-2">
-              <Button variant="outline" className="gap-2">
-                <KanbanSquare className="h-4 w-4" />
-                {wsName}
-                <ChevronDown className="h-4 w-4 opacity-60" />
+      {/* Header compacto */}
+      <div className="h-10 flex items-center gap-2 px-3 border-b">
+        <div className="h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs shrink-0">
+          {wsName.charAt(0).toUpperCase()}
+        </div>
+        <h1 className="text-sm font-semibold truncate">{wsName}</h1>
+        <span className="text-[10px] px-1.5 h-4 rounded-full bg-muted text-muted-foreground border inline-flex items-center">
+          {totalLeads} {totalLeads === 1 ? "lead" : "leads"}
+        </span>
+        <div className="ml-auto hidden md:flex items-center gap-1">
+          <Button size="sm" className="h-7 text-xs gap-1" onClick={() => onAddDeal(stages[0].id)}>
+            <Plus className="h-3 w-3" /> Novo Lead
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                <SettingsIcon className="h-3 w-3" /> Config
               </Button>
-              <Button onClick={() => onAddDeal(stages[0].id)} className="gap-1">
-                <Plus className="h-4 w-4" /> Novo Lead
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-1">
-                    <SettingsIcon className="h-4 w-4" /> Configurações
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => setConfig("stages")}><Layers className="h-4 w-4 mr-2" /> Etapas do Funil</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setConfig("loss")}><TagIcon className="h-4 w-4 mr-2" /> Motivos de Perda</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setConfig("origins")}><Megaphone className="h-4 w-4 mr-2" /> Canais de Origem</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setConfig("products")}><Package className="h-4 w-4 mr-2" /> Serviços/Produtos</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setConfig("capture")}><Webhook className="h-4 w-4 mr-2" /> Captura de Leads</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setConfig("automations")}><Timer className="h-4 w-4 mr-2" /> Automações</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button variant="outline" className="gap-1" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Importar</Button>
-            </div>
-          </div>
-        </Card>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setConfig("stages")}><Layers className="h-4 w-4 mr-2" /> Etapas do Funil</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("loss")}><TagIcon className="h-4 w-4 mr-2" /> Motivos de Perda</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("origins")}><Megaphone className="h-4 w-4 mr-2" /> Canais de Origem</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("products")}><Package className="h-4 w-4 mr-2" /> Serviços/Produtos</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("capture")}><Webhook className="h-4 w-4 mr-2" /> Captura de Leads</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("automations")}><Timer className="h-4 w-4 mr-2" /> Automações</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setImportOpen(true)}>
+            <Upload className="h-3 w-3" /> Importar
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
