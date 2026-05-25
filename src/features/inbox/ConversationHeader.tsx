@@ -18,6 +18,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useStages } from "@/features/pipeline/hooks";
+import { ContactAvatar } from "./ContactAvatar";
 import { DealDialog } from "@/features/pipeline/DealDialog";
 import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import {
