@@ -35,7 +35,14 @@ export type ConversationRow = {
       }
     | null;
   channels: { kind: string; display_name: string } | null;
+  open_deals?: Array<{
+    id: string;
+    value_cents: number | null;
+    title: string | null;
+    pipeline_stages: { name: string | null; color: string | null } | null;
+  }> | null;
 };
+
 
 export function useConversations() {
   const { current } = useWorkspace();
