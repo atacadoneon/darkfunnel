@@ -299,7 +299,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   )}
                 >
                   <span>{format(curDate, "HH:mm")}</span>
-                  {out && <StatusIcon status={m.status} />}
+                  {out && <MessageStatusIcon status={m.status} />}
                 </div>
               </div>
             </div>
