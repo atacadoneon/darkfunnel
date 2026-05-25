@@ -33,6 +33,7 @@ import EmailMarketing from "@/pages/app/EmailMarketing";
 import Wallet from "@/pages/app/Wallet";
 import Calls from "@/pages/app/Calls";
 import Agenda from "@/pages/app/Agenda";
+import Prospeccao from "@/pages/app/Prospeccao";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -102,6 +103,7 @@ const App = () => (
                     <Route path="automacoes" element={<Automations />} />
                     <Route path="automations" element={<Automations />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
