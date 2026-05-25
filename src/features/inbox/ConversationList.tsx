@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ContactAvatar } from "./ContactAvatar";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -99,24 +100,31 @@ function StatusBadge({
   const cfg = CONVERSATION_STATUS[status];
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          onClick={(e) => e.stopPropagation()}
-          className="focus:outline-none"
-          title={cfg.label}
-        >
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 h-4 text-[9px] px-1.5 rounded-full border font-semibold uppercase tracking-wide",
-              cfg.badge,
-            )}
-          >
-            <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
-            {cfg.short}
-          </span>
-        </button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="focus:outline-none"
+            >
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 h-4 text-[9px] px-1.5 rounded-full border font-semibold uppercase tracking-wide",
+                  cfg.badge,
+                )}
+              >
+                <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+                {cfg.short}
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <div className="text-xs font-semibold">{cfg.label}</div>
+          <div className="text-[10px] opacity-80 max-w-[200px]">{cfg.description}</div>
+        </TooltipContent>
+      </Tooltip>
       <DropdownMenuContent
         align="end"
         className="w-64"

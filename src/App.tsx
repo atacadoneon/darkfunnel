@@ -34,6 +34,9 @@ import Wallet from "@/pages/app/Wallet";
 import Calls from "@/pages/app/Calls";
 import Agenda from "@/pages/app/Agenda";
 import Prospeccao from "@/pages/app/Prospeccao";
+import EquipeOnline from "@/pages/app/EquipeOnline";
+import Admin from "@/pages/admin/Admin";
+import GoogleCallback from "@/pages/auth/GoogleCallback";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -72,6 +75,7 @@ const App = () => (
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
                   <Route path="/app/*" element={<Navigate to="/dashboard" replace />} />
 
@@ -104,7 +108,9 @@ const App = () => (
                     <Route path="automations" element={<Automations />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="prospeccao" element={<Prospeccao />} />
+                    <Route path="equipe-online" element={<EquipeOnline />} />
                     <Route path="settings/wallet" element={<Wallet />} />
+                    <Route path="admin" element={<Admin />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
                     {/* Redirects legados */}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 
 function CreateWorkspacePrompt() {
   const { createWorkspace } = useWorkspace();
@@ -49,6 +50,7 @@ const PIN_KEY = "sidebar:pinned";
 
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
+  usePresenceHeartbeat();
   const [pinned, setPinned] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(PIN_KEY) === "1";

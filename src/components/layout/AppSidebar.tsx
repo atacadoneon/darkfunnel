@@ -171,9 +171,11 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <Users className="h-4 w-4" />
-                    <span>Equipe Online</span>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith("/equipe-online")}>
+                    <NavLink to="/equipe-online" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Equipe Online</span>
+                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -193,7 +195,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname.startsWith("/admin")}>
-                    <NavLink to="/admin/features" className="flex items-center gap-2">
+                    <NavLink to="/admin" className="flex items-center gap-2">
                       <Shield className="h-4 w-4" />
                       {!collapsed && <span>Admin</span>}
                     </NavLink>
