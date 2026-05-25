@@ -26,7 +26,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
   const v = useVirtualizer({
     count: conversations.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 84,
+    estimateSize: () => 96,
     overscan: 8,
   });
 
