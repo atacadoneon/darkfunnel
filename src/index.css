@@ -114,6 +114,15 @@ All colors MUST be HSL.
   }
 }
 
+/* Rail mode: keep sidebar gap clamped to icon width even when expanded on hover */
+.rail-mode .peer > div:first-child {
+  width: var(--sidebar-width-icon) !important;
+}
+.rail-mode .peer[data-state="expanded"] > div:nth-child(2) {
+  box-shadow: 0 20px 40px -10px hsl(0 0% 0% / 0.25);
+  z-index: 50;
+}
+
 /* Esconde barra de rolagem em todos os elementos visualmente, mantendo o scroll funcional */
 * {
   -ms-overflow-style: none;
