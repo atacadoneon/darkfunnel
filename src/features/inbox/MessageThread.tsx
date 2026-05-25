@@ -296,9 +296,11 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   out
                     ? "bg-[#d9fdd3] text-[#111b21] dark:bg-[#005c4b] dark:text-white"
                     : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-white",
-                  isActive && "ring-2 ring-yellow-400 ring-offset-1"
+                  isActive && "ring-2 ring-yellow-400 ring-offset-1",
+                  (m.payload as Record<string, unknown> | null)?._optimistic && "opacity-70"
                 )}
               >
+
                 <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
                 <div
                   className={cn(
