@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { formatLastMessagePreview, previewBodyFromPayload } from "./messagePreview";
+import { mergeWithOptimistic, optimisticStore, useOptimisticMessages } from "./optimisticMessages";
+
 
 
 
