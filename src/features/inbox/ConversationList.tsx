@@ -204,6 +204,9 @@ export function ConversationList({ conversations, selectedId, onSelect }: Props)
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <ChannelIcon kind={c.channels?.kind} className="w-3 h-3 shrink-0" />
+                  {c.last_message_direction === "out" && c.last_message_status && (
+                    <MessageStatusIcon status={c.last_message_status} className="shrink-0" />
+                  )}
                   <span
                     className={cn(
                       "text-[11px] truncate",
