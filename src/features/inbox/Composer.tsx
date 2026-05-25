@@ -277,7 +277,7 @@ export function Composer({ conversation }: Props) {
           if (fileRef.current) fileRef.current.value = "";
         }}
       />
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-1">
         <Textarea
           ref={ref}
           value={text}
@@ -286,13 +286,14 @@ export function Composer({ conversation }: Props) {
           placeholder={windowExpired ? "Selecione um template..." : attachment ? "Caption (opcional)…" : "Digite uma mensagem... (/ para atalhos)"}
           disabled={windowExpired || recording}
           rows={1}
-          className="resize-none min-h-[40px] max-h-32"
+          className="resize-none min-h-[32px] max-h-32 text-sm py-1.5"
         />
         <Popover open={quickOpen} onOpenChange={setQuickOpen}>
           <PopoverTrigger asChild>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
+              className="h-7 w-7 shrink-0"
               disabled={windowExpired || recording}
               title="Respostas rápidas"
             >
@@ -330,8 +331,9 @@ export function Composer({ conversation }: Props) {
         </Popover>
         {isUazapi && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="h-7 w-7 shrink-0"
             onClick={() => fileRef.current?.click()}
             disabled={windowExpired || recording || !!attachment}
             title="Anexar arquivo"
@@ -341,7 +343,7 @@ export function Composer({ conversation }: Props) {
         )}
         <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="icon" disabled={windowExpired || recording} title="Emoji">
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" disabled={windowExpired || recording} title="Emoji">
               <Smile className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
@@ -371,8 +373,9 @@ export function Composer({ conversation }: Props) {
         </Popover>
         {isUazapi && (
           <Button
-            variant={recording ? "destructive" : "outline"}
+            variant={recording ? "destructive" : "ghost"}
             size="icon"
+            className="h-7 w-7 shrink-0"
             onClick={() => (recording ? stopRecording() : void startRecording())}
             disabled={windowExpired || !!attachment}
             title={recording ? "Parar gravação" : "Gravar áudio"}
@@ -381,8 +384,9 @@ export function Composer({ conversation }: Props) {
           </Button>
         )}
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
+          className="h-7 w-7 shrink-0"
           onClick={() => setScheduleOpen(true)}
           disabled={windowExpired || recording}
           title="Agendar"
@@ -393,11 +397,12 @@ export function Composer({ conversation }: Props) {
           onClick={() => void send()}
           disabled={sending || recording || (!text.trim() && !attachment) || windowExpired}
           size="icon"
+          className="h-7 w-7 shrink-0"
         >
           <Send className="h-4 w-4" />
         </Button>
       </div>
-      <div className="text-xs opacity-50 mt-1">Shift+Enter quebra linha · / atalhos · @ menciona vendedor</div>
+      <div className="text-[10px] opacity-50 mt-0.5 text-center">Shift+Enter quebra linha · / atalhos · @ menciona</div>
 
       <ScheduleMessageDialog
         open={scheduleOpen}
