@@ -160,6 +160,7 @@ export default function Calls() {
       </Card>
 
       <CallDrawer call={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
+      </div>
     </div>
   );
 }
