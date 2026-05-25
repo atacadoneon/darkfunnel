@@ -57,14 +57,17 @@ export function useActiveCalls() {
 
   useEffect(() => {
     if (!wsId) return;
-    const ch = supabase
-      .channel(`calls-active:${wsId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `workspace_id=eq.${wsId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["calls-active", wsId] });
-        qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    let ch: any;
+    try {
+      ch = supabase
+        .channel(`calls-active:${wsId}:${Math.random().toString(36).slice(2)}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `workspace_id=eq.${wsId}` }, () => {
+          qc.invalidateQueries({ queryKey: ["calls-active", wsId] });
+          qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
+        })
+        .subscribe();
+    } catch (e) { console.error("[calls-active realtime]", e); }
+    return () => { if (ch) try { supabase.removeChannel(ch); } catch {} };
   }, [wsId, qc]);
 
   return q;
@@ -84,19 +87,25 @@ export function useCallsList(filters: CallFilters) {
 
   useEffect(() => {
     if (!wsId) return;
-    const ch = supabase
-      .channel(`calls-list-rt:${wsId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `workspace_id=eq.${wsId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "call_recordings" }, () => {
-        qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "call_transcripts" }, () => {
-        qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const channels: any[] = [];
+    try {
+      const rnd = Math.random().toString(36).slice(2);
+      channels.push(
+        supabase.channel(`calls-list-rt:${wsId}:${rnd}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "calls", filter: `workspace_id=eq.${wsId}` }, () => {
+            qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
+          }).subscribe(),
+        supabase.channel(`call-rec-rt:${wsId}:${rnd}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "call_recordings" }, () => {
+            qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
+          }).subscribe(),
+        supabase.channel(`call-trs-rt:${wsId}:${rnd}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "call_transcripts" }, () => {
+            qc.invalidateQueries({ queryKey: ["calls-list", wsId] });
+          }).subscribe(),
+      );
+    } catch (e) { console.error("[calls-list realtime]", e); }
+    return () => { channels.forEach(c => { try { supabase.removeChannel(c); } catch {} }); };
   }, [wsId, qc]);
 
   return useQuery({
