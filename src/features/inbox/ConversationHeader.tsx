@@ -43,8 +43,8 @@ function IconBtn({ children, label, onClick, active }: { children: React.ReactNo
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            type="button" variant={active ? "default" : "outline"} size="icon"
-            className="h-9 w-9" onClick={onClick} aria-label={label}
+            type="button" variant={active ? "default" : "ghost"} size="icon"
+            className="h-7 w-7" onClick={onClick} aria-label={label}
           >
             {children}
           </Button>
