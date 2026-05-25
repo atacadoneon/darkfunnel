@@ -18,6 +18,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useStages } from "@/features/pipeline/hooks";
+import { ContactAvatar } from "./ContactAvatar";
 import { DealDialog } from "@/features/pipeline/DealDialog";
 import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
 import {
@@ -69,9 +70,7 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
 
   return (
     <div className="h-10 border-b flex items-center px-3 gap-2">
-      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0">
-        {(c?.display_name ?? c?.phone_e164 ?? "?").charAt(0).toUpperCase()}
-      </div>
+      <ContactAvatar contact={c} size={28} />
       <div className="min-w-0 flex-1">
         {contactDeal ? (
           <button
