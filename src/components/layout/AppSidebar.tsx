@@ -53,8 +53,7 @@ const sections: { label: string; items: Item[] }[] = [
     label: "Principal",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
-      { title: "CRM & Leads", url: "/leads", icon: Users },
-      { title: "Funil de Vendas", url: "/funildevendas", icon: Users },
+      { title: "CRM & Leads", url: "/funildevendas", icon: Users },
     ],
   },
   {
