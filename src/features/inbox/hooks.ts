@@ -25,6 +25,8 @@ export type ConversationRow = {
   created_at?: string;
   updated_at?: string;
   last_message_preview?: string | null;
+  last_message_direction?: "in" | "out" | null;
+  last_message_status?: string | null;
   contacts:
     | {
         display_name: string | null;
