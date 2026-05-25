@@ -43,17 +43,22 @@ export function useWallet() {
 
   useEffect(() => {
     if (!wsId) return;
-    const ch = supabase
-      .channel(`wallet:${wsId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `workspace_id=eq.${wsId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["wallet", wsId] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "wallet_transactions", filter: `workspace_id=eq.${wsId}` }, () => {
-        qc.invalidateQueries({ queryKey: ["wallet-tx", wsId] });
-        qc.invalidateQueries({ queryKey: ["wallet", wsId] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const channels: any[] = [];
+    try {
+      const rnd = Math.random().toString(36).slice(2);
+      channels.push(
+        supabase.channel(`wallet:${wsId}:${rnd}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "wallets", filter: `workspace_id=eq.${wsId}` }, () => {
+            qc.invalidateQueries({ queryKey: ["wallet", wsId] });
+          }).subscribe(),
+        supabase.channel(`wallet-tx:${wsId}:${rnd}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "wallet_transactions", filter: `workspace_id=eq.${wsId}` }, () => {
+            qc.invalidateQueries({ queryKey: ["wallet-tx", wsId] });
+            qc.invalidateQueries({ queryKey: ["wallet", wsId] });
+          }).subscribe(),
+      );
+    } catch (e) { console.error("[wallet realtime]", e); }
+    return () => { channels.forEach(c => { try { supabase.removeChannel(c); } catch {} }); };
   }, [wsId, qc]);
 
   return q;
