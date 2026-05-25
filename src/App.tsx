@@ -33,6 +33,7 @@ import EmailMarketing from "@/pages/app/EmailMarketing";
 import Wallet from "@/pages/app/Wallet";
 import Calls from "@/pages/app/Calls";
 import Agenda from "@/pages/app/Agenda";
+import Prospeccao from "@/pages/app/Prospeccao";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
