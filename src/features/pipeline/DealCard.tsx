@@ -135,6 +135,9 @@ export function DealCard({ deal, onClick, overlay }: Props) {
       contactId={deal.contact_id ?? null}
       contactLabel={contactLabel}
     />
+    {editOpen && (
+      <LeadEditDialog open={editOpen} onOpenChange={setEditOpen} dealId={deal.id} />
+    )}
     </>
   );
 }
