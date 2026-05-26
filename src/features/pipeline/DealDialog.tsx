@@ -28,7 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Check, ChevronsUpDown, Trophy, XCircle, Archive,
-  User as UserIcon, Users, Lock, X,
+  User as UserIcon, Users, Lock, X, AlertTriangle,
 } from "lucide-react";
 import { useContacts } from "@/features/contacts/hooks";
 import { useChannels } from "@/features/channels/hooks";
@@ -37,6 +37,7 @@ import {
 } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import { useLossReasons } from "@/features/workspace/CatalogsAdmin";
+import { normalizePhoneE164, isValidE164, PHONE_INVALID_MSG, PHONE_REQUIRED_MSG } from "@/lib/phone";
 import type { Deal, Stage } from "./hooks";
 
 type Props = {
