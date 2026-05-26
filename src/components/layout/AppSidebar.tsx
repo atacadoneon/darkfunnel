@@ -194,8 +194,8 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
       <SidebarContent className="gap-0">
 
         {visibleSections.map((section) => (
-          <SidebarGroup key={section.label} className="py-1">
-            {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
+          <SidebarGroup key={section.label || "main"} className="py-1">
+            {!collapsed && section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => (
