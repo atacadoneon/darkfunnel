@@ -304,7 +304,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   "relative max-w-[75%] rounded-lg text-sm shadow-sm transition-shadow",
                   isMedia ? "p-1.5" : "px-2.5 py-1.5",
                   out
-                    ? "bg-[#d9fdd3] text-[#111b21] dark:bg-[#005c4b] dark:text-white"
+                    ? "bg-[#d9fdd3] text-black dark:bg-[#005c4b] dark:text-white"
                     : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-white",
                   isActive && "ring-2 ring-yellow-400 ring-offset-1",
                   (m.payload as Record<string, unknown> | null)?._optimistic && "opacity-70"
