@@ -122,7 +122,7 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
 }
 
 /* =============== INFO TAB =============== */
-function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => void }) {
+export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { current } = useWorkspace();
   const { user } = useAuth();
