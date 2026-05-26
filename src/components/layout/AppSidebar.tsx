@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   LayoutGrid,
   Users,
@@ -15,14 +16,10 @@ import {
   HelpCircle,
   ArrowLeft,
   LifeBuoy,
-  UserCheck,
-  Building2,
-  Shield,
   LogOut,
   Search,
   Pin,
   PinOff,
-
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -43,8 +40,8 @@ import {
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
-import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
+import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
 type Item = { title: string; url: string; icon: any };
 
