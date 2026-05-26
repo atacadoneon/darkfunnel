@@ -286,8 +286,18 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
             )}
             <div
               ref={(el) => { itemRefs.current[m.id] = el; }}
-              className={cn("flex", out ? "justify-end" : "justify-start", grouped && !showDay ? "mt-0.5" : "mt-2")}
+              className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped && !showDay ? "mt-0.5" : "mt-2")}
             >
+              {out && (
+                <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                    <Forward className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
+                    <Reply className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
               <div
                 className={cn(
                   "relative max-w-[75%] rounded-lg text-sm shadow-sm transition-shadow",
@@ -311,6 +321,16 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   {out && <MessageStatusIcon status={m.status} />}
                 </div>
               </div>
+              {!out && (
+                <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
+                    <Reply className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                    <Forward className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         );
