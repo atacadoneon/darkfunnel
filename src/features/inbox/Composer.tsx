@@ -288,6 +288,18 @@ export function Composer({ conversation }: Props) {
           mensagem(ns) agendada(s) — gerenciar
         </button>
       )}
+      {replyTo && (
+        <div className="mb-2 flex items-start gap-2 rounded-md border-l-4 border-primary bg-muted/40 p-2">
+          <ReplyIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-medium text-primary">Respondendo</div>
+            <div className="truncate text-xs text-muted-foreground">{replyTo.body}</div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyTo(null)} title="Cancelar resposta">
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
       {attachment && (
         <div className="mb-2 flex items-center gap-2 rounded-md border bg-muted/40 p-2">
           <AttIcon className="h-5 w-5 text-muted-foreground" />
