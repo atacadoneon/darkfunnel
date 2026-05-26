@@ -242,6 +242,8 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -253,6 +255,12 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
     const node = itemRefs.current[activeMatchId];
     if (node) node.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [activeMatchId]);
+
+  const handleReply = (m: MessageRow) => {
+    const p = (m.payload ?? {}) as Record<string, unknown>;
+    const body = (p.body as string | undefined) || (p.caption as string | undefined) || `[${m.type}]`;
+    window.dispatchEvent(new CustomEvent("inbox:reply", { detail: { id: m.id, body, direction: m.direction } }));
+  };
 
   return (
     <div
