@@ -173,6 +173,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
       setName(c?.display_name ?? "");
       setCompanyName(c?.company_name ?? "");
       setPhone(c?.phone_e164 ?? "");
+      setInitialPhone(c?.phone_e164 ?? "");
       setPhone2(c?.phone2_e164 ?? "");
       setEmail(c?.email ?? "");
       setNiche(c?.niche ?? "");
