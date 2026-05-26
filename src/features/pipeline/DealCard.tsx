@@ -9,6 +9,7 @@ import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import { ConversationPopup } from "@/features/inbox/ConversationPopup";
 import { CallButton } from "@/features/voice/CallButton";
+import { LeadEditDialog } from "./LeadEditDialog";
 
 type Props = {
   deal: Deal & { last_interaction_at?: string | null; has_proposal?: boolean; origin_id?: string | null };
