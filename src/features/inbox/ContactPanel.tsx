@@ -1,17 +1,17 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Edit2, Mail, Tag as TagIcon, DollarSign, User, RefreshCw, ListChecks, Bell, StickyNote, History, MessageSquare, Building2, Briefcase, MapPin } from "lucide-react";
+import { Mail, RefreshCw, ListChecks, Bell, StickyNote, User, History, ShoppingCart, Paperclip, Calendar, Box, Megaphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { useStages, formatMoney } from "@/features/pipeline/hooks";
-import { useWorkspaceMembers } from "@/features/workspace/permissions";
+import { useStages } from "@/features/pipeline/hooks";
 import { useContactDeal } from "./inboxFeatureHooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
-import { LeadEditDialog } from "@/features/pipeline/LeadEditDialog";
+import {
+  InfoTab, HistoryTab, PurchasesTab, AttachmentsTab,
+  ActivitiesTab, CustomFieldsTab, AdsTab,
+} from "@/features/pipeline/LeadEditDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -19,8 +19,6 @@ import { ContactAvatar } from "./ContactAvatar";
 import { CallButton } from "@/features/voice/CallButton";
 
 import type { ConversationRow } from "./hooks";
-
-const ALL_SECTIONS = ["deal", "contato", "tags", "vendedor", "historico", "conversas", "notas"];
 
 type ContactFull = {
   id: string;
