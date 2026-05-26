@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   LayoutGrid,
   Users,
@@ -15,14 +16,10 @@ import {
   HelpCircle,
   ArrowLeft,
   LifeBuoy,
-  UserCheck,
-  Building2,
-  Shield,
   LogOut,
   Search,
   Pin,
   PinOff,
-
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -43,8 +40,8 @@ import {
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
-import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
+import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
 type Item = { title: string; url: string; icon: any };
 
@@ -96,8 +93,18 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
   const { current } = useWorkspace();
   const { user } = useAuth();
   const canSeeSettings = useIsManagerOrAdmin();
-  const { data: isPlatformAdmin } = usePlatformAdmin();
   const navigate = useNavigate();
+
+  const [available, setAvailable] = useState<boolean>(() => {
+    return (localStorage.getItem("presence:manual") ?? "online") !== "away";
+  });
+
+  const toggleAvailable = () => {
+    const next = !available;
+    setAvailable(next);
+    localStorage.setItem("presence:manual", next ? "online" : "away");
+    window.dispatchEvent(new Event("presence:manual-change"));
+  };
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -127,17 +134,31 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-3 border-b">
         {collapsed ? (
-          <div className="h-8 w-8 mx-auto rounded-md bg-primary/10 text-primary flex items-center justify-center font-semibold">
-            {wsName.charAt(0).toUpperCase()}
+          <div className="flex flex-col items-center gap-2">
+            <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
+            <button
+              type="button"
+              onClick={toggleAvailable}
+              className={cn(
+                "h-2.5 w-2.5 rounded-full transition-colors",
+                available ? "bg-emerald-500" : "bg-red-500",
+              )}
+              title={available ? "Disponível — clique para ficar Ausente" : "Ausente — clique para ficar Disponível"}
+            />
           </div>
         ) : (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="h-9 w-9 shrink-0 rounded-md bg-primary/10 text-primary flex items-center justify-center font-semibold">
-                {wsName.charAt(0).toUpperCase()}
-              </div>
+              <img
+                src={logoDarkFunnel}
+                alt="DarkFunnel"
+                className="h-8 w-8 shrink-0 object-contain"
+                loading="lazy"
+                width={32}
+                height={32}
+              />
               <div className="min-w-0 flex-1">
-                <div className="font-semibold text-sm truncate">{wsName}</div>
+                <div className="font-semibold text-sm truncate">DarkFunnel</div>
               </div>
               {onTogglePin && (
                 <button
@@ -151,60 +172,32 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
               )}
             </div>
 
-
-            <button
-              className="w-full flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm hover:bg-muted transition-colors"
-              type="button"
-            >
-              <Building2 className="h-4 w-4" />
-              <span className="truncate">{wsName}</span>
-            </button>
-
+            <div className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
+              <span className="truncate flex-1">{wsName}</span>
+              <NavLink
+                to="/equipe-online"
+                className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                title="Equipe Online"
+              >
+                <Users className="h-3.5 w-3.5" />
+              </NavLink>
+              <button
+                type="button"
+                onClick={toggleAvailable}
+                className={cn(
+                  "h-3 w-3 rounded-full transition-colors",
+                  available ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600",
+                )}
+                title={available ? "Disponível — clique para ficar Ausente" : "Ausente — clique para ficar Disponível"}
+                aria-label="Alternar disponibilidade"
+              />
+            </div>
           </div>
         )}
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
-        {!collapsed && (
-          <SidebarGroup className="py-0">
 
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith("/equipe-online")}>
-                    <NavLink to="/equipe-online" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>Equipe Online</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="text-emerald-500">
-                    <UserCheck className="h-4 w-4" />
-                    <span>Disponível</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-        {isPlatformAdmin && (
-          <SidebarGroup className="py-1">
-            {!collapsed && <SidebarGroupLabel>Plataforma</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith("/admin")}>
-                    <NavLink to="/admin" className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
         {visibleSections.map((section) => (
           <SidebarGroup key={section.label} className="py-1">
             {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}

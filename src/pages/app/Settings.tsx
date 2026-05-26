@@ -1,4 +1,4 @@
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams, NavLink } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { PreferencesSection } from "@/features/settings/PreferencesSection";
@@ -6,9 +6,10 @@ import { ChannelsSection } from "@/features/channels/ChannelsSection";
 import { TagsAdminSection, LossReasonsAdminSection } from "@/features/workspace/CatalogsAdmin";
 import { UsersSection } from "@/features/workspace/UsersSection";
 import { useIsManagerOrAdmin, useMyRole } from "@/features/workspace/permissions";
-import { Settings2, Radio, LineChart, Plug, Users, Tags } from "lucide-react";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
+import { Settings2, Radio, LineChart, Plug, Users, Tags, Shield, ArrowUpRight } from "lucide-react";
 
-const TABS = [
+const BASE_TABS = [
   { value: "preferences",  label: "Preferências", icon: Settings2 },
   { value: "channels",     label: "Canais",       icon: Radio },
   { value: "catalogs",     label: "Cadastros",    icon: Tags },
@@ -31,8 +32,13 @@ export default function Settings() {
   const tab = params.get("tab") ?? "preferences";
   const allowed = useIsManagerOrAdmin();
   const { isLoading } = useMyRole();
+  const { data: isPlatformAdmin } = usePlatformAdmin();
   if (isLoading) return null;
   if (!allowed) return <Navigate to="/dashboard" replace />;
+
+  const tabs = isPlatformAdmin
+    ? [...BASE_TABS, { value: "platform", label: "Plataforma", icon: Shield } as const]
+    : BASE_TABS;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -52,7 +58,7 @@ export default function Settings() {
         }}
       >
         <TabsList className="h-auto flex-wrap justify-start gap-1 bg-muted/60 p-1">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <TabsTrigger key={t.value} value={t.value} className="gap-2">
               <t.icon className="h-4 w-4" />
               {t.label}
@@ -79,7 +85,28 @@ export default function Settings() {
         <TabsContent value="users" className="mt-6">
           <UsersSection />
         </TabsContent>
+        {isPlatformAdmin && (
+          <TabsContent value="platform" className="mt-6">
+            <Card className="p-6 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Shield className="h-4 w-4" /> Admin da Plataforma
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Gerencie workspaces, uso, logs de auditoria e feature flags.
+                </p>
+              </div>
+              <NavLink
+                to="/admin"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90"
+              >
+                Abrir painel <ArrowUpRight className="h-3.5 w-3.5" />
+              </NavLink>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
 }
+
