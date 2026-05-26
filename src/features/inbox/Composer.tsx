@@ -68,6 +68,7 @@ export function Composer({ conversation }: Props) {
   const [quickOpen, setQuickOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [replyTo, setReplyTo] = useState<{ id: string; body: string } | null>(null);
   const [recording, setRecording] = useState(false);
   const [recSeconds, setRecSeconds] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
