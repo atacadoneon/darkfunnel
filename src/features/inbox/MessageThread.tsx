@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw } from "lucide-react";
+import { FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw, Reply, Forward } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MessageStatusIcon } from "@/components/messages/MessageStatusIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { ForwardMessageDialog } from "./ForwardMessageDialog";
 import type { MessageRow } from "./hooks";
 
 function RefreshMediaButton({ messageId, conversationId, onRefreshed }: { messageId: string; conversationId: string; onRefreshed: (url: string) => void }) {
