@@ -131,7 +131,11 @@ export function CsvImportDialog({ open, onOpenChange }: Props) {
         const phoneRaw = get("phone");
         const email = get("email") || null;
         const phone = phoneRaw ? normalizePhone(phoneRaw) : null;
-        const title = get("title") || name || phone || email || `Lead ${i + 1}`;
+        // Lead = Contato = Conversa: rejeitar linha sem telefone E.164 válido
+        if (!phone || !/^\+[1-9][0-9]{7,14}$/.test(phone)) {
+          throw new Error("Telefone ausente ou inválido (use formato internacional, ex.: +5511999998888)");
+        }
+        const title = get("title") || name || phone || `Lead ${i + 1}`;
         const valueStr = get("value").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
         const valueNum = parseFloat(valueStr);
         const value_cents = isFinite(valueNum) ? Math.round(valueNum * 100) : 0;
