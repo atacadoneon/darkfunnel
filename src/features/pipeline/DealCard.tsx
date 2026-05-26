@@ -37,6 +37,7 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const { user } = useAuth();
   const { data: members = [] } = useWorkspaceMembers();
   const [chatOpen, setChatOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id, data: { type: "deal", deal } });
 
