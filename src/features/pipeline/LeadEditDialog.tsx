@@ -97,13 +97,13 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
         </DialogHeader>
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-6 mt-3 grid grid-cols-7 h-auto bg-transparent p-1 gap-1 rounded-lg border">
-            <TabsTrigger value="info">Informações</TabsTrigger>
-            <TabsTrigger value="history">Histórico</TabsTrigger>
-            <TabsTrigger value="purchases">Compras</TabsTrigger>
-            <TabsTrigger value="attachments">Anexos</TabsTrigger>
-            <TabsTrigger value="activities">Atividades</TabsTrigger>
-            <TabsTrigger value="custom">Campos Extra</TabsTrigger>
-            <TabsTrigger value="ads">ADS</TabsTrigger>
+            <TabsTrigger value="info" title="Informações" className="flex-col gap-1 py-2"><User className="h-4 w-4" /><span className="text-[10px]">Informações</span></TabsTrigger>
+            <TabsTrigger value="history" title="Histórico" className="flex-col gap-1 py-2"><History className="h-4 w-4" /><span className="text-[10px]">Histórico</span></TabsTrigger>
+            <TabsTrigger value="purchases" title="Compras" className="flex-col gap-1 py-2"><ShoppingCart className="h-4 w-4" /><span className="text-[10px]">Compras</span></TabsTrigger>
+            <TabsTrigger value="attachments" title="Anexos" className="flex-col gap-1 py-2"><Paperclip className="h-4 w-4" /><span className="text-[10px]">Anexos</span></TabsTrigger>
+            <TabsTrigger value="activities" title="Atividades" className="flex-col gap-1 py-2"><Calendar className="h-4 w-4" /><span className="text-[10px]">Atividades</span></TabsTrigger>
+            <TabsTrigger value="custom" title="Campos Extra" className="flex-col gap-1 py-2"><Box className="h-4 w-4" /><span className="text-[10px]">Extras</span></TabsTrigger>
+            <TabsTrigger value="ads" title="ADS" className="flex-col gap-1 py-2"><Megaphone className="h-4 w-4" /><span className="text-[10px]">ADS</span></TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto px-6 py-4">
