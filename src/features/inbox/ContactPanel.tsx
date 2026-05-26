@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useStages, formatMoney } from "@/features/pipeline/hooks";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
