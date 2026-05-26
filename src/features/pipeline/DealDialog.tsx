@@ -339,66 +339,49 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
           <DialogTitle>{editing ? "Editar Lead" : "Novo Lead"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="t">Título</Label>
-            <Input id="t" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Pacote anual — Empresa X" />
+          {/* Lead = Contato = Conversa — telefone é OBRIGATÓRIO */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-name">Nome do contato</Label>
+              <Input
+                id="contact-name"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                placeholder="Ex.: João Silva"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-phone" className="flex items-center gap-1">
+                Telefone <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="contact-phone"
+                required
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="+55 11 99999-9999"
+                aria-invalid={phoneInput.length > 0 && !phoneValid}
+                className={cn(phoneInput.length > 0 && !phoneValid && "border-destructive")}
+              />
+              {phoneInput.length > 0 && !phoneValid && (
+                <p className="text-[11px] text-destructive">{PHONE_INVALID_MSG}</p>
+              )}
+            </div>
           </div>
 
+          {phoneChanged && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                Alterar o telefone mantém o histórico de conversas, mensagens e o deal vinculado.
+                O número antigo fica salvo como referência.
+              </span>
+            </div>
+          )}
+
           <div className="space-y-1.5">
-            <Label>Contato</Label>
-            <Popover open={contactOpen} onOpenChange={setContactOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  role="combobox"
-                  className="w-full justify-between font-normal"
-                >
-                  <span className="flex items-center gap-2 truncate">
-                    <UserIcon className="h-4 w-4 text-muted-foreground" />
-                    {selectedContact
-                      ? selectedContact.display_name || selectedContact.phone_e164 || "Sem nome"
-                      : "Vincular contato/chat (opcional)"}
-                  </span>
-                  <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Buscar contato..." />
-                  <CommandList>
-                    <CommandEmpty>Nenhum contato encontrado.</CommandEmpty>
-                    <CommandGroup>
-                      {contactId && (
-                        <CommandItem
-                          value="__none__"
-                          onSelect={() => { setContactId(null); setContactOpen(false); }}
-                        >
-                          <XCircle className="mr-2 h-4 w-4 text-muted-foreground" />
-                          Remover vínculo
-                        </CommandItem>
-                      )}
-                      {contacts.map((c) => {
-                        const label = c.display_name || c.phone_e164 || "Sem nome";
-                        return (
-                          <CommandItem
-                            key={c.id}
-                            value={`${label} ${c.phone_e164 ?? ""}`}
-                            onSelect={() => { setContactId(c.id); setContactOpen(false); }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", contactId === c.id ? "opacity-100" : "opacity-0")} />
-                            <span className="truncate">{label}</span>
-                            {c.phone_e164 && (
-                              <span className="ml-auto text-xs text-muted-foreground">{c.phone_e164}</span>
-                            )}
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="t">Título do Lead</Label>
+            <Input id="t" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Pacote anual — Empresa X" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
