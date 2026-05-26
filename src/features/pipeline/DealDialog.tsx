@@ -71,6 +71,11 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const { data: lossReasons = [] } = useLossReasons(true);
   const [duplicateLead, setDuplicateLead] = useState<{ id: string; title: string; channelName?: string; phone?: string } | null>(null);
 
+  // Telefone obrigatório — Lead = Contato = Conversa
+  const [phoneInput, setPhoneInput] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [initialPhone, setInitialPhone] = useState(""); // edição: para detectar mudança
+
   const { data: contacts = [] } = useContacts();
   const { data: channels = [] } = useChannels();
   const { data: members = [] } = useWorkspaceMembers();
@@ -97,8 +102,18 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
       setContactId(deal?.contact_id ?? null);
       setAssignedTo(deal?.assigned_to ?? user?.id ?? null);
       setChannelId(((deal as any)?.channel_id) ?? null);
+      // phone: editing -> carrega do contato vinculado; novo -> vazio
+      const linked = deal?.contact_id ? contacts.find((c) => c.id === deal.contact_id) : null;
+      const ph = linked?.phone_e164 ?? "";
+      setPhoneInput(ph);
+      setInitialPhone(ph);
+      setContactName(linked?.display_name ?? "");
     }
-  }, [open, deal, defaultStageId, stages, user]);
+  }, [open, deal, defaultStageId, stages, user, contacts]);
+
+  const phoneNormalized = normalizePhoneE164(phoneInput);
+  const phoneValid = isValidE164(phoneNormalized);
+  const phoneChanged = editing && initialPhone !== phoneNormalized && phoneNormalized !== "";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
