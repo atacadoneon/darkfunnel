@@ -125,7 +125,7 @@ export default function Prospeccao() {
   const [results, setResults] = useState<ResultRow[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const canSearch = !!cnae || razao.trim().length >= 3;
+  const canSearch = razao.replace(/\D/g, "").length === 14;
 
   // Filtros mantidos para UI; backend atual só suporta lookup por CNPJ.
   void cnae; void ufs; void municipio; void porte; void situacao; void limit;
