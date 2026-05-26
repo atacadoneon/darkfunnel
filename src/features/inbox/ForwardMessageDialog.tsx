@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useConversations } from "./hooks";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import type { MessageRow } from "./hooks";
 
 type Props = {
