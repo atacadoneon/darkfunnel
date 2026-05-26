@@ -211,7 +211,7 @@ export default function Inbox() {
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden">
-      <div className="w-80 shrink-0 border-r flex min-h-0 flex-col overflow-hidden">
+      <div className="w-96 shrink-0 border-r flex min-h-0 flex-col overflow-hidden">
         <div className="px-2 py-1.5 border-b space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
