@@ -274,7 +274,16 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
             <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
           </Field>
           <Field label="Telefone" required icon={<Phone className="h-3 w-3" />}>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+55 11 99999-9999" />
+            {phone && !isValidE164(normalizePhoneE164(phone)) && (
+              <p className="text-[10px] text-destructive mt-1">{PHONE_INVALID_MSG}</p>
+            )}
+            {normalizePhoneE164(phone) !== initialPhone && initialPhone && phone && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                ⚠ Alterar o telefone mantém o histórico de conversas, mensagens e o deal vinculado.
+                O número antigo fica salvo como referência.
+              </p>
+            )}
           </Field>
           <Field label="Telefone 2" icon={<Phone className="h-3 w-3" />}>
             <Input value={phone2} onChange={(e) => setPhone2(e.target.value)} placeholder="(11) 99999-9999" />
