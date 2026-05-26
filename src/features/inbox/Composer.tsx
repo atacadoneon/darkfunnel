@@ -94,6 +94,17 @@ export function Composer({ conversation }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: string; body: string } | undefined;
+      if (!detail) return;
+      setReplyTo({ id: detail.id, body: detail.body });
+      setTimeout(() => ref.current?.focus(), 0);
+    };
+    window.addEventListener("inbox:reply", handler as EventListener);
+    return () => window.removeEventListener("inbox:reply", handler as EventListener);
+  }, []);
+
   const handleFile = (f: File | undefined | null) => {
     if (!f) return;
     if (!isUazapi) {
