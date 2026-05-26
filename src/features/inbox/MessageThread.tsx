@@ -342,6 +342,8 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
         </div>
       )}
     </div>
+    <ForwardMessageDialog open={!!forwardMsg} onOpenChange={(v) => { if (!v) setForwardMsg(null); }} message={forwardMsg} />
+    </>
   );
 }
 
