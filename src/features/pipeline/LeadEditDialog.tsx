@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { toast } from "sonner";
+import { normalizePhoneE164, isValidE164, PHONE_INVALID_MSG, PHONE_REQUIRED_MSG } from "@/lib/phone";
 import { useStages, formatMoney, type Deal } from "./hooks";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import {
