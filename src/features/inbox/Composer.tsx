@@ -167,10 +167,14 @@ export function Composer({ conversation }: Props) {
       return;
     }
     setSending(true);
-    const body = text.trim();
+    const rawBody = text.trim();
+    const quoted = replyTo ? `> ${replyTo.body.split("\n").join("\n> ")}\n\n` : "";
+    const body = quoted + rawBody;
     const att = attachment;
+    const currentReply = replyTo;
     setText("");
     setAttachment(null);
+    setReplyTo(null);
 
     // 1) Insert optimistic message immediately
     const optimistic = makeOptimistic({
