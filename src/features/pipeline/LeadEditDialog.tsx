@@ -203,12 +203,20 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
 
   const save = async () => {
     if (!current || !user || !contactId) return;
+
+    // Lead = Contato = Conversa: telefone obrigatório + E.164
+    const phoneNorm = normalizePhoneE164(phone);
+    if (!phoneNorm) { toast.error(PHONE_REQUIRED_MSG); return; }
+    if (!isValidE164(phoneNorm)) { toast.error(PHONE_INVALID_MSG); return; }
+    const phone2Norm = phone2.trim() ? normalizePhoneE164(phone2) : "";
+    if (phone2Norm && !isValidE164(phone2Norm)) { toast.error(`Telefone 2: ${PHONE_INVALID_MSG}`); return; }
+
     setSaving(true);
     try {
-      // contact
+      // contact (trigger do DB preserva histórico do telefone antigo em contact_identities)
       await supabase.from("contacts").update({
         display_name: name.trim(), company_name: companyName.trim() || null,
-        phone_e164: phone.trim() || null, phone2_e164: phone2.trim() || null,
+        phone_e164: phoneNorm, phone2_e164: phone2Norm || null,
         email: email.trim() || null, niche: niche.trim() || null, city: city.trim() || null,
       }).eq("id", contactId);
 
