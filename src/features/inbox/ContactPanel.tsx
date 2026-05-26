@@ -33,7 +33,10 @@ type ContactFull = {
   city: string | null;
 };
 
+type SectionKey = "deal" | "contato" | "tags" | "vendedor" | "historico" | "conversas" | "notas";
+
 export function ContactPanel({ conversation }: { conversation: ConversationRow }) {
+  const [activeSection, setActiveSection] = useState<SectionKey>("deal");
   const c = conversation.contacts;
   const qc = useQueryClient();
   const { data: deal } = useContactDeal(conversation.contact_id);
