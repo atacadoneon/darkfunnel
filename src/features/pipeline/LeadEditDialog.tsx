@@ -141,6 +141,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
   const [phone2, setPhone2] = useState("");
+  const [initialPhone, setInitialPhone] = useState("");
   const [email, setEmail] = useState("");
   const [niche, setNiche] = useState("");
   const [city, setCity] = useState("");
