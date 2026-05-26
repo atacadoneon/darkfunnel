@@ -51,7 +51,7 @@ const sections: { label: string; items: Item[] }[] = [
     label: "",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
-      { title: "CRM & Leads", url: "/funildevendas", icon: Users },
+      { title: "CRM & Leads", url: "/funildevendas", icon: Filter },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
     ],
