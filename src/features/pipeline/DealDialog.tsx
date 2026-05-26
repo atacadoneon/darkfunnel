@@ -565,7 +565,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={saving || !title.trim() || !stageId}>
+            <Button type="submit" disabled={saving || !title.trim() || !stageId || !phoneValid}>
               {saving ? "Salvando..." : editing ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>
