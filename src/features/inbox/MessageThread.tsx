@@ -263,6 +263,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
   };
 
   return (
+    <>
     <div
       ref={ref}
       className="flex-1 overflow-y-auto overscroll-contain scrollbar-hide p-4 space-y-1 bg-[#efeae2] dark:bg-[#0b141a]"
