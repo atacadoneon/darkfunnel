@@ -17,6 +17,7 @@ type Props = {
 
 export function ForwardMessageDialog({ open, onOpenChange, message }: Props) {
   const { data: conversations = [] } = useConversations();
+  const { current } = useWorkspace();
   const [q, setQ] = useState("");
   const [target, setTarget] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -25,14 +26,14 @@ export function ForwardMessageDialog({ open, onOpenChange, message }: Props) {
     const term = q.trim().toLowerCase();
     if (!term) return conversations.slice(0, 50);
     return conversations.filter((c) => {
-      const name = (c.contacts?.name ?? "").toLowerCase();
-      const phone = (c.contacts?.phone ?? "").toLowerCase();
+      const name = (c.contacts?.display_name ?? "").toLowerCase();
+      const phone = (c.contacts?.phone_e164 ?? "").toLowerCase();
       return name.includes(term) || phone.includes(term);
     }).slice(0, 50);
   }, [conversations, q]);
 
   const send = async () => {
-    if (!target || !message) return;
+    if (!target || !message || !current) return;
     const conv = conversations.find((c) => c.id === target);
     if (!conv) return;
     setSending(true);
@@ -58,7 +59,7 @@ export function ForwardMessageDialog({ open, onOpenChange, message }: Props) {
         if (error) throw new Error(error.message);
       } else {
         const { error } = await supabase.rpc("enqueue_outbound", {
-          p_workspace: conv.workspace_id,
+          p_workspace: current.id,
           p_contact: conv.contact_id,
           p_channel: conv.channel_id,
           p_message_type: type,
@@ -98,9 +99,9 @@ export function ForwardMessageDialog({ open, onOpenChange, message }: Props) {
                 onClick={() => setTarget(c.id)}
                 className={`w-full text-left px-2 py-1.5 rounded text-sm hover:bg-accent ${target === c.id ? "bg-accent" : ""}`}
               >
-                <div className="truncate font-medium">{c.contacts?.name || c.contacts?.phone || "—"}</div>
-                {c.contacts?.phone && (
-                  <div className="truncate text-xs text-muted-foreground">{c.contacts.phone}</div>
+                <div className="truncate font-medium">{c.contacts?.display_name || c.contacts?.phone_e164 || "—"}</div>
+                {c.contacts?.phone_e164 && (
+                  <div className="truncate text-xs text-muted-foreground">{c.contacts.phone_e164}</div>
                 )}
               </button>
             ))}
