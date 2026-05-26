@@ -125,7 +125,7 @@ export default function Prospeccao() {
   const [results, setResults] = useState<ResultRow[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const canSearch = !!cnae || razao.trim().length >= 3;
+  const canSearch = razao.replace(/\D/g, "").length === 14;
 
   // Filtros mantidos para UI; backend atual só suporta lookup por CNPJ.
   void cnae; void ufs; void municipio; void porte; void situacao; void limit;
@@ -273,8 +273,13 @@ export default function Prospeccao() {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Razão social contém</Label>
-            <Input className="h-8 text-xs" value={razao} onChange={(e) => setRazao(e.target.value)} />
+            <Label className="text-xs">CNPJ (14 dígitos)</Label>
+            <Input
+              className="h-8 text-xs font-mono"
+              value={razao}
+              onChange={(e) => setRazao(e.target.value)}
+              placeholder="08.147.973/0001-60"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Limite (máx 500)</Label>
