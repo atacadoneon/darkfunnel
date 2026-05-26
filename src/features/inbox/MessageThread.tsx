@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw } from "lucide-react";
+import { FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw, Reply, Forward } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MessageStatusIcon } from "@/components/messages/MessageStatusIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { ForwardMessageDialog } from "./ForwardMessageDialog";
 import type { MessageRow } from "./hooks";
 
 function RefreshMediaButton({ messageId, conversationId, onRefreshed }: { messageId: string; conversationId: string; onRefreshed: (url: string) => void }) {
@@ -241,6 +242,8 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -253,7 +256,14 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
     if (node) node.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [activeMatchId]);
 
+  const handleReply = (m: MessageRow) => {
+    const p = (m.payload ?? {}) as Record<string, unknown>;
+    const body = (p.body as string | undefined) || (p.caption as string | undefined) || `[${m.type}]`;
+    window.dispatchEvent(new CustomEvent("inbox:reply", { detail: { id: m.id, body, direction: m.direction } }));
+  };
+
   return (
+    <>
     <div
       ref={ref}
       className="flex-1 overflow-y-auto overscroll-contain scrollbar-hide p-4 space-y-1 bg-[#efeae2] dark:bg-[#0b141a]"
@@ -277,8 +287,18 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
             )}
             <div
               ref={(el) => { itemRefs.current[m.id] = el; }}
-              className={cn("flex", out ? "justify-end" : "justify-start", grouped && !showDay ? "mt-0.5" : "mt-2")}
+              className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped && !showDay ? "mt-0.5" : "mt-2")}
             >
+              {out && (
+                <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                    <Forward className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
+                    <Reply className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
               <div
                 className={cn(
                   "relative max-w-[75%] rounded-lg text-sm shadow-sm transition-shadow",
@@ -302,6 +322,16 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   {out && <MessageStatusIcon status={m.status} />}
                 </div>
               </div>
+              {!out && (
+                <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
+                    <Reply className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                    <Forward className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -312,6 +342,8 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
         </div>
       )}
     </div>
+    <ForwardMessageDialog open={!!forwardMsg} onOpenChange={(v) => { if (!v) setForwardMsg(null); }} message={forwardMsg} />
+    </>
   );
 }
 

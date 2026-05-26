@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music, Smile } from "lucide-react";
+import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music, Smile, Reply as ReplyIcon } from "lucide-react";
 import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 import { useQuickReplies, useScheduledMessages } from "./inboxFeatureHooks";
@@ -68,6 +68,7 @@ export function Composer({ conversation }: Props) {
   const [quickOpen, setQuickOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [replyTo, setReplyTo] = useState<{ id: string; body: string } | null>(null);
   const [recording, setRecording] = useState(false);
   const [recSeconds, setRecSeconds] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -91,6 +92,17 @@ export function Composer({ conversation }: Props) {
       if (recTimerRef.current) clearInterval(recTimerRef.current);
       recStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { id: string; body: string } | undefined;
+      if (!detail) return;
+      setReplyTo({ id: detail.id, body: detail.body });
+      setTimeout(() => ref.current?.focus(), 0);
+    };
+    window.addEventListener("inbox:reply", handler as EventListener);
+    return () => window.removeEventListener("inbox:reply", handler as EventListener);
   }, []);
 
   const handleFile = (f: File | undefined | null) => {
@@ -155,10 +167,14 @@ export function Composer({ conversation }: Props) {
       return;
     }
     setSending(true);
-    const body = text.trim();
+    const rawBody = text.trim();
+    const quoted = replyTo ? `> ${replyTo.body.split("\n").join("\n> ")}\n\n` : "";
+    const body = quoted + rawBody;
     const att = attachment;
+    const currentReply = replyTo;
     setText("");
     setAttachment(null);
+    setReplyTo(null);
 
     // 1) Insert optimistic message immediately
     const optimistic = makeOptimistic({
@@ -227,8 +243,9 @@ export function Composer({ conversation }: Props) {
     } catch (err) {
       optimisticStore.remove(conversation.id, optimistic.id);
       toast.error((err as Error).message);
-      setText(body);
+      setText(rawBody);
       if (att) setAttachment(att);
+      if (currentReply) setReplyTo(currentReply);
     } finally {
       setSending(false);
       ref.current?.focus();
@@ -270,6 +287,18 @@ export function Composer({ conversation }: Props) {
           <Badge variant="secondary" className="h-5 px-1.5">{pendings.length}</Badge>
           mensagem(ns) agendada(s) — gerenciar
         </button>
+      )}
+      {replyTo && (
+        <div className="mb-2 flex items-start gap-2 rounded-md border-l-4 border-primary bg-muted/40 p-2">
+          <ReplyIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-medium text-primary">Respondendo</div>
+            <div className="truncate text-xs text-muted-foreground">{replyTo.body}</div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setReplyTo(null)} title="Cancelar resposta">
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       )}
       {attachment && (
         <div className="mb-2 flex items-center gap-2 rounded-md border bg-muted/40 p-2">
