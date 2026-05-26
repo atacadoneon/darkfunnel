@@ -9,6 +9,7 @@ import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import { ConversationPopup } from "@/features/inbox/ConversationPopup";
 import { CallButton } from "@/features/voice/CallButton";
+import { LeadEditDialog } from "./LeadEditDialog";
 
 type Props = {
   deal: Deal & { last_interaction_at?: string | null; has_proposal?: boolean; origin_id?: string | null };
@@ -36,6 +37,7 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const { user } = useAuth();
   const { data: members = [] } = useWorkspaceMembers();
   const [chatOpen, setChatOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id, data: { type: "deal", deal } });
 
@@ -83,7 +85,11 @@ export function DealCard({ deal, onClick, overlay }: Props) {
           >
             <MessageCircle className="h-3.5 w-3.5" />
           </button>
-          <button className="text-muted-foreground hover:text-foreground" title="Detalhes">
+          <button
+            className="text-muted-foreground hover:text-foreground"
+            title="Configurações do lead"
+            onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
+          >
             <ExternalLink className="h-3.5 w-3.5" />
           </button>
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{ago}</span>
@@ -129,6 +135,9 @@ export function DealCard({ deal, onClick, overlay }: Props) {
       contactId={deal.contact_id ?? null}
       contactLabel={contactLabel}
     />
+    {editOpen && (
+      <LeadEditDialog open={editOpen} onOpenChange={setEditOpen} dealId={deal.id} />
+    )}
     </>
   );
 }
