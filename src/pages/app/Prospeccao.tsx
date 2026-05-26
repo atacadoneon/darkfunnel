@@ -127,39 +127,29 @@ export default function Prospeccao() {
 
   const canSearch = !!cnae || razao.trim().length >= 3;
 
-  const filters = useMemo(() => ({
-    cnae: cnae?.code ?? null,
-    ufs,
-    municipio: municipio.trim() || null,
-    porte: porte === "any" ? null : porte,
-    situacao,
-    razao_social: razao.trim() || null,
-    limit: Math.min(500, Math.max(1, Number(limit) || 100)),
-    bairro: bairro.trim() || null,
-    ddd: ddd.trim() ? ddd.split(",").map((d) => d.trim()).filter(Boolean) : null,
-    year_from: yearFrom,
-    year_to: yearTo,
-    only_email: onlyEmail,
-    only_phone: onlyPhone,
-    only_headquarter: onlyHQ,
-    mei: mei === "any" ? null : mei === "yes",
-    simples: simples === "any" ? null : simples === "yes",
-    capital_min: capitalMin ? Number(capitalMin) : null,
-  }), [cnae, ufs, municipio, porte, situacao, razao, limit, bairro, ddd, yearFrom, yearTo, onlyEmail, onlyPhone, onlyHQ, mei, simples, capitalMin]);
+  // Filtros mantidos para UI; backend atual só suporta lookup por CNPJ.
+  void cnae; void ufs; void municipio; void porte; void situacao; void limit;
+  void bairro; void ddd; void yearFrom; void yearTo; void onlyEmail; void onlyPhone;
+  void onlyHQ; void mei; void simples; void capitalMin;
 
   const searchMut = useMutation({
     mutationFn: async () => {
+      const cnpjDigits = razao.replace(/\D/g, "");
+      if (cnpjDigits.length !== 14) {
+        throw new Error("Digite um CNPJ válido (14 dígitos) no campo de busca. A busca por filtros ainda não está disponível.");
+      }
       const { data, error } = await supabase.functions.invoke("prospect-search-cnpj", {
-        body: { action: "lookup_cnpj", filters, workspace_id: current?.id },
+        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      return (data?.results ?? []) as ResultRow[];
+      const result = data?.result ?? data?.results?.[0];
+      return result ? [result as ResultRow] : [];
     },
     onSuccess: (rows) => {
       setResults(rows);
       setSelected(new Set());
-      toast.success(`${rows.length} empresas encontradas`);
+      toast.success(`${rows.length} empresa(s) encontrada(s)`);
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha na busca"),
   });
