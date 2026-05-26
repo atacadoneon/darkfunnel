@@ -47,15 +47,10 @@ type Item = { title: string; url: string; icon: any };
 
 const sections: { label: string; items: Item[] }[] = [
   {
-    label: "Principal",
+    label: "",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
       { title: "CRM & Leads", url: "/funildevendas", icon: Users },
-    ],
-  },
-  {
-    label: "Comunicação",
-    items: [
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
     ],
