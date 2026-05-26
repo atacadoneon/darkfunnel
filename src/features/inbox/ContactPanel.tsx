@@ -193,32 +193,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
 }
 
 
-function ReadonlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2 text-[11px]">
-      <Label className="text-[10px] text-muted-foreground">{label}</Label>
-      <div className="truncate text-right">{value}</div>
-    </div>
-  );
-}
 
-function EditableField({
-  label, value, onSave, type = "text", placeholder, multiline = false,
-}: {
-  label: string;
-  value: string;
-  onSave: (v: string) => Promise<boolean> | void;
-  type?: string;
-  placeholder?: string;
-  multiline?: boolean;
-}) {
-  return (
-    <div className="space-y-0.5">
-      <Label className="text-[10px] text-muted-foreground">{label}</Label>
-      <AutoInput value={value} onSave={onSave} type={type} placeholder={placeholder} multiline={multiline} />
-    </div>
-  );
-}
 
 function AutoInput({
   value, onSave, type = "text", placeholder, className, multiline = false,
