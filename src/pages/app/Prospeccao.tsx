@@ -149,17 +149,22 @@ export default function Prospeccao() {
 
   const searchMut = useMutation({
     mutationFn: async () => {
+      const cnpjDigits = razao.replace(/\D/g, "");
+      if (cnpjDigits.length !== 14) {
+        throw new Error("Digite um CNPJ válido (14 dígitos) no campo de busca. A busca por filtros ainda não está disponível.");
+      }
       const { data, error } = await supabase.functions.invoke("prospect-search-cnpj", {
-        body: { action: "lookup_cnpj", filters, workspace_id: current?.id },
+        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      return (data?.results ?? []) as ResultRow[];
+      const result = data?.result ?? data?.results?.[0];
+      return result ? [result as ResultRow] : [];
     },
     onSuccess: (rows) => {
       setResults(rows);
       setSelected(new Set());
-      toast.success(`${rows.length} empresas encontradas`);
+      toast.success(`${rows.length} empresa(s) encontrada(s)`);
     },
     onError: (e: any) => toast.error(e?.message ?? "Falha na busca"),
   });
