@@ -58,6 +58,7 @@ export function usePresenceHeartbeat() {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("beforeunload", onUnload);
+      window.removeEventListener("presence:manual-change", onManual);
       void upsert("offline");
     };
   }, [user, current]);
