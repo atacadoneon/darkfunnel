@@ -47,15 +47,10 @@ type Item = { title: string; url: string; icon: any };
 
 const sections: { label: string; items: Item[] }[] = [
   {
-    label: "Principal",
+    label: "",
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
       { title: "CRM & Leads", url: "/funildevendas", icon: Users },
-    ],
-  },
-  {
-    label: "Comunicação",
-    items: [
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
     ],
@@ -199,8 +194,8 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
       <SidebarContent className="gap-0">
 
         {visibleSections.map((section) => (
-          <SidebarGroup key={section.label} className="py-1">
-            {!collapsed && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
+          <SidebarGroup key={section.label || "main"} className="py-1">
+            {!collapsed && section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => (
