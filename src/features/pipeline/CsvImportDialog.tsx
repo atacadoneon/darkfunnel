@@ -109,7 +109,9 @@ export function CsvImportDialog({ open, onOpenChange }: Props) {
 
   const preview = rows.slice(0, 5);
   const hasName = mapping.includes("name");
-  const hasIdentifier = mapping.includes("phone") || mapping.includes("email") || hasName;
+  const hasPhone = mapping.includes("phone");
+  // Lead = Contato = Conversa: telefone é OBRIGATÓRIO. Sem coluna telefone, sem import.
+  const hasIdentifier = hasPhone;
 
   const runImport = async () => {
     if (!current || !stageId) return;
