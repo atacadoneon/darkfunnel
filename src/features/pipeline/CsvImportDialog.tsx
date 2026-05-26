@@ -109,7 +109,9 @@ export function CsvImportDialog({ open, onOpenChange }: Props) {
 
   const preview = rows.slice(0, 5);
   const hasName = mapping.includes("name");
-  const hasIdentifier = mapping.includes("phone") || mapping.includes("email") || hasName;
+  const hasPhone = mapping.includes("phone");
+  // Lead = Contato = Conversa: telefone é OBRIGATÓRIO. Sem coluna telefone, sem import.
+  const hasIdentifier = hasPhone;
 
   const runImport = async () => {
     if (!current || !stageId) return;
@@ -129,7 +131,11 @@ export function CsvImportDialog({ open, onOpenChange }: Props) {
         const phoneRaw = get("phone");
         const email = get("email") || null;
         const phone = phoneRaw ? normalizePhone(phoneRaw) : null;
-        const title = get("title") || name || phone || email || `Lead ${i + 1}`;
+        // Lead = Contato = Conversa: rejeitar linha sem telefone E.164 válido
+        if (!phone || !/^\+[1-9][0-9]{7,14}$/.test(phone)) {
+          throw new Error("Telefone ausente ou inválido (use formato internacional, ex.: +5511999998888)");
+        }
+        const title = get("title") || name || phone || `Lead ${i + 1}`;
         const valueStr = get("value").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
         const valueNum = parseFloat(valueStr);
         const value_cents = isFinite(valueNum) ? Math.round(valueNum * 100) : 0;
@@ -300,7 +306,7 @@ export function CsvImportDialog({ open, onOpenChange }: Props) {
 
             {!hasIdentifier && (
               <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 px-3 py-2 rounded">
-                <AlertCircle className="h-4 w-4" /> Mapeie ao menos Nome, Telefone ou E-mail.
+                <AlertCircle className="h-4 w-4" /> Mapeie obrigatoriamente a coluna <strong>Telefone</strong>. Lead sem telefone não é aceito.
               </div>
             )}
 

@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { toast } from "sonner";
+import { normalizePhoneE164, isValidE164, PHONE_INVALID_MSG, PHONE_REQUIRED_MSG } from "@/lib/phone";
 import { useStages, formatMoney, type Deal } from "./hooks";
 import { useWorkspaceMembers } from "@/features/workspace/permissions";
 import {
@@ -140,6 +141,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
   const [phone2, setPhone2] = useState("");
+  const [initialPhone, setInitialPhone] = useState("");
   const [email, setEmail] = useState("");
   const [niche, setNiche] = useState("");
   const [city, setCity] = useState("");
@@ -171,6 +173,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
       setName(c?.display_name ?? "");
       setCompanyName(c?.company_name ?? "");
       setPhone(c?.phone_e164 ?? "");
+      setInitialPhone(c?.phone_e164 ?? "");
       setPhone2(c?.phone2_e164 ?? "");
       setEmail(c?.email ?? "");
       setNiche(c?.niche ?? "");
@@ -200,12 +203,20 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
 
   const save = async () => {
     if (!current || !user || !contactId) return;
+
+    // Lead = Contato = Conversa: telefone obrigatório + E.164
+    const phoneNorm = normalizePhoneE164(phone);
+    if (!phoneNorm) { toast.error(PHONE_REQUIRED_MSG); return; }
+    if (!isValidE164(phoneNorm)) { toast.error(PHONE_INVALID_MSG); return; }
+    const phone2Norm = phone2.trim() ? normalizePhoneE164(phone2) : "";
+    if (phone2Norm && !isValidE164(phone2Norm)) { toast.error(`Telefone 2: ${PHONE_INVALID_MSG}`); return; }
+
     setSaving(true);
     try {
-      // contact
+      // contact (trigger do DB preserva histórico do telefone antigo em contact_identities)
       await supabase.from("contacts").update({
         display_name: name.trim(), company_name: companyName.trim() || null,
-        phone_e164: phone.trim() || null, phone2_e164: phone2.trim() || null,
+        phone_e164: phoneNorm, phone2_e164: phone2Norm || null,
         email: email.trim() || null, niche: niche.trim() || null, city: city.trim() || null,
       }).eq("id", contactId);
 
@@ -263,7 +274,16 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
             <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
           </Field>
           <Field label="Telefone" required icon={<Phone className="h-3 w-3" />}>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+55 11 99999-9999" />
+            {phone && !isValidE164(normalizePhoneE164(phone)) && (
+              <p className="text-[10px] text-destructive mt-1">{PHONE_INVALID_MSG}</p>
+            )}
+            {normalizePhoneE164(phone) !== initialPhone && initialPhone && phone && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                ⚠ Alterar o telefone mantém o histórico de conversas, mensagens e o deal vinculado.
+                O número antigo fica salvo como referência.
+              </p>
+            )}
           </Field>
           <Field label="Telefone 2" icon={<Phone className="h-3 w-3" />}>
             <Input value={phone2} onChange={(e) => setPhone2(e.target.value)} placeholder="(11) 99999-9999" />
