@@ -150,7 +150,7 @@ export default function Prospeccao() {
   const searchMut = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("prospect-search-cnpj", {
-        body: { action: "search", filters, workspace_id: current?.id },
+        body: { action: "lookup_cnpj", filters, workspace_id: current?.id },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
