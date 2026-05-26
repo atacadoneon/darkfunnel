@@ -243,8 +243,9 @@ export function Composer({ conversation }: Props) {
     } catch (err) {
       optimisticStore.remove(conversation.id, optimistic.id);
       toast.error((err as Error).message);
-      setText(body);
+      setText(rawBody);
       if (att) setAttachment(att);
+      if (currentReply) setReplyTo(currentReply);
     } finally {
       setSending(false);
       ref.current?.focus();
