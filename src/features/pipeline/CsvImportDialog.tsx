@@ -302,7 +302,7 @@ export function CsvImportDialog({ open, onOpenChange }: Props) {
 
             {!hasIdentifier && (
               <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 px-3 py-2 rounded">
-                <AlertCircle className="h-4 w-4" /> Mapeie ao menos Nome, Telefone ou E-mail.
+                <AlertCircle className="h-4 w-4" /> Mapeie obrigatoriamente a coluna <strong>Telefone</strong>. Lead sem telefone não é aceito.
               </div>
             )}
 
