@@ -118,6 +118,11 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!current || !user) return;
+
+    // Validação obrigatória: Lead = Contato e telefone é obrigatório
+    if (!phoneNormalized) { toast.error(PHONE_REQUIRED_MSG); return; }
+    if (!phoneValid) { toast.error(PHONE_INVALID_MSG); return; }
+
     setSaving(true);
     try {
       // Resolver pipeline_id a partir da stage selecionada (deals.pipeline_id é NOT NULL)
@@ -130,6 +135,42 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         const { data: defPipe } = await supabase.from("pipelines").select("id").eq("workspace_id", current.id).is("archived_at", null).order("is_default", { ascending: false }).limit(1).maybeSingle();
         pipelineId = (defPipe as any)?.id ?? null;
       }
+
+      // ===== Resolver contato a partir do telefone =====
+      let effectiveContactId = contactId;
+      if (editing && deal) {
+        // Editando: salva telefone (e nome se mudou) no contato vinculado.
+        // O trigger do DB preserva histórico do telefone antigo.
+        if (deal.contact_id) {
+          const patch: Record<string, unknown> = { phone_e164: phoneNormalized };
+          if (contactName.trim()) patch.display_name = contactName.trim();
+          const { error: cErr } = await supabase.from("contacts").update(patch).eq("id", deal.contact_id);
+          if (cErr) { toast.error(cErr.message); setSaving(false); return; }
+        }
+        effectiveContactId = deal.contact_id;
+      } else {
+        // Criando: lookup por telefone no workspace; se não existe, cria contato.
+        const { data: foundList } = await supabase
+          .from("contacts").select("id")
+          .eq("workspace_id", current.id).eq("phone_e164", phoneNormalized).limit(1);
+        const found = foundList?.[0];
+        if (found) {
+          effectiveContactId = found.id;
+          if (contactName.trim()) {
+            await supabase.from("contacts").update({ display_name: contactName.trim() }).eq("id", found.id);
+          }
+        } else {
+          const { data: created, error: cErr } = await supabase.from("contacts").insert({
+            workspace_id: current.id,
+            display_name: contactName.trim() || null,
+            phone_e164: phoneNormalized,
+            owner_id: assignedTo ?? user.id,
+          }).select("id").single();
+          if (cErr) { toast.error(cErr.message); setSaving(false); return; }
+          effectiveContactId = created.id;
+        }
+      }
+
       const payload = {
         workspace_id: current.id,
         pipeline_id: pipelineId,
@@ -137,7 +178,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         title: title.trim(),
         value_cents: Math.round(parseFloat(value || "0") * 100),
         notes: notes.trim() || null,
-        contact_id: contactId,
+        contact_id: effectiveContactId,
         channel_id: channelId,
         assigned_to: assignedTo ?? user.id,
       };
@@ -147,18 +188,11 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
         toast.success("Lead atualizado");
       } else {
         // Regra Lead = Chat: Lead único por (canal + número de telefone)
-        if (channelId && contactId) {
-          const phone = selectedContact?.phone_e164 ?? null;
-          // 1) procurar contatos com mesmo telefone no workspace
-          let contactIds: string[] = [contactId];
-          if (phone) {
-            const { data: sameNumber } = await supabase
-              .from("contacts")
-              .select("id")
-              .eq("workspace_id", current.id)
-              .eq("phone_e164", phone);
-            contactIds = Array.from(new Set([contactId, ...((sameNumber ?? []).map((r: any) => r.id))]));
-          }
+        if (channelId && effectiveContactId) {
+          const { data: sameNumber } = await supabase
+            .from("contacts").select("id")
+            .eq("workspace_id", current.id).eq("phone_e164", phoneNormalized);
+          const contactIds = Array.from(new Set([effectiveContactId, ...((sameNumber ?? []).map((r: any) => r.id))]));
           const { data: existing } = await supabase
             .from("deals")
             .select("id,title,contact_id")
@@ -176,28 +210,49 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
               id: existing.id,
               title: existing.title,
               channelName: ch?.display_name,
-              phone: phone ?? undefined,
+              phone: phoneNormalized,
             });
             setSaving(false);
             return;
           }
         }
-        const { error } = await supabase.from("deals").insert(payload);
-        if (error) throw error;
+
+        // Trigger contacts_autocreate_deal pode ter criado um deal aberto neste contato.
+        // Se existir e ainda não tiver título/etapa definidos pelo usuário, atualizamos.
+        const { data: autoDeal } = await supabase
+          .from("deals")
+          .select("id,title")
+          .eq("workspace_id", current.id)
+          .eq("contact_id", effectiveContactId!)
+          .is("archived_at", null)
+          .is("deleted_at", null)
+          .eq("status", "open")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (autoDeal?.id) {
+          const { error } = await supabase.from("deals").update(payload).eq("id", autoDeal.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("deals").insert(payload);
+          if (error) throw error;
+        }
         toast.success("Lead criado");
       }
 
       // garantir owner_id no contato vinculado (se ainda nulo)
-      if (contactId) {
+      if (effectiveContactId) {
         await supabase
           .from("contacts")
           .update({ owner_id: assignedTo ?? user.id })
-          .eq("id", contactId)
+          .eq("id", effectiveContactId)
           .is("owner_id", null);
       }
 
       qc.invalidateQueries({ queryKey: ["deals", current.id] });
       qc.invalidateQueries({ queryKey: ["contacts", current.id] });
+      qc.invalidateQueries({ queryKey: ["contact-full", effectiveContactId] });
       onOpenChange(false);
     } catch (err) {
       toast.error((err as Error).message);
