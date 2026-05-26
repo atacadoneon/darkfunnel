@@ -273,8 +273,13 @@ export default function Prospeccao() {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Razão social contém</Label>
-            <Input className="h-8 text-xs" value={razao} onChange={(e) => setRazao(e.target.value)} />
+            <Label className="text-xs">CNPJ (14 dígitos)</Label>
+            <Input
+              className="h-8 text-xs font-mono"
+              value={razao}
+              onChange={(e) => setRazao(e.target.value)}
+              placeholder="08.147.973/0001-60"
+            />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Limite (máx 500)</Label>
