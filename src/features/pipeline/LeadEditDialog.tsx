@@ -122,7 +122,7 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
 }
 
 /* =============== INFO TAB =============== */
-function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => void }) {
+export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { current } = useWorkspace();
   const { user } = useAuth();
@@ -367,7 +367,7 @@ function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => void }) {
 }
 
 /* =============== HISTORY TAB =============== */
-function HistoryTab({ dealId }: { dealId: string }) {
+export function HistoryTab({ dealId }: { dealId: string }) {
   const { data: rows = [], isLoading } = useDealHistory(dealId);
   const { data: stages = [] } = useStages();
   const { data: members = [] } = useWorkspaceMembers();
@@ -411,7 +411,7 @@ function HistoryTab({ dealId }: { dealId: string }) {
 }
 
 /* =============== PURCHASES TAB =============== */
-function PurchasesTab({ dealId }: { dealId: string }) {
+export function PurchasesTab({ dealId }: { dealId: string }) {
   const { data: list = [] } = usePurchases(dealId);
   const { data: products = [] } = useProducts();
   const add = useAddPurchase(dealId);
@@ -495,7 +495,7 @@ function PurchasesTab({ dealId }: { dealId: string }) {
 }
 
 /* =============== ATTACHMENTS TAB =============== */
-function AttachmentsTab({ dealId }: { dealId: string }) {
+export function AttachmentsTab({ dealId }: { dealId: string }) {
   const { data: list = [] } = useAttachments(dealId);
   const upload = useUploadAttachment(dealId);
   const del = useDeleteAttachment(dealId);
@@ -536,7 +536,7 @@ function AttachmentsTab({ dealId }: { dealId: string }) {
 }
 
 /* =============== ACTIVITIES TAB =============== */
-function ActivitiesTab({ dealId }: { dealId: string }) {
+export function ActivitiesTab({ dealId }: { dealId: string }) {
   const { data: list = [] } = useActivities(dealId);
   const add = useAddActivity(dealId);
   const [open, setOpen] = useState(false);
@@ -618,7 +618,7 @@ function ActivitiesTab({ dealId }: { dealId: string }) {
 }
 
 /* =============== CUSTOM FIELDS TAB =============== */
-function CustomFieldsTab({ dealId }: { dealId: string }) {
+export function CustomFieldsTab({ dealId }: { dealId: string }) {
   const { data: list = [] } = useCustomFields(dealId);
   const upsert = useUpsertCustomField(dealId);
   const del = useDeleteCustomField(dealId);
@@ -660,7 +660,7 @@ function CustomFieldRow({ cf, onSave, onDelete }: { cf: { id: string; field_name
 }
 
 /* =============== ADS TAB =============== */
-function AdsTab({ dealId }: { dealId: string }) {
+export function AdsTab({ dealId }: { dealId: string }) {
   const { data: ads, isLoading } = useAdsAttribution(dealId);
   if (isLoading) return <Loader2 className="h-5 w-5 animate-spin mx-auto my-8" />;
   if (!ads) return (
