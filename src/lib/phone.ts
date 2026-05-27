@@ -31,9 +31,11 @@ export function toZenviaBR(input: string | null | undefined): string {
   let d = String(input).replace(/\D/g, "");
   // Remove country code 55 (com ou sem 9º dígito): "+5548999999999" → "48999999999"
   if (d.startsWith("55") && (d.length === 12 || d.length === 13)) d = d.slice(2);
-  // Remove prefixo de operadora 0XX: "04832830151" → "4832830151"
+  // Remove prefixo de operadora 0/0XX: "04832830151"/"0415195307694" → DDD + número
   if (d.startsWith("0") && (d.length === 11 || d.length === 12)) d = d.slice(1);
-  // Remove sufixo zero indevido / espaços já tratados
+  if (d.startsWith("0") && (d.length === 13 || d.length === 14)) d = d.slice(3);
+  // Celular BR antigo com 8 dígitos iniciando em 9: adiciona o 9º dígito após o DDD.
+  if (d.length === 10 && /^\d{2}9\d{7}$/.test(d)) d = `${d.slice(0, 2)}9${d.slice(2)}`;
   return d;
 }
 
