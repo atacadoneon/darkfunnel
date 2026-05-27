@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Phone, PhoneOff, Pause, Square, Loader2, Copy, CheckCircle2, Sparkles,
-  AlertTriangle, Target as TargetIcon, MessageCircle,
+  ArrowLeft, Phone, PhoneOff, Pause, ChevronRight, Loader2, Copy, CheckCircle2,
+  Sparkles, AlertTriangle, Target as TargetIcon, MessageSquare, Search, X,
+  Minimize2, Maximize2, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,8 +17,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useStages } from "@/features/pipeline/hooks";
-import { useMessages } from "@/features/inbox/hooks";
+import { useMessages, useConversationById } from "@/features/inbox/hooks";
 import { MessageThread } from "@/features/inbox/MessageThread";
+import { Composer } from "@/features/inbox/Composer";
+import { ConversationHeader } from "@/features/inbox/ConversationHeader";
+import { ContactPanel } from "@/features/inbox/ContactPanel";
 import {
   useCampaign, useQueue, useSetCampaignStatus, useSetOutcome, useAiCoach, fetchNextLead,
   sendNoAnswerMessage,
@@ -27,22 +30,17 @@ import {
 import { CallTimer } from "@/components/voice/CallTimer";
 import { cn } from "@/lib/utils";
 
-type RunState = "idle" | "calling" | "outcome";
+type RunState = "idle" | "dialing" | "in_call" | "outcome";
 
 function brl(cents: number | null | undefined) {
   return ((cents ?? 0) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function SentimentBadge({ s }: { s?: string }) {
-  if (!s) return null;
-  const map: Record<string, { c: string; t: string }> = {
-    positivo: { c: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30", t: "🟢 Sentimento positivo" },
-    neutro: { c: "bg-amber-500/15 text-amber-700 border-amber-500/30", t: "🟡 Sentimento neutro" },
-    negativo: { c: "bg-red-500/15 text-red-700 border-red-500/30", t: "🔴 Sentimento negativo" },
-  };
-  const m = map[s] ?? map.neutro;
-  return <Badge className={`${m.c} border`}>{m.t}</Badge>;
-}
+const sentimentMeta: Record<string, { label: string; cls: string }> = {
+  positivo: { label: "🟢 Positivo", cls: "bg-emerald-500/20 text-emerald-50 border-emerald-300/30" },
+  neutro: { label: "🟡 Neutro", cls: "bg-amber-500/20 text-amber-50 border-amber-300/30" },
+  negativo: { label: "🔴 Negativo", cls: "bg-red-500/20 text-red-50 border-red-300/30" },
+};
 
 export default function DialerRun() {
   const { id } = useParams<{ id: string }>();
@@ -60,39 +58,58 @@ export default function DialerRun() {
   const [callStartedAt, setCallStartedAt] = useState<string | null>(null);
   const [coach, setCoach] = useState<AiCoach | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
+  const [coachMinimized, setCoachMinimized] = useState(false);
+  const [coachHidden, setCoachHidden] = useState(false);
   const [outcomeOpen, setOutcomeOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
+  const { data: conversation } = useConversationById(currentItem?.conversation_id ?? null);
   const { data: messages = [] } = useMessages(currentItem?.conversation_id ?? null);
 
-  /* --------- Boot: set campaign active + load first lead --------- */
+  const stage = stages.find((s) => s.id === currentItem?.deal?.stage_id);
+  const stageName = stage?.name ?? (currentItem as any)?.stage_name ?? null;
+  const stageColor = stage?.color ?? "hsl(var(--primary))";
+  const stageObjective = (stage as any)?.default_objective ?? (currentItem as any)?.default_objective;
+
+  /* --------- AI Coach loader --------- */
+  const loadCoach = useCallback((item: DialerQueueItem) => {
+    if (!item?.id) return;
+    setCoachLoading(true);
+    setCoachHidden(false);
+    setCoachMinimized(false);
+    aiCoach.mutate(
+      { contact_id: item.contact_id, deal_id: item.deal_id, queue_id: item.id },
+      {
+        onSuccess: (data) => { setCoach(data); setCoachLoading(false); },
+        onError: () => { setCoachLoading(false); },
+      },
+    );
+  }, [aiCoach]);
+
+  /* --------- Select lead --------- */
+  const selectLead = useCallback((item: DialerQueueItem) => {
+    setCurrentItem(item);
+    setRunState("idle");
+    setCoach(null);
+    loadCoach(item);
+  }, [loadCoach]);
+
+  /* --------- Boot / load next pending --------- */
   const loadNext = useCallback(async () => {
     if (!id) return;
-    setCoach(null);
-    setCurrentItem(null);
     try {
       const next = await fetchNextLead(id);
       if (!next) {
         toast.success("Fila concluída!");
         await setStatus.mutateAsync({ id, status: "completed" });
+        setCurrentItem(null);
         return;
       }
-      setCurrentItem(next);
-      setRunState("idle");
-      // Fire AI coach
-      if (next.id) {
-        setCoachLoading(true);
-        aiCoach.mutate(
-          { contact_id: next.contact_id, deal_id: next.deal_id, queue_id: next.id },
-          {
-            onSuccess: (data) => { setCoach(data); setCoachLoading(false); },
-            onError: (e: any) => { toast.error(e?.message ?? "Erro IA"); setCoachLoading(false); },
-          },
-        );
-      }
+      selectLead(next);
     } catch (e: any) {
       toast.error(e?.message ?? "Erro ao buscar próximo lead");
     }
-  }, [id]); // eslint-disable-line
+  }, [id, selectLead, setStatus]);
 
   useEffect(() => {
     if (!id) return;
@@ -107,7 +124,7 @@ export default function DialerRun() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, campaign?.status]);
 
-  /* --------- Subscribe to call status updates --------- */
+  /* --------- Subscribe call status --------- */
   useEffect(() => {
     if (!activeCallId) return;
     const ch = supabase
@@ -115,7 +132,10 @@ export default function DialerRun() {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "calls", filter: `id=eq.${activeCallId}` },
         (p: any) => {
           const st = p?.new?.status;
-          if (st === "in_progress" && p?.new?.answered_at) setCallStartedAt(p.new.answered_at);
+          if (st === "in_progress" && p?.new?.answered_at) {
+            setCallStartedAt(p.new.answered_at);
+            setRunState("in_call");
+          }
           if (st === "completed" || st === "failed" || st === "no-answer" || st === "busy") {
             setRunState("outcome");
             setOutcomeOpen(true);
@@ -131,17 +151,11 @@ export default function DialerRun() {
     const rawTo = currentItem.phone_e164 ?? currentItem.contact?.phone_e164;
     if (!rawTo) { toast.error("Sem telefone para este lead"); return; }
     const to = (await import("@/lib/phone")).toZenviaBR(rawTo);
-    console.log("[Dialer] voice-outbound", { rawTo, formatted: to, contact_id: currentItem.contact_id });
-    if (!/^\d{10,11}$/.test(to)) { toast.error(`Telefone inválido após formatação: "${to}" (origem: ${rawTo})`); return; }
+    if (!/^\d{10,11}$/.test(to)) { toast.error(`Telefone inválido: "${to}"`); return; }
+    setRunState("dialing");
     try {
       const { data, error } = await supabase.functions.invoke("voice-outbound", {
-        body: {
-          workspace_id: ws.id,
-          to,
-          contact_id: currentItem.contact_id,
-          deal_id: currentItem.deal_id,
-          channel: "pstn",
-        },
+        body: { workspace_id: ws.id, to, contact_id: currentItem.contact_id, deal_id: currentItem.deal_id, channel: "pstn" },
       });
       if (error) {
         const message = String(error.message ?? "");
@@ -149,30 +163,21 @@ export default function DialerRun() {
         if (isZenviaNumberError && to.length === 10 && /^\d{2}9\d{7}$/.test(to)) {
           const mobileWithNinthDigit = `${to.slice(0, 2)}9${to.slice(2)}`;
           const retry = await supabase.functions.invoke("voice-outbound", {
-            body: {
-              workspace_id: ws.id,
-              to: mobileWithNinthDigit,
-              contact_id: currentItem.contact_id,
-              deal_id: currentItem.deal_id,
-              channel: "pstn",
-            },
+            body: { workspace_id: ws.id, to: mobileWithNinthDigit, contact_id: currentItem.contact_id, deal_id: currentItem.deal_id, channel: "pstn" },
           });
           if (retry.error) throw retry.error;
           setActiveCallId((retry.data as any)?.call_id ?? null);
           setCallStartedAt(new Date().toISOString());
-          setRunState("calling");
-          toast.success(`Chamando ${currentItem.contact?.display_name ?? mobileWithNinthDigit}...`);
           return;
         }
         throw error;
       }
       setActiveCallId((data as any)?.call_id ?? null);
       setCallStartedAt(new Date().toISOString());
-      setRunState("calling");
-      toast.success(`Chamando ${currentItem.contact?.display_name ?? to}...`);
     } catch (e: any) {
       console.error("[Dialer] voice-outbound failed", e);
       toast.error(e?.message ?? "Erro ao ligar");
+      setRunState("idle");
     }
   }, [ws, currentItem]);
 
@@ -191,277 +196,405 @@ export default function DialerRun() {
     navigate("/discador");
   }, [id, setStatus, navigate]);
 
-  const endCampaign = useCallback(async () => {
-    if (!id) return;
-    if (!confirm("Encerrar campanha? Isso marcará como concluída.")) return;
-    await setStatus.mutateAsync({ id, status: "completed" });
-    navigate("/discador");
-  }, [id, setStatus, navigate]);
-
   /* --------- Keyboard shortcuts --------- */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
-      if (e.key === "l" && runState === "idle") { e.preventDefault(); void startCall(); }
-      if (e.key === "x" && runState === "calling") { e.preventDefault(); void endCall(); }
-      if (e.key === "n") { e.preventDefault(); void loadNext(); }
-      if (e.key === "p") { e.preventDefault(); void pauseCampaign(); }
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.key === "Escape") { setCoachHidden(true); return; }
+      if (e.key === "l" || e.key === "L") { if (runState === "idle") { e.preventDefault(); void startCall(); } }
+      if (e.key === "x" || e.key === "X") { if (runState === "in_call" || runState === "dialing") { e.preventDefault(); void endCall(); } }
+      if (e.key === "n" || e.key === "N") { e.preventDefault(); void loadNext(); }
+      if (e.key === "p" || e.key === "P") { e.preventDefault(); void pauseCampaign(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [runState, startCall, endCall, loadNext, pauseCampaign]);
 
-  const stage = stages.find((s) => s.id === currentItem?.deal?.stage_id);
-  const stageName = stage?.name ?? (currentItem as any)?.stage_name ?? null;
-  const stageColor = stage?.color ?? "hsl(var(--primary))";
-  const stageObjective = (stage as any)?.default_objective ?? (currentItem as any)?.default_objective;
+  const insertIntoComposer = useCallback((text: string) => {
+    if (!currentItem?.conversation_id) {
+      navigator.clipboard.writeText(text);
+      toast.success("Texto copiado");
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("inbox:insert-text", {
+      detail: { text, conversationId: currentItem.conversation_id },
+    }));
+    toast.success("Inserido no compositor");
+  }, [currentItem]);
 
   const target = campaign?.target_count ?? 0;
   const done = campaign?.completed_count ?? 0;
   const pct = target > 0 ? Math.round((done / target) * 100) : 0;
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className="border-b px-4 py-2 flex items-center gap-3 bg-card/50">
-        <Button size="icon" variant="ghost" onClick={() => navigate("/discador")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold truncate">{campaign?.name ?? "Carregando..."}</div>
-          <div className="text-xs text-muted-foreground">Discador automático em operação</div>
-        </div>
-        <div className="text-xs text-muted-foreground hidden md:flex gap-3">
-          <kbd className="px-1.5 py-0.5 border rounded">L</kbd> Ligar
-          <kbd className="px-1.5 py-0.5 border rounded">X</kbd> Encerrar
-          <kbd className="px-1.5 py-0.5 border rounded">N</kbd> Próximo
-          <kbd className="px-1.5 py-0.5 border rounded">P</kbd> Pausar
-        </div>
-      </div>
+  const filteredQueue = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return queue;
+    return queue.filter((it) => {
+      const name = (it.contact?.display_name ?? "").toLowerCase();
+      const phone = (it.phone_e164 ?? it.contact?.phone_e164 ?? "").toLowerCase();
+      const deal = (it.deal?.title ?? "").toLowerCase();
+      return name.includes(q) || phone.includes(q) || deal.includes(q);
+    });
+  }, [queue, search]);
 
-      <div className="flex-1 grid grid-cols-[280px_1fr_380px] overflow-hidden">
-        {/* ============ LEFT: QUEUE ============ */}
-        <div className="border-r flex flex-col bg-muted/20">
-          <div className="p-3 border-b space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase">Fila</div>
-            <div className="flex justify-between text-xs">
-              <span className="tabular-nums font-medium">{done} / {target}</span>
-              <span className="text-muted-foreground">{pct}%</span>
-            </div>
-            <Progress value={pct} className="h-1.5" />
+  return (
+    <div className="h-full flex flex-col bg-muted/20 min-h-0 overflow-hidden">
+      {/* ============ TOP COMMAND BAR ============ */}
+      <header className="bg-card border-b px-4 py-2.5 flex items-center gap-3 shrink-0 shadow-sm">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/discador")} className="gap-1">
+          <ArrowLeft className="h-4 w-4" /> Voltar
+        </Button>
+        <div className="min-w-0">
+          <div className="font-semibold text-sm truncate">{campaign?.name ?? "Carregando..."}</div>
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="tabular-nums">{done}/{target}</span>
+            <Progress value={pct} className="h-1 w-24" />
+            <span>{pct}%</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {queue.map((q) => {
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Big action buttons */}
+        <div className="flex items-center gap-2">
+          {(runState === "idle" || runState === "outcome") && currentItem && (
+            <Button
+              size="lg"
+              onClick={startCall}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md gap-2 h-11 px-5 font-semibold"
+            >
+              <Phone className="h-4 w-4" /> LIGAR
+              <kbd className="ml-1 text-[10px] opacity-80 bg-white/15 px-1 rounded">L</kbd>
+            </Button>
+          )}
+
+          {runState === "dialing" && (
+            <div className="flex items-center gap-2 px-3 h-11 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/40">
+              <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+              <span className="text-sm font-medium">Chamando...</span>
+              <Button size="sm" variant="destructive" onClick={endCall} className="gap-1 h-8">
+                <PhoneOff className="h-3.5 w-3.5" /> Cancelar
+              </Button>
+            </div>
+          )}
+
+          {runState === "in_call" && (
+            <div className="flex items-center gap-2 px-3 h-11 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-400 dark:border-emerald-500/40">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <CallTimer startedAt={callStartedAt} className="text-sm font-mono font-semibold tabular-nums" />
+              <Button size="sm" variant="destructive" onClick={endCall} className="gap-1 h-8">
+                <PhoneOff className="h-3.5 w-3.5" /> Encerrar
+                <kbd className="ml-1 text-[10px] opacity-80 bg-white/15 px-1 rounded">X</kbd>
+              </Button>
+            </div>
+          )}
+
+          <Button
+            size="lg"
+            onClick={loadNext}
+            className="bg-primary text-primary-foreground shadow gap-2 h-11 px-4 font-semibold"
+          >
+            Próximo <ChevronRight className="h-4 w-4" />
+            <kbd className="text-[10px] opacity-80 bg-white/15 px-1 rounded">N</kbd>
+          </Button>
+
+          <Button size="lg" variant="outline" onClick={pauseCampaign} className="gap-2 h-11">
+            <Pause className="h-4 w-4" /> Pausar
+            <kbd className="text-[10px] opacity-70 border rounded px-1">P</kbd>
+          </Button>
+        </div>
+      </header>
+
+      {/* ============ MAIN 3-COLUMN ============ */}
+      <div className="flex-1 grid grid-cols-[300px_1fr_auto] min-h-0 overflow-hidden">
+        {/* LEFT — QUEUE LIST */}
+        <aside className="border-r bg-card flex flex-col min-h-0 overflow-hidden">
+          <div className="p-2.5 border-b shrink-0">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar na fila..."
+                className="h-8 pl-7 text-xs"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {filteredQueue.length === 0 && (
+              <div className="text-xs text-muted-foreground italic text-center py-8">
+                {search ? "Sem resultados" : "Fila vazia"}
+              </div>
+            )}
+            {filteredQueue.map((q) => {
               const isCurrent = q.id === currentItem?.id;
               const isDone = q.status === "completed";
               return (
                 <button
                   key={q.id}
-                  onClick={() => !isDone && setCurrentItem(q)}
-                  disabled={isDone}
+                  onClick={() => selectLead(q)}
                   className={cn(
-                    "w-full text-left p-2 rounded-md border text-xs flex items-center gap-2 transition-colors",
-                    isCurrent && "bg-primary/10 border-primary",
-                    !isCurrent && !isDone && "hover:bg-muted/60",
-                    isDone && "opacity-50 line-through",
+                    "w-full text-left p-2.5 flex items-center gap-2.5 border-b transition-colors hover:bg-muted/50",
+                    isCurrent && "bg-primary/10 border-l-2 border-l-primary",
+                    isDone && !isCurrent && "opacity-50",
                   )}
                 >
-                  <Avatar className="h-7 w-7">
+                  <Avatar className="h-9 w-9 shrink-0">
                     <AvatarImage src={q.contact?.profile_pic_url ?? undefined} />
                     <AvatarFallback className="text-[10px]">{(q.contact?.display_name ?? "?").charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="truncate font-medium">{q.contact?.display_name ?? q.phone_e164 ?? "Sem nome"}</div>
-                    {q.deal && <div className="text-[10px] text-muted-foreground truncate">{q.deal.title}</div>}
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-xs truncate flex-1">
+                        {q.contact?.display_name ?? q.phone_e164 ?? "Sem nome"}
+                      </span>
+                      <Badge variant="outline" className="text-[9px] h-4 px-1">#{q.position ?? "-"}</Badge>
+                    </div>
+                    {q.deal && (
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {q.deal.title} · {brl(q.deal.value_cents)}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {q.status === "pending" && <Badge variant="secondary" className="text-[9px] h-3.5 px-1">Aguardando</Badge>}
+                      {q.status === "calling" && <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 text-[9px] h-3.5 px-1">Chamando</Badge>}
+                      {q.outcome === "atendeu" && <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 text-[9px] h-3.5 px-1">Atendeu</Badge>}
+                      {q.outcome === "nao_atendeu" && <Badge variant="outline" className="text-[9px] h-3.5 px-1">N/A</Badge>}
+                      {q.outcome === "convertido" && <Badge className="bg-purple-500/15 text-purple-700 border-purple-500/30 text-[9px] h-3.5 px-1">Convertido</Badge>}
+                      {q.outcome === "sem_interesse" && <Badge variant="destructive" className="text-[9px] h-3.5 px-1">Sem interesse</Badge>}
+                      {q.outcome === "reagendar" && <Badge className="bg-sky-500/15 text-sky-700 border-sky-500/30 text-[9px] h-3.5 px-1">Reagendar</Badge>}
+                    </div>
                   </div>
-                  {isDone && q.outcome && (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0">{q.outcome}</Badge>
-                  )}
                 </button>
               );
             })}
-            {queue.length === 0 && (
-              <div className="text-xs text-muted-foreground italic text-center py-6">Fila vazia.</div>
-            )}
           </div>
-          <div className="p-2 border-t space-y-1">
-            <Button variant="outline" size="sm" className="w-full gap-1" onClick={pauseCampaign}>
-              <Pause className="h-3.5 w-3.5" /> Pausar campanha
-            </Button>
-            <Button variant="outline" size="sm" className="w-full gap-1 text-destructive" onClick={endCampaign}>
-              <Square className="h-3.5 w-3.5" /> Encerrar campanha
-            </Button>
-          </div>
-        </div>
+        </aside>
 
-        {/* ============ CENTER: CONVERSATION ============ */}
-        <div className="flex flex-col min-w-0 overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-hidden bg-[hsl(var(--background))]">
-            {currentItem?.conversation_id ? (
-              <MessageThread messages={messages as any} contactAvatar={currentItem.contact?.profile_pic_url ?? null} />
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                {currentItem ? "Sem conversa para este lead." : "Carregando..."}
-              </div>
-            )}
-          </div>
-
-          {/* Call action bar */}
-          <div className="border-t p-3 bg-card">
-            {runState === "idle" && currentItem && (
-              <Button onClick={startCall} size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-14 text-base">
-                <Phone className="h-5 w-5" /> LIGAR AGORA
-              </Button>
-            )}
-            {runState === "calling" && (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-emerald-500/10 border border-emerald-500/30">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-sm font-medium">Em chamada</span>
-                  <CallTimer startedAt={callStartedAt} className="text-sm font-mono" />
-                </div>
-                <Button onClick={endCall} variant="destructive" size="lg" className="flex-1 gap-2">
-                  <PhoneOff className="h-4 w-4" /> Encerrar chamada
-                </Button>
-              </div>
-            )}
-            {runState === "outcome" && (
-              <Button onClick={() => setOutcomeOpen(true)} size="lg" className="w-full gap-2">
-                Registrar resultado
-              </Button>
-            )}
-            {!currentItem && (
-              <Button onClick={loadNext} variant="outline" className="w-full">Carregar próximo lead</Button>
-            )}
-          </div>
-        </div>
-
-        {/* ============ RIGHT: LEAD + AI COACH ============ */}
-        <div className="border-l flex flex-col overflow-hidden bg-card/30">
-          <div className="p-3 border-b">
-            {currentItem ? (
-              <div className="flex items-start gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={currentItem.contact?.profile_pic_url ?? undefined} />
-                  <AvatarFallback>{(currentItem.contact?.display_name ?? "?").charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold truncate">{currentItem.contact?.display_name ?? "Sem nome"}</div>
-                  <div className="text-xs text-muted-foreground">{currentItem.phone_e164 ?? currentItem.contact?.phone_e164 ?? "—"}</div>
-                  {currentItem.deal && (
-                    <div className="text-xs mt-1">
-                      <span className="font-medium">{currentItem.deal.title}</span>
-                      <span className="text-emerald-600 ml-2">{brl(currentItem.deal.value_cents)}</span>
-                    </div>
-                  )}
-                  {stageName && (
-                    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                      <Badge variant="outline" className="text-[10px]" style={{ borderColor: stageColor, color: stageColor }}>
-                        {stageName}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Sem lead carregado</div>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
-              <Sparkles className="h-3.5 w-3.5" /> AI COACH
+        {/* CENTER — CONVERSATION (reuse Inbox components) */}
+        <section className="flex flex-col min-h-0 min-w-0 overflow-hidden bg-background">
+          {!currentItem ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
+              <Phone className="h-12 w-12 opacity-30" />
+              <span className="text-sm">Selecione um lead na fila ao lado</span>
             </div>
+          ) : conversation ? (
+            <>
+              <ConversationHeader conversation={conversation} />
+              <MessageThread
+                messages={messages}
+                contactAvatar={conversation.contacts?.profile_pic_url ?? null}
+              />
+              <Composer conversation={conversation} />
+            </>
+          ) : currentItem.conversation_id ? (
+            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Carregando conversa...
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-6 text-center">
+              <div>
+                <MessageSquare className="h-12 w-12 mx-auto opacity-30 mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Nenhuma conversa anterior com este lead.</p>
+                <p className="text-xs mt-1 text-muted-foreground">Ligue para iniciar o contato.</p>
+              </div>
+            </div>
+          )}
+        </section>
 
-            {coachLoading && (
-              <Card className="p-4 flex flex-col items-center gap-2 text-center">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <div className="text-xs text-muted-foreground">IA analisando conversa...</div>
-              </Card>
+        {/* RIGHT — CONTACT PANEL (reuse from Inbox) */}
+        {conversation ? (
+          <ContactPanel conversation={conversation} />
+        ) : (
+          <aside className="w-[300px] shrink-0 border-l bg-card p-4 hidden lg:block">
+            {currentItem ? (
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={currentItem.contact?.profile_pic_url ?? undefined} />
+                    <AvatarFallback>{(currentItem.contact?.display_name ?? "?").charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">{currentItem.contact?.display_name ?? "Sem nome"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {currentItem.phone_e164 ?? currentItem.contact?.phone_e164 ?? "—"}
+                    </div>
+                  </div>
+                </div>
+                {currentItem.deal && (
+                  <div className="border rounded-md p-2 text-xs">
+                    <div className="font-medium">{currentItem.deal.title}</div>
+                    <div className="text-emerald-600">{brl(currentItem.deal.value_cents)}</div>
+                  </div>
+                )}
+                {stageName && (
+                  <Badge variant="outline" style={{ borderColor: stageColor, color: stageColor }}>
+                    {stageName}
+                  </Badge>
+                )}
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground text-center">Selecione um lead</div>
             )}
+          </aside>
+        )}
+      </div>
 
-            {!coachLoading && coach && (
-              <div className="space-y-3 text-xs">
-                {(stageObjective || coach.objetivo) && (
-                  <div>
-                    <div className="font-semibold text-muted-foreground flex items-center gap-1">
-                      <TargetIcon className="h-3 w-3" /> OBJETIVO DA ETAPA
-                    </div>
-                    <div className="text-muted-foreground mt-0.5">{coach.objetivo ?? stageObjective}</div>
+      {/* ============ FLOATING AI COACH POPUP ============ */}
+      {currentItem && !coachHidden && (
+        <div
+          className={cn(
+            "fixed bottom-4 right-4 w-[400px] max-w-[calc(100vw-2rem)] bg-card rounded-xl shadow-2xl border z-50 overflow-hidden",
+            "border-purple-300 dark:border-purple-500/40",
+          )}
+        >
+          <header className="bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white px-3.5 py-2.5 flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            <h3 className="font-semibold text-sm">AI Coach</h3>
+            {coach?.sentimento && sentimentMeta[coach.sentimento as string] && (
+              <Badge className={cn("ml-1 border text-[10px] h-5", sentimentMeta[coach.sentimento as string].cls)}>
+                {sentimentMeta[coach.sentimento as string].label}
+              </Badge>
+            )}
+            <div className="ml-auto flex items-center gap-0.5">
+              <button onClick={() => loadCoach(currentItem)} title="Atualizar" className="p-1 rounded hover:bg-white/15">
+                <RefreshCw className={cn("h-3.5 w-3.5", coachLoading && "animate-spin")} />
+              </button>
+              <button onClick={() => setCoachMinimized((v) => !v)} title={coachMinimized ? "Expandir" : "Minimizar"} className="p-1 rounded hover:bg-white/15">
+                {coachMinimized ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
+              </button>
+              <button onClick={() => setCoachHidden(true)} title="Fechar" className="p-1 rounded hover:bg-white/15">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </header>
+
+          {!coachMinimized && (
+            <>
+              <div className="max-h-[55vh] overflow-y-auto p-3 space-y-2.5 text-xs">
+                {coachLoading && !coach && (
+                  <div className="flex flex-col items-center justify-center py-6 gap-2 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
+                    <span>IA analisando conversa...</span>
                   </div>
                 )}
 
-                {coach.resumo && coach.resumo.length > 0 && (
+                {(stageObjective || coach?.objetivo) && (
+                  <div className="bg-amber-500/10 border-l-4 border-amber-500 p-2.5 rounded">
+                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-0.5">
+                      <TargetIcon className="h-3 w-3" /> Objetivo da etapa
+                    </div>
+                    <div className="text-amber-900 dark:text-amber-100">{coach?.objetivo ?? stageObjective}</div>
+                  </div>
+                )}
+
+                {coach?.resumo && coach.resumo.length > 0 && (
                   <div>
-                    <div className="font-semibold">📋 RESUMO</div>
-                    <ul className="mt-1 space-y-0.5 list-disc list-inside">
-                      {coach.resumo.slice(0, 3).map((r, i) => <li key={i}>{r}</li>)}
+                    <div className="font-bold text-[10px] uppercase tracking-wide text-muted-foreground mb-1">📋 Resumo</div>
+                    <ul className="space-y-1">
+                      {(Array.isArray(coach.resumo) ? coach.resumo : [coach.resumo]).map((r, i) => (
+                        <li key={i} className="flex gap-1.5"><span className="text-purple-500">•</span><span>{r}</span></li>
+                      ))}
                     </ul>
                   </div>
                 )}
 
-                {coach.abertura && (
-                  <div>
-                    <div className="font-semibold">💬 ABERTURA SUGERIDA</div>
-                    <div className="mt-1 p-2 rounded bg-sky-500/10 border border-sky-500/30 relative pr-7">
-                      {coach.abertura}
-                      <button
-                        onClick={() => { navigator.clipboard.writeText(coach.abertura!); toast.success("Copiado"); }}
-                        className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-foreground"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </button>
+                {coach?.abertura && (
+                  <div className="bg-sky-500/10 border border-sky-500/30 rounded p-2.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-bold text-[10px] uppercase tracking-wide text-sky-700 dark:text-sky-300">💬 Abertura sugerida</div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(coach.abertura!); toast.success("Copiado"); }}
+                          className="text-[10px] text-sky-600 hover:bg-sky-500/15 px-1.5 py-0.5 rounded inline-flex items-center gap-1"
+                        >
+                          <Copy className="h-3 w-3" /> Copiar
+                        </button>
+                        <button
+                          onClick={() => insertIntoComposer(coach.abertura!)}
+                          className="text-[10px] text-sky-700 dark:text-sky-200 hover:bg-sky-500/20 px-1.5 py-0.5 rounded font-semibold"
+                        >
+                          → Usar
+                        </button>
+                      </div>
                     </div>
+                    <p className="italic text-sky-900 dark:text-sky-100">"{coach.abertura}"</p>
                   </div>
                 )}
 
-                {coach.perguntas && coach.perguntas.length > 0 && (
+                {coach?.perguntas && coach.perguntas.length > 0 && (
                   <div>
-                    <div className="font-semibold">❓ PERGUNTAS ESTRATÉGICAS</div>
-                    <ul className="mt-1 space-y-0.5 list-disc list-inside">
-                      {coach.perguntas.slice(0, 2).map((p, i) => <li key={i}>{p}</li>)}
-                    </ul>
+                    <div className="font-bold text-[10px] uppercase tracking-wide text-muted-foreground mb-1">❓ Perguntas estratégicas</div>
+                    <ol className="space-y-1">
+                      {coach.perguntas.map((p, i) => (
+                        <li key={i} className="flex gap-1.5 group items-start">
+                          <span className="font-bold text-purple-600 shrink-0">{i + 1}.</span>
+                          <span className="flex-1">{p}</span>
+                          <button
+                            onClick={() => insertIntoComposer(p)}
+                            className="opacity-0 group-hover:opacity-100 text-purple-600 hover:bg-purple-500/15 p-0.5 rounded shrink-0"
+                            title="Usar no compositor"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 )}
 
-                {coach.objecao && (
-                  <div>
-                    <div className="font-semibold flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-amber-500" /> POSSÍVEL OBJEÇÃO</div>
+                {coach?.objecao && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded p-2.5">
+                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-red-700 dark:text-red-300 mb-0.5">
+                      <AlertTriangle className="h-3 w-3" /> Possível objeção
+                    </div>
                     {typeof coach.objecao === "string" ? (
-                      <div className="mt-0.5">{coach.objecao}</div>
+                      <div className="text-red-900 dark:text-red-100">{coach.objecao}</div>
                     ) : (
-                      <div className="mt-0.5 space-y-1">
-                        {coach.objecao.texto && <div>{coach.objecao.texto}</div>}
+                      <div className="space-y-1">
+                        {coach.objecao.texto && <div className="text-red-900 dark:text-red-100">{coach.objecao.texto}</div>}
                         {coach.objecao.resposta && (
-                          <div className="text-muted-foreground italic">→ {coach.objecao.resposta}</div>
+                          <div className="italic text-muted-foreground">→ {coach.objecao.resposta}</div>
                         )}
                       </div>
                     )}
                   </div>
                 )}
 
-                {coach.proximo_passo && (
-                  <div>
-                    <div className="font-semibold">➡️ PRÓXIMO PASSO</div>
-                    <div className="font-bold mt-0.5">{coach.proximo_passo}</div>
+                {coach?.proximo_passo && (
+                  <div className="bg-emerald-500/10 border-l-4 border-emerald-500 p-2.5 rounded">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300 mb-0.5">
+                      ➡️ Próximo passo
+                    </div>
+                    <div className="font-medium text-emerald-900 dark:text-emerald-100">{coach.proximo_passo}</div>
                   </div>
                 )}
 
-                {coach.sentimento && (
-                  <div className="pt-1">
-                    <SentimentBadge s={coach.sentimento} />
-                  </div>
+                {!coachLoading && !coach && (
+                  <div className="text-center text-muted-foreground py-4">Coach IA indisponível.</div>
                 )}
               </div>
-            )}
 
-            {!coachLoading && !coach && currentItem && (
-              <Card className="p-3 text-xs text-muted-foreground">
-                Coach IA indisponível para este lead.
-              </Card>
-            )}
-          </div>
+              <footer className="bg-muted/40 px-3 py-1.5 text-[10px] text-muted-foreground border-t flex items-center justify-between">
+                <span>Powered by AI</span>
+                <span className="opacity-60">Esc para fechar</span>
+              </footer>
+            </>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Mini "Open coach" button when hidden */}
+      {currentItem && coachHidden && (
+        <button
+          onClick={() => setCoachHidden(false)}
+          className="fixed bottom-4 right-4 z-50 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-full shadow-xl p-3 hover:scale-105 transition-transform"
+          title="Abrir AI Coach"
+        >
+          <Sparkles className="h-5 w-5" />
+        </button>
+      )}
 
       <OutcomeModal
         open={outcomeOpen}
@@ -501,11 +634,11 @@ function OutcomeModal({
     if (open) { setOutcome(null); setNotes(""); setSendAuto(defaultAutoMsg); setReagendarAt(""); }
   }, [open, defaultAutoMsg]);
 
-  // Keyboard shortcuts inside modal
   useEffect(() => {
     if (!open) return;
     const h = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.tagName === "INPUT") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT")) return;
       if (e.key === "1") setOutcome("atendeu");
       if (e.key === "2") setOutcome("nao_atendeu");
       if (e.key === "3") setOutcome("reagendar");
@@ -571,7 +704,6 @@ function OutcomeModal({
             <label className="flex items-center gap-2 text-sm p-2 rounded border">
               <Checkbox checked={sendAuto} onCheckedChange={(v) => setSendAuto(!!v)} />
               <span className="flex-1">Enviar mensagem automática via WhatsApp</span>
-              <MessageCircle className="h-4 w-4 text-emerald-600" />
             </label>
           )}
 
@@ -591,7 +723,7 @@ function OutcomeModal({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={save} disabled={!outcome || setOutcomeM.isPending} className="gap-1">
-            <CheckCircle2 className="h-4 w-4" /> Salvar e próximo lead
+            <CheckCircle2 className="h-4 w-4" /> Salvar e próximo
           </Button>
         </DialogFooter>
       </DialogContent>
