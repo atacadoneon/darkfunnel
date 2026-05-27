@@ -131,7 +131,8 @@ export default function DialerRun() {
     const rawTo = currentItem.phone_e164 ?? currentItem.contact?.phone_e164;
     if (!rawTo) { toast.error("Sem telefone para este lead"); return; }
     const to = (await import("@/lib/phone")).toZenviaBR(rawTo);
-    if (!/^\d{10,11}$/.test(to)) { toast.error("Telefone inválido (use DDD + número)"); return; }
+    console.log("[Dialer] voice-outbound", { rawTo, formatted: to, contact_id: currentItem.contact_id });
+    if (!/^\d{10,11}$/.test(to)) { toast.error(`Telefone inválido após formatação: "${to}" (origem: ${rawTo})`); return; }
     try {
       const { data, error } = await supabase.functions.invoke("voice-outbound", {
         body: {
