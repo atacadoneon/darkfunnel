@@ -665,9 +665,12 @@ type Props = {
   messages: MessageRow[];
   searchQuery?: string;
   activeMatchId?: string | null;
+  contactAvatar?: string | null;
+  channelAvatar?: string | null;
 };
 
-export function MessageThread({ messages: rawMessages, searchQuery = "", activeMatchId = null }: Props) {
+export function MessageThread({ messages: rawMessages, searchQuery = "", activeMatchId = null, contactAvatar = null, channelAvatar = null }: Props) {
+
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
