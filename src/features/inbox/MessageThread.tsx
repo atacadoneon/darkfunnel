@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
+import { ReactionPicker, ReactionChips } from "./ReactionPicker";
 import type { MessageRow } from "./hooks";
 
 /* ============================== Helpers ============================== */
