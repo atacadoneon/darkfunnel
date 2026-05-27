@@ -76,12 +76,12 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
     (async () => {
       const { data } = await supabase
         .from("deals")
-        .select("contact:contacts(id, display_name, phone_e164, email, document)")
+        .select("contact:contacts(id, display_name, phone_e164, email)")
         .eq("id", dealId)
         .maybeSingle();
       const c: any = (data as any)?.contact;
       if (c) setLoadedContact({
-        id: c.id, name: c.display_name, phone: c.phone_e164, email: c.email, document: c.document,
+        id: c.id, name: c.display_name, phone: c.phone_e164, email: c.email,
       });
     })();
   }, [open, dealId, contact]);
