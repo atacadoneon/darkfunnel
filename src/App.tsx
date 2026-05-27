@@ -11,7 +11,7 @@ import { RequireAuth } from "@/features/auth/RequireAuth";
 import { WorkspaceProvider } from "@/features/workspace/WorkspaceProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { VoiceProvider } from "@/features/voice/VoiceProvider";
-import { Dialer } from "@/components/voice/Dialer";
+import { Dialer as VoiceDialer } from "@/components/voice/Dialer";
 import { InsufficientBalanceModal } from "@/features/voice/InsufficientBalanceModal";
 
 import Login from "@/pages/auth/Login";
@@ -140,7 +140,7 @@ const App = () => (
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-                <Dialer />
+                <VoiceDialer />
                 <InsufficientBalanceModal />
               </VoiceProvider>
             </WorkspaceProvider>
