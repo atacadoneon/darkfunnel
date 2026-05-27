@@ -37,7 +37,14 @@ import Prospeccao from "@/pages/app/Prospeccao";
 import EquipeOnline from "@/pages/app/EquipeOnline";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
+import SettingsRodizio from "@/pages/SettingsRodizio";
 import NotFound from "@/pages/NotFound";
+import { useUserPresence } from "@/hooks/useUserPresence";
+
+function PresenceMount() {
+  useUserPresence();
+  return null;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +76,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <WorkspaceProvider>
+              <PresenceMount />
               <VoiceProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
@@ -110,6 +118,7 @@ const App = () => (
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
                     <Route path="settings/wallet" element={<Wallet />} />
+                    <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="admin" element={<Admin />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
