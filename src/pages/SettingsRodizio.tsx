@@ -16,7 +16,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical, Trash2, Plus, Loader2, Users,
-  ChevronDown, ChevronRight, MessageCircle,
+  ChevronDown, ChevronRight, MessageCircle, Phone,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip } from "recharts";
 import { toast } from "sonner";
@@ -226,12 +226,16 @@ function ChannelRotationCard({
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
       >
         {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-        <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-          <MessageCircle className="h-4 w-4 text-emerald-600" />
+        <div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+          <Phone className="h-4 w-4 text-emerald-600" fill="currentColor" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-semibold truncate">{channel.display_name}</span>
+            <span className="font-mono text-sm font-semibold tabular-nums">
+              {channel.phone_e164 ?? "—"}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span className="font-medium truncate">{channel.display_name}</span>
             {rotation ? (
               <Badge variant={rotation.is_active ? "default" : "secondary"} className="text-[10px]">
                 {rotation.is_active ? "Ativo" : "Pausado"}
@@ -241,12 +245,14 @@ function ChannelRotationCard({
             )}
           </div>
           <div className="text-xs text-muted-foreground truncate">
-            {channel.phone_e164 ?? "—"} · {slots.length} vendedor{slots.length === 1 ? "" : "es"} · {totalToday} hoje
+            {slots.length} vendedor{slots.length === 1 ? "" : "es"} · {totalToday} atribuição{totalToday === 1 ? "" : "s"} hoje
           </div>
         </div>
         {rotation && (
           <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <span className="text-xs text-muted-foreground">Ativo</span>
+            <span className="text-xs text-muted-foreground">
+              {rotation.is_active ? "Ativo" : "Pausado"}
+            </span>
             <Switch
               checked={rotation.is_active}
               onCheckedChange={async (v) => {
