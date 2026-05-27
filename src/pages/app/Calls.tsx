@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/EmptyState";
 import { useCallsList, formatDuration, type CallRow } from "@/features/voice/hooks";
 import { formatBRL } from "@/features/wallet/hooks";
 import { useDialer } from "@/features/voice/VoiceProvider";
 import { CallDrawer } from "@/features/voice/CallDrawer";
+import Dialer from "@/pages/app/Dialer";
 import { format } from "date-fns";
 
 export default function Calls() {
