@@ -530,6 +530,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
     const body = (p.body as string | undefined) || (p.caption as string | undefined) || `[${m.type}]`;
     window.dispatchEvent(new CustomEvent("inbox:reply", { detail: { id: m.id, body, direction: m.direction } }));
   };
+  void handleReply;
 
   return (
     <>
@@ -570,13 +571,13 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                 className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
               >
                 {out && (
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
-                      <Reply className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                    <button type="button" className="wa-quick-btn" title="Reagir">
+                      <SmileIcon className="h-4 w-4" />
+                    </button>
+                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                      <Forward className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
 
@@ -621,13 +622,13 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                 )}
 
                 {!out && (
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
-                      <Reply className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                    <button type="button" className="wa-quick-btn" title="Reagir">
+                      <SmileIcon className="h-4 w-4" />
+                    </button>
+                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                      <Forward className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
               </div>
