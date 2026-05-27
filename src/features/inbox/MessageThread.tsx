@@ -3,8 +3,8 @@ import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon,
-  RefreshCw, Reply, Forward, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
-  User as UserIcon, Phone,
+  RefreshCw, Forward, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
+  User as UserIcon, Phone, Smile as SmileIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,17 +92,17 @@ function StatusChecks({ status }: { status: string }) {
     return <Clock className="h-3 w-3 opacity-70 animate-pulse" aria-label="enviando" />;
   const isRead = status === "read";
   const isDelivered = isRead || status === "delivered";
-  const color = isRead ? "var(--wa-check-read)" : "var(--wa-check-sent)";
+  const color = isRead ? "#53bdeb" : "#667781";
   if (isDelivered) {
     return (
-      <svg width="16" height="11" viewBox="0 0 16 11" aria-label={isRead ? "lida" : "entregue"}>
-        <path d="M11.07 1.84 4.93 8 1.85 4.93l-.92.92L4.93 9.84l7.06-7.08-.92-.92zM15 1.84 8.84 8l-.74-.74 6.16-6.16.74.74z" fill={color}/>
+      <svg width="16" height="11" viewBox="0 0 16 11" aria-label={isRead ? "lida" : "entregue"} style={{ color }}>
+        <path d="M15.01 3.316l-.478-.372a.365.365 0 00-.51.063L8.666 9.879a.32.32 0 01-.484.033l-.358-.325a.319.319 0 00-.484.032l-.378.483a.418.418 0 00.036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 00-.064-.512zm-4.1 0l-.478-.372a.365.365 0 00-.51.063L4.566 9.879a.32.32 0 01-.484.033L1.891 7.769a.366.366 0 00-.515.006l-.423.433a.364.364 0 00.006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 00-.063-.51z" fill="currentColor"/>
       </svg>
     );
   }
   return (
-    <svg width="16" height="11" viewBox="0 0 16 11" aria-label="enviada">
-      <path d="M10.91 1.84 4.77 8 1.69 4.93l-.92.92 4 4.01 7.06-7.08-.92-.94z" fill={color}/>
+    <svg width="16" height="11" viewBox="0 0 16 11" aria-label="enviada" style={{ color }}>
+      <path d="M11.071.653a.457.457 0 00-.304-.102.493.493 0 00-.381.178l-6.19 7.636-2.405-2.272a.463.463 0 00-.336-.146.47.47 0 00-.343.156L.165 7.105a.49.49 0 00-.001.694l3.234 3.246a.512.512 0 00.367.155.499.499 0 00.388-.18L11.192 1.39a.483.483 0 00-.121-.741z" fill="currentColor"/>
     </svg>
   );
 }
@@ -368,28 +368,36 @@ function DocumentMessage({ m }: { m: MessageRow }) {
       <FileText className="h-4 w-4" /> 📎 documento (indisponível)
     </span>
   );
+  const isPdf = mime.includes("pdf") || ext === "PDF";
   return (
     <MediaWithRefresh
       messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
       render={(u) => (
         <a
           href={u} target="_blank" rel="noreferrer"
-          className="flex items-center gap-3 rounded-md p-2 min-w-[260px] max-w-[320px] hover:opacity-90 transition-opacity"
+          className="group/doc flex items-center gap-2 rounded-[6px] p-2 min-w-[260px] max-w-[320px] hover:opacity-95 transition-opacity"
           style={{ background: "var(--wa-doc-bg)" }}
         >
-          <div className="h-11 w-9 rounded-sm bg-white/80 dark:bg-white/10 flex flex-col items-center justify-center shrink-0 border border-black/10 dark:border-white/10">
-            <FileText className="h-4 w-4 opacity-70" />
-            <span className="text-[8px] font-bold opacity-70 mt-0.5">{ext}</span>
-          </div>
+          {isPdf ? (
+            <div className="h-[55px] w-[40px] rounded-sm flex flex-col items-center justify-center shrink-0" style={{ background: "#f15c4e" }}>
+              <FileText className="h-5 w-5 text-white" />
+              <span className="text-[9px] font-bold text-white mt-0.5 leading-none">PDF</span>
+            </div>
+          ) : (
+            <div className="h-[55px] w-[40px] rounded-sm bg-white/80 dark:bg-white/10 flex flex-col items-center justify-center shrink-0 border border-black/10 dark:border-white/10">
+              <FileText className="h-4 w-4 opacity-70" />
+              <span className="text-[8px] font-bold opacity-70 mt-0.5">{ext}</span>
+            </div>
+          )}
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{filename}</div>
-            <div className="truncate text-[11px] opacity-60">
+            <div className="truncate text-[14.2px] font-medium">{filename}</div>
+            <div className="truncate text-[12px] opacity-60">
               {pages ? `${pages} ${pages === 1 ? "página" : "páginas"}` : null}
               {pages && (ext || sizeFmt) ? " · " : ""}
               {ext}{sizeFmt ? ` · ${sizeFmt}` : ""}
             </div>
           </div>
-          <Download className="h-4 w-4 opacity-70 shrink-0" />
+          <Download className="h-4 w-4 opacity-0 group-hover/doc:opacity-70 transition-opacity shrink-0" />
         </a>
       )}
     />
@@ -530,6 +538,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
     const body = (p.body as string | undefined) || (p.caption as string | undefined) || `[${m.type}]`;
     window.dispatchEvent(new CustomEvent("inbox:reply", { detail: { id: m.id, body, direction: m.direction } }));
   };
+  void handleReply;
 
   return (
     <>
@@ -570,13 +579,13 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                 className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
               >
                 {out && (
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
-                      <Reply className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                    <button type="button" className="wa-quick-btn" title="Reagir">
+                      <SmileIcon className="h-4 w-4" />
+                    </button>
+                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                      <Forward className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
 
@@ -621,13 +630,13 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                 )}
 
                 {!out && (
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
-                      <Reply className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-3.5 w-3.5" />
-                    </Button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                    <button type="button" className="wa-quick-btn" title="Reagir">
+                      <SmileIcon className="h-4 w-4" />
+                    </button>
+                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                      <Forward className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
               </div>

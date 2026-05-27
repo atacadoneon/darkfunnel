@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { Send, Calendar, Clock, MessagesSquare, Paperclip, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music, Smile, Reply as ReplyIcon } from "lucide-react";
+import { Send, Calendar, Clock, MessagesSquare, Plus, Mic, Square, X, FileText, Image as ImageIcon, Video as VideoIcon, Music, Smile, Reply as ReplyIcon } from "lucide-react";
 import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 import { ScheduleMessageDialog } from "./ScheduleMessageDialog";
 import { useQuickReplies, useScheduledMessages } from "./inboxFeatureHooks";
@@ -394,7 +394,7 @@ export function Composer({ conversation }: Props) {
             disabled={windowExpired || recording || !!attachment}
             title="Anexar arquivo"
           >
-            <Paperclip className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
           </Button>
         )}
         <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>

@@ -35,18 +35,28 @@
   background-color: var(--wa-thread-bg);
   font-family: var(--wa-font);
   color: var(--wa-text-color);
-  background-image:
-    radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px, 40px 40px;
-  background-position: 0 0, 12px 12px;
+  background-image: url('/whatsapp-bg-light.svg');
+  background-repeat: repeat;
+  background-size: 600px 600px;
 }
 
 .dark .wa-thread {
-  background-image:
-    radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-image: url('/whatsapp-bg-light.svg');
+  filter: invert(0.92) hue-rotate(180deg);
 }
+
+/* Quick actions (smile + forward) que aparecem em hover do balao */
+.wa-quick-btn {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #ffffff;
+  color: #54656f;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(11,20,26,0.18);
+  transition: transform .12s ease, background .12s ease;
+}
+.wa-quick-btn:hover { background: #f5f6f6; transform: scale(1.05); }
+.dark .wa-quick-btn { background: #233138; color: #aebac1; }
 
 .wa-bubble {
   position: relative;
