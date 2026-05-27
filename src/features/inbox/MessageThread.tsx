@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon,
   RefreshCw, Forward, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
-  User as UserIcon, Phone, Smile as SmileIcon,
+  User as UserIcon, Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
