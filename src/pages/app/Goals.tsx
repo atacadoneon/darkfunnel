@@ -183,7 +183,7 @@ function GeralTab({ year, month, setYear, setMonth }: {
   const [mask, setMask] = useState<number>(0b0111110);
   const [holidays, setHolidays] = useState<string[]>([]);
   const [newHoliday, setNewHoliday] = useState("");
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     setTarget(Number(goal?.target_amount ?? 0));
@@ -203,9 +203,7 @@ function GeralTab({ year, month, setYear, setMonth }: {
       holidays: goal?.holidays ?? holidays,
     };
     const merged: GoalDailyActual[] = [...actuals];
-    Object.entries(drafts).forEach(([date, v]) => {
-      if (v === "") return;
-      const amount = Number(v); if (Number.isNaN(amount)) return;
+    Object.entries(drafts).forEach(([date, amount]) => {
       const i = merged.findIndex((a) => a.date === date);
       const row = { id: "draft", goal_id: goal?.id ?? "", date, amount, created_at: "", updated_at: "" } as any;
       row.actual_amount = amount;
@@ -230,15 +228,14 @@ function GeralTab({ year, month, setYear, setMonth }: {
     } catch (e) { toast.error((e as Error).message); }
   };
 
-  const saveRealized = async (date: string, value: string) => {
+  const saveRealized = async (date: string, amount: number) => {
     if (!goal) return toast.error("Salve a configuração primeiro");
-    if (value === "" || value === undefined) return;
-    const amount = Number(value) || 0;
     try {
       await upsertActual.mutateAsync({ goal_id: goal.id, date, amount });
       setDrafts((d) => { const c = { ...d }; delete c[date]; return c; });
     } catch (e) { toast.error((e as Error).message); }
   };
+
 
   return (
     <div className="space-y-3">
