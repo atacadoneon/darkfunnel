@@ -624,12 +624,14 @@ function ReactionMessage({ m }: { m: MessageRow }) {
 
 const MEDIA_TYPES = new Set(["image", "audio", "video", "document", "sticker", "location", "contact"]);
 
-function renderBody(m: MessageRow, query: string) {
+type RenderCtx = { contactAvatar?: string | null; channelAvatar?: string | null };
+
+function renderBody(m: MessageRow, query: string, ctx: RenderCtx = {}) {
+  const isOut = m.direction === "out";
   switch (m.type) {
     case "text": {
       const body = ((m.payload ?? {}) as Record<string, unknown>).body as string | undefined;
       const text = body ?? "";
-      // emoji-only short → larger
       const onlyEmoji = /^[\p{Emoji}\s]{1,6}$/u.test(text);
       return (
         <span className={cn("whitespace-pre-wrap break-words", onlyEmoji && "text-3xl leading-tight")}>
@@ -639,7 +641,7 @@ function renderBody(m: MessageRow, query: string) {
     }
     case "image":    return <ImageMessage m={m} query={query} />;
     case "video":    return <VideoMessage m={m} query={query} />;
-    case "audio":    return <AudioMessage m={m} />;
+    case "audio":    return <AudioMessage m={m} isOut={isOut} contactAvatar={ctx.contactAvatar} channelAvatar={ctx.channelAvatar} />;
     case "document": return <DocumentMessage m={m} />;
     case "sticker":  return <StickerMessage m={m} />;
     case "location": return <LocationMessage m={m} />;
@@ -655,6 +657,7 @@ function renderBody(m: MessageRow, query: string) {
       return <span className="italic opacity-60">[{m.type}]</span>;
   }
 }
+
 
 /* ============================== Main ============================== */
 
