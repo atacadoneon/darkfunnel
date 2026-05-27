@@ -158,6 +158,11 @@ export type MessageRow = {
   sent_at: string | null;
   delivered_at: string | null;
   read_at: string | null;
+  // Dedicated columns (backend pronto)
+  pinned_at?: string | null;
+  starred_by_user_ids?: string[] | null;
+  deleted_for_all_at?: string | null;
+  deleted_for_user_ids?: string[] | null;
 };
 
 export function useMessages(conversationId: string | null) {
@@ -171,7 +176,7 @@ export function useMessages(conversationId: string | null) {
     queryFn: async (): Promise<MessageRow[]> => {
       const { data, error } = await supabase
         .from("messages")
-        .select("id,conversation_id,direction,type,payload,status,created_at,sent_at,delivered_at,read_at")
+        .select("id,conversation_id,direction,type,payload,status,created_at,sent_at,delivered_at,read_at,pinned_at,starred_by_user_ids,deleted_for_all_at,deleted_for_user_ids")
         .eq("conversation_id", conversationId!)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -180,6 +185,7 @@ export function useMessages(conversationId: string | null) {
     },
     staleTime: 2_000,
   });
+
 
   // Reconcile optimistic store with server data: drop any optimistic that has matched
   useEffect(() => {
