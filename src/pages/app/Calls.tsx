@@ -169,6 +169,11 @@ export default function Calls() {
 
       <CallDrawer call={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
       </div>
+        </TabsContent>
+        <TabsContent value="discador" className="mt-0">
+          <Dialer />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
