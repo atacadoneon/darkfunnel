@@ -133,7 +133,7 @@ export default function Agenda() {
         </div>
       </Card>
 
-      <NewMeetingDialog open={openNew} onOpenChange={setOpenNew} onCreated={() => qc.invalidateQueries({ queryKey: ["calendar-events"] })} />
+      <NewMeetingDialog open={openNew} onOpenChange={setOpenNew} onCreated={() => { qc.invalidateQueries({ queryKey: ["calendar-events"] }); qc.invalidateQueries({ queryKey: ["agenda-meetings"] }); }} />
     </div>
   );
 }
