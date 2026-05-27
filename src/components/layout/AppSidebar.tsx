@@ -53,6 +53,7 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
       { title: "CRM & Leads", url: "/funildevendas", icon: Filter },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
+      { title: "Ligações", url: "/calls", icon: Phone },
       { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
     ],
   },
@@ -63,7 +64,6 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Tarefas", url: "/tarefas", icon: ListChecks },
       { title: "Reuniões", url: "/reunioes", icon: Calendar },
       { title: "Agenda", url: "/agenda", icon: CalendarDays },
-      { title: "Ligações", url: "/calls", icon: Phone },
     ],
   },
   {
