@@ -28,9 +28,7 @@ export function AppTopbar() {
         <CallPill />
         <WalletWidget />
         <AiHelpButton />
-        <Button variant="ghost" size="icon" aria-label="Notificações">
-          <Bell className="h-4 w-4" />
-        </Button>
+        <UnreadBell />
         <Button variant="ghost" size="icon" onClick={toggle} aria-label="Tema">
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
