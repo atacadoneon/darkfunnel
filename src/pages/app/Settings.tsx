@@ -7,11 +7,13 @@ import { TagsAdminSection, LossReasonsAdminSection } from "@/features/workspace/
 import { UsersSection } from "@/features/workspace/UsersSection";
 import { useIsManagerOrAdmin, useMyRole } from "@/features/workspace/permissions";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
-import { Settings2, Radio, LineChart, Plug, Users, Tags, Shield, ArrowUpRight } from "lucide-react";
+import RodizioSection from "@/pages/SettingsRodizio";
+import { Settings2, Radio, LineChart, Plug, Users, Tags, Shield, ArrowUpRight, Shuffle } from "lucide-react";
 
 const BASE_TABS = [
   { value: "preferences",  label: "Preferências", icon: Settings2 },
   { value: "channels",     label: "Canais",       icon: Radio },
+  { value: "rodizio",      label: "Rodízio",      icon: Shuffle },
   { value: "catalogs",     label: "Cadastros",    icon: Tags },
   { value: "tracking",     label: "Trackeamento", icon: LineChart },
   { value: "integrations", label: "Integrações",  icon: Plug },
@@ -71,6 +73,9 @@ export default function Settings() {
         </TabsContent>
         <TabsContent value="channels" className="mt-6">
           <ChannelsSection />
+        </TabsContent>
+        <TabsContent value="rodizio" className="mt-6">
+          <RodizioSection />
         </TabsContent>
         <TabsContent value="catalogs" className="mt-6 space-y-6">
           <TagsAdminSection />
