@@ -22,6 +22,7 @@ import {
   Pin,
   PinOff,
   PhoneOutgoing,
+  CreditCard,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -66,6 +67,7 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Reuniões", url: "/reunioes", icon: Calendar },
       { title: "Agenda", url: "/agenda", icon: CalendarDays },
       { title: "Prospecção", url: "/prospeccao", icon: Search },
+      { title: "Pagamentos", url: "/pagamentos", icon: CreditCard },
     ],
   },
   {
