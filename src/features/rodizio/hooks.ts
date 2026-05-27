@@ -164,14 +164,34 @@ export function useAssignmentsToday(rotationId: string | null) {
   return q;
 }
 
-export async function createRotation(workspaceId: string, name: string) {
+export async function createRotation(
+  workspaceId: string,
+  name: string,
+  channelId: string | null = null,
+) {
   const { data, error } = await supabase
     .from("lead_rotations" as never)
-    .insert({ workspace_id: workspaceId, name, is_active: true } as never)
+    .insert({ workspace_id: workspaceId, channel_id: channelId, name, is_active: true } as never)
     .select()
     .single();
   if (error) throw error;
   return data as unknown as LeadRotation;
+}
+
+/** Garante uma rotation para o canal (cria se não existir) e retorna o id. */
+export async function ensureRotationForChannel(
+  workspaceId: string,
+  channelId: string,
+  name: string,
+): Promise<LeadRotation> {
+  const { data: existing } = await supabase
+    .from("lead_rotations" as never)
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("channel_id", channelId)
+    .maybeSingle();
+  if (existing) return existing as unknown as LeadRotation;
+  return createRotation(workspaceId, name, channelId);
 }
 
 export async function updateRotation(id: string, patch: Partial<Pick<LeadRotation, "name" | "is_active">>) {
