@@ -3,7 +3,7 @@ import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon,
-  RefreshCw, Forward, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
+  RefreshCw, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
   User as UserIcon, Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
 import { ReactionPicker, ReactionChips } from "./ReactionPicker";
+import { MessageActions, isDeletedForMe, isDeletedForAll, isPinned } from "./MessageActions";
+import { PinnedMessagesBar } from "./PinnedMessagesBar";
+import { useAuth } from "@/features/auth/AuthProvider";
 import type { MessageRow } from "./hooks";
 
 /* ============================== Helpers ============================== */
@@ -446,23 +449,76 @@ function LocationMessage({ m }: { m: MessageRow }) {
 function ContactMessage({ m }: { m: MessageRow }) {
   const p = (m.payload ?? {}) as Record<string, unknown>;
   const vcard = (p.vcard as string | undefined) || "";
-  const displayName = (p.display_name as string | undefined) || "Contato";
+  const displayName =
+    (p.display_name as string | undefined) ||
+    (vcard.match(/FN[^:]*:([^\r\n]+)/i)?.[1]?.trim()) ||
+    "Contato";
   const telMatch = vcard.match(/TEL[^:]*:([^\r\n]+)/i);
   const tel = telMatch ? telMatch[1].trim() : null;
+  const telDigits = tel ? tel.replace(/\D/g, "") : null;
+  const emailMatch = vcard.match(/EMAIL[^:]*:([^\r\n]+)/i);
+  const email = emailMatch ? emailMatch[1].trim() : null;
+
+  const handleSave = async () => {
+    if (!telDigits) return;
+    try {
+      const phoneE164 = telDigits.startsWith("+") ? telDigits : `+${telDigits}`;
+      const { data: existing } = await supabase
+        .from("contacts").select("id").eq("phone_e164", phoneE164).maybeSingle();
+      if (existing) { toast.success("Contato já existe"); return; }
+      const { data: u } = await supabase.auth.getUser();
+      const { data: convs } = await supabase
+        .from("conversations").select("workspace_id").limit(1).maybeSingle();
+      const workspaceId = convs?.workspace_id;
+      if (!workspaceId) { toast.error("Workspace não encontrado"); return; }
+      const { error } = await supabase.from("contacts").insert({
+        workspace_id: workspaceId,
+        display_name: displayName,
+        phone_e164: phoneE164,
+        email: email,
+        created_by: u?.user?.id,
+      });
+      if (error) throw error;
+      toast.success("Contato salvo");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   return (
-    <div className="min-w-[230px]">
+    <div className="w-[280px]">
       <div className="flex items-center gap-2 px-1 py-1.5">
-        <div className="h-9 w-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-700 font-medium">
+        <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-700 font-medium">
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-medium truncate text-sm">{displayName}</div>
+          <div className="font-medium truncate text-[14px]">{displayName}</div>
           {tel && (
-            <div className="flex items-center gap-1 text-xs opacity-70">
+            <div className="flex items-center gap-1 text-[12px] opacity-70">
               <Phone className="h-3 w-3" /> {tel}
             </div>
           )}
         </div>
+      </div>
+      <div className="border-t border-black/10 flex">
+        {telDigits && (
+          <a
+            href={`https://wa.me/${telDigits}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 text-center py-2 text-[13px] font-medium text-[#027eb5] hover:bg-black/5"
+          >
+            MENSAGEM
+          </a>
+        )}
+        <div className="w-px bg-black/10" />
+        <button
+          type="button"
+          onClick={handleSave}
+          className="flex-1 text-center py-2 text-[13px] font-medium text-[#027eb5] hover:bg-black/5"
+        >
+          SALVAR CONTATO
+        </button>
       </div>
     </div>
   );
@@ -518,10 +574,17 @@ type Props = {
   activeMatchId?: string | null;
 };
 
-export function MessageThread({ messages, searchQuery = "", activeMatchId = null }: Props) {
+export function MessageThread({ messages: rawMessages, searchQuery = "", activeMatchId = null }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
+  const { user } = useAuth();
+
+  // Hide "delete for me" messages from current user
+  const messages = useMemo(
+    () => rawMessages.filter((m) => !isDeletedForMe(m, user?.id)),
+    [rawMessages, user?.id],
+  );
 
   useEffect(() => {
     const el = ref.current; if (!el) return;
@@ -539,10 +602,19 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
     const body = (p.body as string | undefined) || (p.caption as string | undefined) || `[${m.type}]`;
     window.dispatchEvent(new CustomEvent("inbox:reply", { detail: { id: m.id, body, direction: m.direction } }));
   };
-  void handleReply;
+
+  const jumpTo = (id: string) => {
+    const node = itemRefs.current[id];
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      node.classList.add("ring-2", "ring-yellow-400");
+      setTimeout(() => node.classList.remove("ring-2", "ring-yellow-400"), 1500);
+    }
+  };
 
   return (
     <>
+      <PinnedMessagesBar messages={messages} onJump={jumpTo} />
       <div ref={ref} className="wa-thread flex-1 overflow-y-auto overscroll-contain scrollbar-hide px-[5%] py-4 space-y-0.5">
         {messages.map((m, idx) => {
           const out = m.direction === "out";
@@ -559,6 +631,8 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
           const isReaction = m.type === "reaction";
           const isSystem = m.type === "system";
           const isMedia = MEDIA_TYPES.has(m.type);
+          const deletedAll = isDeletedForAll(m);
+          const pinnedHere = isPinned(m);
 
           if (isSystem) {
             return (
@@ -567,6 +641,45 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
               </div>
             );
           }
+
+          // Deleted for all — render placeholder bubble, no actions
+          if (deletedAll) {
+            return (
+              <div key={m.id}>
+                {showDay && (
+                  <div className="flex justify-center my-3">
+                    <span className="wa-date-pill">{dayLabel(new Date(m.created_at))}</span>
+                  </div>
+                )}
+                <div
+                  ref={(el) => { itemRefs.current[m.id] = el; }}
+                  className={cn("flex mt-2", out ? "justify-end" : "justify-start")}
+                >
+                  <div
+                    className={cn(
+                      "wa-bubble relative px-3 py-2 italic text-[13.5px] flex items-center gap-1.5",
+                      out ? "wa-bubble-out" : "wa-bubble-in",
+                    )}
+                    style={{ color: "var(--wa-text-secondary)" }}
+                  >
+                    🚫 Esta mensagem foi apagada
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          const actions = (
+            <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+              <ReactionPicker message={m} />
+              <MessageActions
+                message={m}
+                side={out ? "out" : "in"}
+                onReply={handleReply}
+                onForward={(mm) => setForwardMsg(mm)}
+              />
+            </div>
+          );
 
           return (
             <div key={m.id}>
@@ -579,14 +692,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                 ref={(el) => { itemRefs.current[m.id] = el; }}
                 className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
               >
-                {out && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <ReactionPicker message={m} />
-                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
+                {out && actions}
 
                 {isSticker || isReaction ? (
                   <div className={cn("relative max-w-[75%]", isActive && "ring-2 ring-yellow-400 rounded-md")}>
@@ -612,8 +718,13 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                       style={{ width: "fit-content", maxWidth: "100%", minWidth: "80px" }}
                     >
                       {isLastInGroup && !grouped && <BubbleTail side={out ? "right" : "left"} />}
-                      {(forwarded || quoted) && (
+                      {(forwarded || quoted || pinnedHere) && (
                         <div className={cn(isMedia ? "px-1.5 pt-1" : "")}>
+                          {pinnedHere && (
+                            <div className="flex items-center gap-1 text-[11px] mb-0.5" style={{ color: "var(--wa-text-secondary)" }}>
+                              📌 fixada
+                            </div>
+                          )}
                           {forwarded && <ForwardedHeader />}
                           {quoted && <QuotedPreview quoted={quoted} />}
                         </div>
@@ -635,14 +746,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   </div>
                 )}
 
-                {!out && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <ReactionPicker message={m} />
-                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
+                {!out && actions}
               </div>
             </div>
           );

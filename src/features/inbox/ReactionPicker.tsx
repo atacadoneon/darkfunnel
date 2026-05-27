@@ -1,6 +1,6 @@
 import { useState } from "react";
 import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
-import { Smile as SmileIcon, Plus } from "lucide-react";
+import { SmilePlus, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -55,7 +55,7 @@ export function ReactionPicker({ message }: Props) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button type="button" className="wa-quick-btn" title="Reagir">
-          <SmileIcon className="h-4 w-4" />
+          <SmilePlus className="h-4 w-4" />
         </button>
       </PopoverTrigger>
       <PopoverContent
