@@ -41,15 +41,15 @@ function isoLocal(d: Date) {
 function PageHeader({ workspace }: { workspace?: string }) {
   return (
     <div
-      className="rounded-2xl p-6 flex items-center gap-4 text-white shadow-md"
+      className="rounded-xl px-4 py-3 flex items-center gap-3 text-white shadow-sm"
       style={{ background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)" }}
     >
-      <div className="w-14 h-14 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
-        <Target className="h-7 w-7" />
+      <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+        <Target className="h-5 w-5" />
       </div>
-      <div>
-        <h1 className="text-2xl font-bold leading-tight">Metas de Faturamento</h1>
-        <p className="text-sm text-white/80 mt-0.5">
+      <div className="min-w-0">
+        <h1 className="text-base font-semibold leading-tight">Metas de Faturamento</h1>
+        <p className="text-[11px] text-white/80 leading-tight mt-0.5 truncate">
           {workspace ?? "Workspace"} — Gerencie e acompanhe as metas da sua organização
         </p>
       </div>
@@ -64,7 +64,7 @@ function TabBar({ tab, onChange }: { tab: TabKey; onChange: (t: TabKey) => void 
     { key: "vendedores", label: "Vendedores", icon: Trophy },
   ];
   return (
-    <div className="bg-white dark:bg-card rounded-xl shadow-sm border p-1.5 inline-flex gap-1">
+    <div className="bg-white dark:bg-card rounded-lg shadow-sm border p-1 inline-flex gap-0.5">
       {items.map(({ key, label, icon: Icon }) => {
         const active = tab === key;
         return (
@@ -72,13 +72,13 @@ function TabBar({ tab, onChange }: { tab: TabKey; onChange: (t: TabKey) => void 
             key={key}
             onClick={() => onChange(key)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all",
               active
                 ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300"
                 : "text-muted-foreground hover:bg-muted/50",
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5" />
             {label}
           </button>
         );
