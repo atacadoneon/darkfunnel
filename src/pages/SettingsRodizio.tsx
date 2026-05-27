@@ -345,6 +345,7 @@ function ChannelRotationCard({
                       index={idx}
                       member={membersMap[s.user_id]}
                       presence={presence[s.user_id]?.status}
+                      lastSeenAt={presence[s.user_id]?.last_seen_at}
                       activeCount={activeCount}
                       rotationActive={rotation?.is_active ?? false}
                       todayCount={countsByUser[s.user_id] ?? 0}
