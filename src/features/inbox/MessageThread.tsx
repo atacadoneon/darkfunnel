@@ -600,15 +600,16 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col">
+                  <div className={cn("flex flex-col min-w-0", out ? "items-end" : "items-start")} style={{ maxWidth: "min(65%, 480px)" }}>
                     <div
                       className={cn(
-                        "wa-bubble",
+                        "wa-bubble relative",
                         out ? "wa-bubble-out" : "wa-bubble-in",
                         isMedia ? "p-[3px]" : "px-2 py-[6px]",
                         isActive && "ring-2 ring-yellow-400 ring-offset-1",
                         (p as { _optimistic?: boolean })._optimistic && "opacity-70"
                       )}
+                      style={{ width: "fit-content", maxWidth: "100%", minWidth: "80px" }}
                     >
                       {isLastInGroup && !grouped && <BubbleTail side={out ? "right" : "left"} />}
                       {(forwarded || quoted) && (
@@ -630,9 +631,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                         {out && <StatusChecks status={m.status} />}
                       </div>
                     </div>
-                    <div className={cn("flex", out ? "justify-end" : "justify-start")}>
-                      <ReactionChips message={m} />
-                    </div>
+                    <ReactionChips message={m} />
                   </div>
                 )}
 
