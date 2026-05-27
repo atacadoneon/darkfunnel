@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/EmptyState";
 import { useCallsList, formatDuration, type CallRow } from "@/features/voice/hooks";
 import { formatBRL } from "@/features/wallet/hooks";
 import { useDialer } from "@/features/voice/VoiceProvider";
 import { CallDrawer } from "@/features/voice/CallDrawer";
+import Dialer from "@/pages/app/Dialer";
 import { format } from "date-fns";
 
 export default function Calls() {
@@ -61,16 +63,22 @@ export default function Calls() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="border-b px-3 h-10 flex items-center gap-2 sticky top-0 bg-background z-10">
-        <Phone className="h-3.5 w-3.5 text-primary" />
-        <h1 className="text-sm font-medium">Ligações</h1>
-        <span className="text-[11px] text-muted-foreground">· {calls.length}</span>
-        <div className="flex-1" />
-        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={exportXlsx} disabled={calls.length === 0}>
-          <Download className="h-3 w-3 mr-1" /> Exportar
-        </Button>
-      </div>
+      <Tabs defaultValue="ligacoes" className="w-full">
+        <div className="border-b px-3 h-10 flex items-center gap-2 sticky top-0 bg-background z-10">
+          <Phone className="h-3.5 w-3.5 text-primary" />
+          <h1 className="text-sm font-medium">Ligações</h1>
+          <TabsList className="h-7 ml-3">
+            <TabsTrigger value="ligacoes" className="h-6 text-xs">Histórico</TabsTrigger>
+            <TabsTrigger value="discador" className="h-6 text-xs">Discador Automático</TabsTrigger>
+          </TabsList>
+          <div className="flex-1" />
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={exportXlsx} disabled={calls.length === 0}>
+            <Download className="h-3 w-3 mr-1" /> Exportar
+          </Button>
+        </div>
+        <TabsContent value="ligacoes" className="mt-0">
       <div className="p-3 space-y-3">
+
 
       <Card className="p-3 flex flex-wrap gap-2 items-end">
         <div><label className="text-xs text-muted-foreground">De</label><Input type="date" value={from} onChange={e => setFrom(e.target.value)} className="h-8 w-36" /></div>
@@ -161,6 +169,11 @@ export default function Calls() {
 
       <CallDrawer call={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
       </div>
+        </TabsContent>
+        <TabsContent value="discador" className="mt-0">
+          <Dialer />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

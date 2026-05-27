@@ -156,8 +156,7 @@ export function useCreateCampaign() {
       auto_send_no_answer_msg?: boolean;
     }) => {
       if (!current) throw new Error("no workspace");
-      const { data: { user } } = await supabase.auth.getUser();
-      const insertRow = {
+      const insertRow: any = {
         workspace_id: current.id,
         name: v.name,
         description: v.description ?? null,
@@ -167,7 +166,6 @@ export function useCreateCampaign() {
         call_timeout_seconds: v.call_timeout_seconds ?? 30,
         auto_send_no_answer_msg: v.auto_send_no_answer_msg ?? false,
         status: "draft" as CampaignStatus,
-        created_by: user?.id ?? null,
       };
       const { data, error } = await (supabase as any)
         .from("dialer_campaigns").insert(insertRow).select("id").single();
