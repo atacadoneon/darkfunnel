@@ -4,8 +4,9 @@ import { format } from "date-fns";
 import {
   User, Tag as TagIcon, ShoppingCart, Paperclip, Calendar,
   Box, Megaphone, Plus, Trash2, Download, Loader2, History,
-  ArrowRight, Phone, Mail, Building2, MapPin, MessageSquare,
+  ArrowRight, Phone, Mail, Building2, MapPin, MessageSquare, CreditCard,
 } from "lucide-react";
+import { PaymentLinkDialog } from "@/features/payments/PaymentLinkDialog";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -44,6 +45,7 @@ type Props = {
 
 export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
   const navigate = useNavigate();
+  const [payOpen, setPayOpen] = useState(false);
   const openConversation = async () => {
     // tenta achar conversation pelo deal_id; fallback contact_id+channel_id
     const { data: deal } = await supabase
@@ -91,9 +93,14 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
                 Organizado por seções para preenchimento mais rápido.
               </DialogDescription>
             </div>
-            <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={openConversation}>
-              <MessageSquare className="h-3.5 w-3.5" /> Abrir conversa
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPayOpen(true)}>
+                <CreditCard className="h-3.5 w-3.5" /> Link de Pagamento
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5" onClick={openConversation}>
+                <MessageSquare className="h-3.5 w-3.5" /> Abrir conversa
+              </Button>
+            </div>
           </div>
         </DialogHeader>
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden">
