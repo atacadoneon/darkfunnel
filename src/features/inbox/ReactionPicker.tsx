@@ -55,7 +55,7 @@ export function ReactionPicker({ message }: Props) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button type="button" className="wa-quick-btn" title="Reagir">
-          <SmileIcon className="h-4 w-4" />
+          <SmilePlus className="h-4 w-4" />
         </button>
       </PopoverTrigger>
       <PopoverContent
