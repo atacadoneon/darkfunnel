@@ -11,7 +11,7 @@ import { RequireAuth } from "@/features/auth/RequireAuth";
 import { WorkspaceProvider } from "@/features/workspace/WorkspaceProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { VoiceProvider } from "@/features/voice/VoiceProvider";
-import { Dialer } from "@/components/voice/Dialer";
+import { Dialer as VoiceDialer } from "@/components/voice/Dialer";
 import { InsufficientBalanceModal } from "@/features/voice/InsufficientBalanceModal";
 
 import Login from "@/pages/auth/Login";
@@ -33,6 +33,8 @@ import EmailMarketing from "@/pages/app/EmailMarketing";
 import Wallet from "@/pages/app/Wallet";
 import Calls from "@/pages/app/Calls";
 import Agenda from "@/pages/app/Agenda";
+import Dialer from "@/pages/app/Dialer";
+import DialerRun from "@/pages/app/DialerRun";
 import Prospeccao from "@/pages/app/Prospeccao";
 import EquipeOnline from "@/pages/app/EquipeOnline";
 import Admin from "@/pages/admin/Admin";
@@ -110,6 +112,8 @@ const App = () => (
                     <Route path="reunioes" element={<Meetings />} />
                     <Route path="agenda" element={<Agenda />} />
                     <Route path="calls" element={<Calls />} />
+                    <Route path="discador" element={<Dialer />} />
+                    <Route path="discador/:id" element={<DialerRun />} />
                     <Route path="cadencia" element={<Cadence />} />
                     <Route path="outreach-flows" element={<Cadence />} />
                     <Route path="automacoes" element={<Automations />} />
@@ -136,7 +140,7 @@ const App = () => (
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-                <Dialer />
+                <VoiceDialer />
                 <InsufficientBalanceModal />
               </VoiceProvider>
             </WorkspaceProvider>
