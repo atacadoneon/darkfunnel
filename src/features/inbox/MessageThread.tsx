@@ -446,23 +446,76 @@ function LocationMessage({ m }: { m: MessageRow }) {
 function ContactMessage({ m }: { m: MessageRow }) {
   const p = (m.payload ?? {}) as Record<string, unknown>;
   const vcard = (p.vcard as string | undefined) || "";
-  const displayName = (p.display_name as string | undefined) || "Contato";
+  const displayName =
+    (p.display_name as string | undefined) ||
+    (vcard.match(/FN[^:]*:([^\r\n]+)/i)?.[1]?.trim()) ||
+    "Contato";
   const telMatch = vcard.match(/TEL[^:]*:([^\r\n]+)/i);
   const tel = telMatch ? telMatch[1].trim() : null;
+  const telDigits = tel ? tel.replace(/\D/g, "") : null;
+  const emailMatch = vcard.match(/EMAIL[^:]*:([^\r\n]+)/i);
+  const email = emailMatch ? emailMatch[1].trim() : null;
+
+  const handleSave = async () => {
+    if (!telDigits) return;
+    try {
+      const phoneE164 = telDigits.startsWith("+") ? telDigits : `+${telDigits}`;
+      const { data: existing } = await supabase
+        .from("contacts").select("id").eq("phone_e164", phoneE164).maybeSingle();
+      if (existing) { toast.success("Contato já existe"); return; }
+      const { data: u } = await supabase.auth.getUser();
+      const { data: convs } = await supabase
+        .from("conversations").select("workspace_id").limit(1).maybeSingle();
+      const workspaceId = convs?.workspace_id;
+      if (!workspaceId) { toast.error("Workspace não encontrado"); return; }
+      const { error } = await supabase.from("contacts").insert({
+        workspace_id: workspaceId,
+        display_name: displayName,
+        phone_e164: phoneE164,
+        email: email,
+        created_by: u?.user?.id,
+      });
+      if (error) throw error;
+      toast.success("Contato salvo");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   return (
-    <div className="min-w-[230px]">
+    <div className="w-[280px]">
       <div className="flex items-center gap-2 px-1 py-1.5">
-        <div className="h-9 w-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-700 font-medium">
+        <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-700 font-medium">
           {displayName.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-medium truncate text-sm">{displayName}</div>
+          <div className="font-medium truncate text-[14px]">{displayName}</div>
           {tel && (
-            <div className="flex items-center gap-1 text-xs opacity-70">
+            <div className="flex items-center gap-1 text-[12px] opacity-70">
               <Phone className="h-3 w-3" /> {tel}
             </div>
           )}
         </div>
+      </div>
+      <div className="border-t border-black/10 flex">
+        {telDigits && (
+          <a
+            href={`https://wa.me/${telDigits}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 text-center py-2 text-[13px] font-medium text-[#027eb5] hover:bg-black/5"
+          >
+            MENSAGEM
+          </a>
+        )}
+        <div className="w-px bg-black/10" />
+        <button
+          type="button"
+          onClick={handleSave}
+          className="flex-1 text-center py-2 text-[13px] font-medium text-[#027eb5] hover:bg-black/5"
+        >
+          SALVAR CONTATO
+        </button>
       </div>
     </div>
   );
