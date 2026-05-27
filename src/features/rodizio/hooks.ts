@@ -171,7 +171,14 @@ export async function createRotation(
 ) {
   const { data, error } = await supabase
     .from("lead_rotations" as never)
-    .insert({ workspace_id: workspaceId, channel_id: channelId, name, is_active: true } as never)
+    .insert({
+      workspace_id: workspaceId,
+      channel_id: channelId,
+      name,
+      is_active: true,
+      trigger_on: "first_inbound",
+      respect_existing_owner: true,
+    } as never)
     .select()
     .single();
   if (error) throw error;
