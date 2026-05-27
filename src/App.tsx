@@ -33,6 +33,8 @@ import EmailMarketing from "@/pages/app/EmailMarketing";
 import Wallet from "@/pages/app/Wallet";
 import Calls from "@/pages/app/Calls";
 import Agenda from "@/pages/app/Agenda";
+import Dialer from "@/pages/app/Dialer";
+import DialerRun from "@/pages/app/DialerRun";
 import Prospeccao from "@/pages/app/Prospeccao";
 import EquipeOnline from "@/pages/app/EquipeOnline";
 import Admin from "@/pages/admin/Admin";
@@ -110,6 +112,8 @@ const App = () => (
                     <Route path="reunioes" element={<Meetings />} />
                     <Route path="agenda" element={<Agenda />} />
                     <Route path="calls" element={<Calls />} />
+                    <Route path="discador" element={<Dialer />} />
+                    <Route path="discador/:id" element={<DialerRun />} />
                     <Route path="cadencia" element={<Cadence />} />
                     <Route path="outreach-flows" element={<Cadence />} />
                     <Route path="automacoes" element={<Automations />} />

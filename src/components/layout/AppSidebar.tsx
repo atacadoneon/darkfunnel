@@ -21,6 +21,7 @@ import {
   Search,
   Pin,
   PinOff,
+  PhoneOutgoing,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -69,6 +70,7 @@ const sections: { label: string; items: Item[] }[] = [
   {
     label: "Automação",
     items: [
+      { title: "Discador", url: "/discador", icon: PhoneOutgoing },
       { title: "Fluxo de Cadência", url: "/cadencia", icon: MessageSquare },
       { title: "Automações", url: "/automacoes", icon: Workflow },
     ],
