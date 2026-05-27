@@ -316,6 +316,7 @@ export default function Inbox() {
               messages={messages}
               searchQuery={searchOpen ? searchQuery : ""}
               activeMatchId={searchOpen ? matchIds[activeMatchIdx] ?? null : null}
+              contactAvatar={selected.contacts?.profile_pic_url ?? null}
             />
             <Composer conversation={selected} />
           </>
