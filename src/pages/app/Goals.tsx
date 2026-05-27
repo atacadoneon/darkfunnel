@@ -756,6 +756,8 @@ export default function Goals() {
       {tab === "geral" && <GeralTab year={year} month={month} setYear={setYear} setMonth={setMonth} />}
       {tab === "setoriais" && <SetoresTab year={year} month={month} />}
       {tab === "vendedores" && <VendedoresTab year={year} month={month} />}
+      </div>
     </div>
   );
 }
+
