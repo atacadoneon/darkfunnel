@@ -173,7 +173,7 @@ function ChannelRotationCard({
     }
   };
 
-  const handleToggleOpen = () => setOpen((v) => !v);
+  const handleToggleOpen = () => setOpen(!isOpen);
 
   const handleCreateRotation = async () => {
     try { await ensure(); }
