@@ -1,7 +1,9 @@
 import { useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+
+const CONTACTS_PAGE_SIZE = 100;
 
 export type IdentityKind = "whatsapp" | "instagram" | "email";
 
@@ -79,3 +81,62 @@ export const IDENTITY_LABELS: Record<IdentityKind, string> = {
   instagram: "Instagram",
   email: "E-mail",
 };
+
+export function useContactsInfinite(search: string = "", includeArchived: boolean = false) {
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+
+  const q = useInfiniteQuery({
+    queryKey: ["contacts-infinite", current?.id, search, includeArchived],
+    enabled: !!current,
+    initialPageParam: 0,
+    staleTime: 30_000,
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam as number;
+      const to = from + CONTACTS_PAGE_SIZE - 1;
+      let query = supabase
+        .from("contacts")
+        .select(
+          "id,workspace_id,display_name,phone_e164,profile_pic_url,created_at,archived_at,identities:contact_identities(id,workspace_id,contact_id,kind,value,is_primary,created_at)",
+          { count: "exact" },
+        )
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (!includeArchived) query = query.is("archived_at", null);
+      if (search.trim()) {
+        const s = `%${search.trim()}%`;
+        query = query.or(`display_name.ilike.${s},phone_e164.ilike.${s}`);
+      }
+      const { data, error, count } = await query;
+      if (error) throw error;
+      const items = (data ?? []) as unknown as Contact[];
+      return {
+        items,
+        nextOffset: items.length === CONTACTS_PAGE_SIZE ? from + CONTACTS_PAGE_SIZE : null,
+        total: count ?? 0,
+      };
+    },
+    getNextPageParam: (last) => last.nextOffset,
+  });
+
+  useEffect(() => {
+    if (!current) return;
+    const ch = supabase
+      .channel(`contacts-inf:${current.id}:${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contacts", filter: `workspace_id=eq.${current.id}` },
+        () => qc.invalidateQueries({ queryKey: ["contacts-infinite", current.id] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contact_identities", filter: `workspace_id=eq.${current.id}` },
+        () => qc.invalidateQueries({ queryKey: ["contacts-infinite", current.id] }),
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [current, qc]);
+
+  return q;
+}
+

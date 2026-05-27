@@ -24,8 +24,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
-import { useContacts, type Contact, IDENTITY_LABELS } from "@/features/contacts/hooks";
+import { useContactsInfinite, type Contact, IDENTITY_LABELS } from "@/features/contacts/hooks";
 import { ContactDialog, IDENTITY_ICON } from "@/features/contacts/ContactDialog";
+import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
+import { ListFooter } from "@/components/lists/ListFooter";
 import {
   MoreHorizontal,
   Search,
@@ -45,13 +47,23 @@ export default function Contacts() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
-  const { data: contacts = [], isLoading } = useContacts(search, showArchived);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useContactsInfinite(search, showArchived);
+  const contacts = useMemo<Contact[]>(
+    () => data?.pages.flatMap((p) => p.items) ?? [],
+    [data],
+  );
+  const total = data?.pages[0]?.total ?? 0;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [toArchive, setToArchive] = useState<Contact | null>(null);
 
-  const total = contacts.length;
   const withChannels = useMemo(
     () => contacts.filter((c) => (c.identities ?? []).length > 0).length,
     [contacts]
@@ -72,7 +84,7 @@ export default function Contacts() {
         .eq("id", toArchive.id);
       if (error) throw error;
       toast.success(isArchived ? "Contato restaurado" : "Contato arquivado");
-      qc.invalidateQueries({ queryKey: ["contacts", current.id] });
+      qc.invalidateQueries({ queryKey: ["contacts-infinite", current.id] });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -232,6 +244,19 @@ export default function Contacts() {
           )}
         </CardContent>
       </Card>
+      <LoadMoreSentinel
+        hasMore={!!hasNextPage}
+        isFetching={isFetchingNextPage}
+        onIntersect={() => fetchNextPage()}
+      />
+      </div>
+      <ListFooter
+        loaded={contacts.length}
+        total={total}
+        hasMore={!!hasNextPage}
+        singular="contato exibido"
+        plural="contatos exibidos"
+      />
 
       <ContactDialog
         open={dialogOpen}
@@ -259,7 +284,6 @@ export default function Contacts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      </div>
     </div>
   );
 }
