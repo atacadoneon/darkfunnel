@@ -267,9 +267,18 @@ function ChannelRotationCard({
 
       {open && (
         <CardContent className="border-t pt-4 space-y-4">
-          {ensuring ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="h-4 w-4 animate-spin" />
+          {!rotation ? (
+            <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center space-y-3">
+              <Users className="h-7 w-7 mx-auto opacity-60 text-muted-foreground" />
+              <div className="space-y-1">
+                <div className="text-sm font-medium">Sem rodízio configurado para este canal</div>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  Crie um rodízio para distribuir automaticamente novos leads deste canal entre vendedores.
+                </p>
+              </div>
+              <Button onClick={handleCreateRotation} disabled={ensuring}>
+                {ensuring ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4 mr-1" /> Criar rodízio neste canal</>}
+              </Button>
             </div>
           ) : slots.length === 0 ? (
             <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
