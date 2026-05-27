@@ -188,7 +188,9 @@ export default function DialerRun() {
   }, [runState, startCall, endCall, loadNext, pauseCampaign]);
 
   const stage = stages.find((s) => s.id === currentItem?.deal?.stage_id);
-  const stageObjective = (stage as any)?.default_objective as string | undefined;
+  const stageName = stage?.name ?? (currentItem as any)?.stage_name ?? null;
+  const stageColor = stage?.color ?? "hsl(var(--primary))";
+  const stageObjective = (stage as any)?.default_objective ?? (currentItem as any)?.default_objective;
 
   const target = campaign?.target_count ?? 0;
   const done = campaign?.completed_count ?? 0;
@@ -327,10 +329,10 @@ export default function DialerRun() {
                       <span className="text-emerald-600 ml-2">{brl(currentItem.deal.value_cents)}</span>
                     </div>
                   )}
-                  {stage && (
+                  {stageName && (
                     <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                      <Badge variant="outline" className="text-[10px]" style={{ borderColor: stage.color, color: stage.color }}>
-                        {stage.name}
+                      <Badge variant="outline" className="text-[10px]" style={{ borderColor: stageColor, color: stageColor }}>
+                        {stageName}
                       </Badge>
                     </div>
                   )}
