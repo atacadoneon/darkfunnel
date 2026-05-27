@@ -30,6 +30,41 @@ const DAY_SHORT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const brl = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 
+function CurrencyInput({
+  value, onChange, onCommit, disabled, className, placeholder,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  onCommit?: (n: number) => void;
+  disabled?: boolean;
+  className?: string;
+  placeholder?: string;
+}) {
+  const format = (n: number) =>
+    n > 0
+      ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 })
+      : "";
+  const [text, setText] = useState(format(value));
+  useEffect(() => { setText(format(value)); }, [value]);
+  return (
+    <Input
+      inputMode="numeric"
+      disabled={disabled}
+      className={className}
+      placeholder={placeholder ?? "R$ 0,00"}
+      value={text}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, "");
+        const n = digits ? Number(digits) / 100 : 0;
+        setText(format(n));
+        onChange(n);
+      }}
+      onBlur={() => onCommit?.(value)}
+    />
+  );
+}
+
+
 function isoLocal(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
