@@ -80,12 +80,20 @@ export function Composer({ conversation }: Props) {
   const { data: pendings = [] } = useScheduledMessages(conversation.id);
   const { data: quickReplies = [] } = useQuickReplies();
 
-  const isCloud = conversation.channels?.kind === "whatsapp_cloud";
-  const isUazapi = conversation.channels?.kind === "uazapi";
+  const channelKind = conversation.channels?.kind;
+  const isCloud = channelKind === "whatsapp_cloud";
+  const isUazapi = channelKind === "uazapi";
+  const isInstagram = channelKind === "instagram";
+  const igWindowExpired = (() => {
+    if (!isInstagram) return false;
+    const last = conversation.last_inbound_at ? new Date(conversation.last_inbound_at).getTime() : 0;
+    if (!last) return true;
+    return Date.now() - last > 24 * 3600 * 1000;
+  })();
   const windowExpired =
-    isCloud && conversation.window_expires_at
+    (isCloud && conversation.window_expires_at
       ? new Date(conversation.window_expires_at) < new Date()
-      : false;
+      : false) || igWindowExpired;
 
   useEffect(() => {
     return () => {
