@@ -78,8 +78,14 @@ export function Dialer() {
 
   const startCall = async () => {
     if (!wsId) return;
-    const to = (prefill?.phone || phone).trim();
-    if (!to) return toast.error("Digite um número");
+    const raw = (prefill?.phone || phone).trim();
+    if (!raw) return toast.error("Digite um número");
+    const { toZenviaBR } = await import("@/lib/phone");
+    const to = toZenviaBR(raw);
+    if (!/^\d{10,11}$/.test(to)) {
+      setMode("idle");
+      return toast.error("Número inválido. Use DDD + número, ex: 4832830151");
+    }
     setSubmitting(true);
     setMode("connecting");
     try {
