@@ -153,7 +153,8 @@ function ChannelRotationCard({
   const { data: slots = [] } = useRotationSlots(rotation?.id ?? null);
   const { data: assignments = [] } = useAssignmentsToday(rotation?.id ?? null);
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<boolean | null>(null);
+  const isOpen = open ?? !!rotation;
   const [ensuring, setEnsuring] = useState(false);
   const [picker, setPicker] = useState("");
   const [adding, setAdding] = useState(false);
