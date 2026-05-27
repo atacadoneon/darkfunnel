@@ -56,6 +56,9 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
   const [result, setResult] = useState<{ url: string; expires_at: string | null } | null>(null);
   const [sending, setSending] = useState(false);
 
+  const [loadedContact, setLoadedContact] = useState<Props["contact"] | null>(null);
+  const effectiveContact = contact ?? loadedContact ?? undefined;
+
   useEffect(() => {
     if (open) {
       setGatewayId(defaultGw?.id ?? "");
@@ -67,6 +70,21 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
       setResult(null);
     }
   }, [open, defaultGw?.id, defaultDescription]);
+
+  useEffect(() => {
+    if (!open || contact || !dealId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("contact:contacts(id, display_name, phone_e164, email, document)")
+        .eq("id", dealId)
+        .maybeSingle();
+      const c: any = (data as any)?.contact;
+      if (c) setLoadedContact({
+        id: c.id, name: c.display_name, phone: c.phone_e164, email: c.email, document: c.document,
+      });
+    })();
+  }, [open, dealId, contact]);
 
   const onSubmit = async () => {
     const cents = brlToCents(amount);
