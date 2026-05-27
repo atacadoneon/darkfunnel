@@ -829,7 +829,7 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
 
                 {isSticker || isReaction ? (
                   <div className={cn("relative max-w-[75%]", isActive && "ring-2 ring-yellow-400 rounded-md")}>
-                    {renderBody(m, searchQuery)}
+                    {renderBody(m, searchQuery, { contactAvatar, channelAvatar })}
                     <div className={cn("mt-0.5 flex items-center gap-1 text-[10px] opacity-70", out ? "justify-end" : "justify-start")}>
                       <span>{format(new Date(m.created_at), "HH:mm")}</span>
                       {out && <StatusChecks status={m.status} />}
