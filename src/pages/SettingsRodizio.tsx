@@ -320,33 +320,35 @@ function ChannelRotationCard({
             </div>
           )}
 
-          <div className="flex items-end gap-2 pt-2 border-t">
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground mb-1 block">
-                Adicionar vendedor (pode repetir para aumentar peso)
-              </label>
-              <Select value={picker} onValueChange={setPicker}>
-                <SelectTrigger><SelectValue placeholder="Escolher vendedor..." /></SelectTrigger>
-                <SelectContent>
-                  {members.map((m) => {
-                    const st = presence[m.user_id]?.status;
-                    const name = m.display_name || m.email || m.user_id;
-                    return (
-                      <SelectItem key={m.user_id} value={m.user_id}>
-                        <div className="flex items-center gap-2">
-                          <span className={cn("h-2 w-2 rounded-full", presenceDotClass(st))} />
-                          {name}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+          {rotation && (
+            <div className="flex items-end gap-2 pt-2 border-t">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  Adicionar vendedor (pode repetir para aumentar peso)
+                </label>
+                <Select value={picker} onValueChange={setPicker}>
+                  <SelectTrigger><SelectValue placeholder="Escolher vendedor..." /></SelectTrigger>
+                  <SelectContent>
+                    {members.map((m) => {
+                      const st = presence[m.user_id]?.status;
+                      const name = m.display_name || m.email || m.user_id;
+                      return (
+                        <SelectItem key={m.user_id} value={m.user_id}>
+                          <div className="flex items-center gap-2">
+                            <span className={cn("h-2 w-2 rounded-full", presenceDotClass(st))} />
+                            {name}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleAdd} disabled={!picker || adding}>
+                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4 mr-1" /> Adicionar</>}
+              </Button>
             </div>
-            <Button onClick={handleAdd} disabled={!picker || adding}>
-              {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4 mr-1" /> Adicionar</>}
-            </Button>
-          </div>
+          )}
 
           {totalToday > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
