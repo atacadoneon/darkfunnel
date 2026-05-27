@@ -391,13 +391,13 @@ function MetricCard({ label, value, icon, color }: {
     green: "text-emerald-600 dark:text-emerald-400",
   };
   return (
-    <Card className="rounded-2xl p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-xs text-muted-foreground">{label}</div>
-          <div className={cn("text-2xl font-bold mt-2", valueColor[color])}>{value}</div>
+    <Card className="rounded-xl p-3 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground truncate">{label}</div>
+          <div className={cn("text-base font-bold mt-1 truncate", valueColor[color])}>{value}</div>
         </div>
-        <div className={cn("rounded-xl p-2.5", colorMap[color])}>{icon}</div>
+        <div className={cn("rounded-lg p-1.5 shrink-0", colorMap[color])}>{icon}</div>
       </div>
     </Card>
   );
