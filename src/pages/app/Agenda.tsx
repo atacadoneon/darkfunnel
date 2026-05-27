@@ -39,6 +39,42 @@ export default function Agenda() {
     },
   });
 
+  const { data: meetings = [] } = useQuery({
+    queryKey: ["agenda-meetings", wsId, monthStart.toISOString()],
+    enabled: !!wsId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("meetings").select("id,title,starts_at,meeting_url")
+        .eq("workspace_id", wsId)
+        .gte("starts_at", monthStart.toISOString())
+        .lte("starts_at", monthEnd.toISOString());
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["agenda-tasks", wsId, monthStart.toISOString()],
+    enabled: !!wsId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks").select("id,title,due_date,status")
+        .eq("workspace_id", wsId)
+        .not("due_date", "is", null)
+        .gte("due_date", monthStart.toISOString())
+        .lte("due_date", monthEnd.toISOString());
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const allItems = useMemo(() => {
+    const ev = (events as any[]).map(e => ({ id: `e-${e.id}`, kind: "event" as const, title: e.title, at: e.starts_at, url: e.conference_url }));
+    const mt = (meetings as any[]).map(m => ({ id: `m-${m.id}`, kind: "meeting" as const, title: m.title, at: m.starts_at, url: m.meeting_url }));
+    const tk = (tasks as any[]).map(t => ({ id: `t-${t.id}`, kind: "task" as const, title: t.title, at: t.due_date, url: null, done: t.status === "completed" }));
+    return [...ev, ...mt, ...tk];
+  }, [events, meetings, tasks]);
+
   const days = useMemo(() => Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)), [gridStart]);
 
   return (
