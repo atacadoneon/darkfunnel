@@ -181,7 +181,7 @@ function ChannelRotationCard({
   channel: ChannelRow;
   members: WorkspaceMember[];
   membersMap: Record<string, WorkspaceMember>;
-  presence: Record<string, { status: "online" | "away" | "offline" }>;
+  presence: Record<string, { status: PresenceStatus; last_seen_at?: string | null }>;
 }) {
   const { current } = useWorkspace();
   const { data: rotations = [] } = useRotations();
