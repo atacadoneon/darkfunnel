@@ -37,7 +37,17 @@ import Prospeccao from "@/pages/app/Prospeccao";
 import EquipeOnline from "@/pages/app/EquipeOnline";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
+import SettingsRodizio from "@/pages/SettingsRodizio";
 import NotFound from "@/pages/NotFound";
+import { useUserPresence } from "@/hooks/useUserPresence";
+import { useAuth } from "@/features/auth/AuthProvider";
+
+function PresenceMount() {
+  const { user } = useAuth();
+  useUserPresence();
+  return null;
+}
+void PresenceMount;
 
 const queryClient = new QueryClient({
   defaultOptions: {
