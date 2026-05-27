@@ -9,6 +9,7 @@ export type LeadRotation = {
   channel_id: string | null;
   name: string;
   is_active: boolean;
+  next_slot_id: string | null;
   created_at: string;
 };
 
