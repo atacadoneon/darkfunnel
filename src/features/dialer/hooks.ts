@@ -203,14 +203,29 @@ export async function fetchNextLead(campaignId: string): Promise<DialerQueueItem
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) return null;
-  // RPC may return only queue row; hydrate join
-  const queueId = (row as any).id ?? (row as any).queue_id ?? null;
-  if (!queueId) return row as DialerQueueItem;
+  if ((row as any).done) return null;
+  // RPC may wrap as { queue_item: {...} } or return flat row with extras
+  const flat: any = (row as any).queue_item ?? row;
+  const queueId = flat.id ?? flat.queue_id ?? null;
+  if (!queueId) return flat as DialerQueueItem;
   const { data: full } = await (supabase as any)
     .from("dialer_queue")
     .select("*, contact:contacts(id,display_name,profile_pic_url,phone_e164), deal:deals(id,title,value_cents,stage_id)")
     .eq("id", queueId).maybeSingle();
-  return (full ?? row) as DialerQueueItem;
+  // Synthesize contact/deal from flat RPC fields when joins are empty
+  const contact = (full as any)?.contact ?? (flat.contact_id || flat.display_name || flat.phone_e164 ? {
+    id: flat.contact_id,
+    display_name: flat.display_name ?? null,
+    profile_pic_url: flat.profile_pic_url ?? null,
+    phone_e164: flat.phone_e164 ?? null,
+  } : null);
+  const deal = (full as any)?.deal ?? (flat.deal_id || flat.deal_title ? {
+    id: flat.deal_id,
+    title: flat.deal_title ?? "",
+    value_cents: flat.value_cents ?? 0,
+    stage_id: flat.stage_id ?? null,
+  } : null);
+  return { ...flat, ...(full ?? {}), contact, deal } as DialerQueueItem;
 }
 
 export function useSetOutcome() {
