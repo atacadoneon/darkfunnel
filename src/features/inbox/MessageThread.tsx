@@ -578,6 +578,9 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const [newCount, setNewCount] = useState(0);
+  const lastLenRef = useRef(0);
   const { user } = useAuth();
 
   // Hide "delete for me" messages from current user
@@ -586,16 +589,49 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
     [rawMessages, user?.id],
   );
 
+  // Track scroll position
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+    const onScroll = () => {
+      const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+      setAtBottom(near);
+      if (near) setNewCount(0);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Smart auto-scroll: only when user is at bottom, else show pill
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const len = messages.length;
+    const prev = lastLenRef.current;
+    lastLenRef.current = len;
+    if (len === 0) return;
+    if (prev === 0) { el.scrollTop = el.scrollHeight; return; }
+    if (len > prev) {
+      const last = messages[len - 1];
+      const isMine = last?.direction === "out";
+      if (atBottom || isMine) {
+        el.scrollTop = el.scrollHeight;
+      } else {
+        setNewCount((n) => n + (len - prev));
+      }
+    }
+  }, [messages, atBottom]);
 
   useEffect(() => {
     if (!activeMatchId) return;
     const node = itemRefs.current[activeMatchId];
     if (node) node.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [activeMatchId]);
+
+  const scrollToBottom = () => {
+    const el = ref.current; if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setNewCount(0);
+  };
+
 
   const handleReply = (m: MessageRow) => {
     const p = (m.payload ?? {}) as Record<string, unknown>;
@@ -613,8 +649,9 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
   };
 
   return (
-    <>
+    <div className="relative flex flex-1 min-h-0 flex-col">
       <PinnedMessagesBar messages={messages} onJump={jumpTo} />
+
       <div ref={ref} className="wa-thread flex-1 overflow-y-auto overscroll-contain scrollbar-hide px-[5%] py-4 space-y-0.5">
         {messages.map((m, idx) => {
           const out = m.direction === "out";
@@ -757,7 +794,18 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
           </div>
         )}
       </div>
+      {!atBottom && newCount > 0 && (
+        <button
+          type="button"
+          onClick={scrollToBottom}
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-lg hover:bg-emerald-700 transition-colors"
+        >
+          {newCount} nova{newCount > 1 ? "s" : ""} mensagem{newCount > 1 ? "s" : ""} ↓
+        </button>
+      )}
       <ForwardMessageDialog open={!!forwardMsg} onOpenChange={(v) => { if (!v) setForwardMsg(null); }} message={forwardMsg} />
-    </>
+    </div>
+
   );
 }
+

@@ -179,8 +179,6 @@ export function useMessages(conversationId: string | null) {
       return ((data ?? []) as unknown as MessageRow[]).reverse();
     },
     staleTime: 2_000,
-    refetchInterval: 5_000,
-    refetchIntervalInBackground: false,
   });
 
   // Reconcile optimistic store with server data: drop any optimistic that has matched
