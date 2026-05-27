@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, ChevronLeft, ChevronRight, Plus, Video } from "lucide-react";
+import { Calendar, CheckSquare, ChevronLeft, ChevronRight, Plus, Users, Video } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
@@ -38,6 +38,42 @@ export default function Agenda() {
       return data ?? [];
     },
   });
+
+  const { data: meetings = [] } = useQuery({
+    queryKey: ["agenda-meetings", wsId, monthStart.toISOString()],
+    enabled: !!wsId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("meetings").select("id,title,starts_at,meeting_url")
+        .eq("workspace_id", wsId)
+        .gte("starts_at", monthStart.toISOString())
+        .lte("starts_at", monthEnd.toISOString());
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["agenda-tasks", wsId, monthStart.toISOString()],
+    enabled: !!wsId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks").select("id,title,due_date,status")
+        .eq("workspace_id", wsId)
+        .not("due_date", "is", null)
+        .gte("due_date", monthStart.toISOString())
+        .lte("due_date", monthEnd.toISOString());
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const allItems = useMemo(() => {
+    const ev = (events as any[]).map(e => ({ id: `e-${e.id}`, kind: "event" as const, title: e.title, at: e.starts_at, url: e.conference_url }));
+    const mt = (meetings as any[]).map(m => ({ id: `m-${m.id}`, kind: "meeting" as const, title: m.title, at: m.starts_at, url: m.meeting_url }));
+    const tk = (tasks as any[]).map(t => ({ id: `t-${t.id}`, kind: "task" as const, title: t.title, at: t.due_date, url: null, done: t.status === "completed" }));
+    return [...ev, ...mt, ...tk];
+  }, [events, meetings, tasks]);
 
   const days = useMemo(() => Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)), [gridStart]);
 
@@ -71,19 +107,26 @@ export default function Agenda() {
         <div className="grid grid-cols-7 gap-1 text-xs">
           {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(d => <div key={d} className="text-center font-semibold py-1 text-muted-foreground">{d}</div>)}
           {days.map(d => {
-            const dayEvents = (events as any[]).filter(e => isSameDay(new Date(e.starts_at), d));
+            const dayItems = allItems.filter(it => it.at && isSameDay(new Date(it.at), d));
             const dim = !isSameMonth(d, cursor);
             const today = isSameDay(d, new Date());
             return (
               <div key={d.toISOString()} className={`border rounded p-1 min-h-[80px] ${dim ? "opacity-40" : ""} ${today ? "ring-1 ring-primary" : ""}`}>
                 <div className="text-[10px] font-bold mb-1">{format(d, "d")}</div>
-                {dayEvents.slice(0, 3).map(e => (
-                  <div key={e.id} className="text-[10px] truncate px-1 py-0.5 rounded bg-primary/10 text-primary mb-0.5 flex items-center gap-1">
-                    {e.conference_url && <Video className="h-2.5 w-2.5 shrink-0" />}
-                    <span className="truncate">{e.title}</span>
-                  </div>
-                ))}
-                {dayEvents.length > 3 && <div className="text-[10px] text-muted-foreground">+{dayEvents.length - 3}</div>}
+                {dayItems.slice(0, 3).map(it => {
+                  const cls =
+                    it.kind === "meeting" ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                    : it.kind === "task" ? `bg-amber-500/10 text-amber-700 dark:text-amber-300 ${(it as any).done ? "line-through opacity-60" : ""}`
+                    : "bg-primary/10 text-primary";
+                  const Icon = it.kind === "meeting" ? Users : it.kind === "task" ? CheckSquare : Video;
+                  return (
+                    <div key={it.id} className={`text-[10px] truncate px-1 py-0.5 rounded mb-0.5 flex items-center gap-1 ${cls}`}>
+                      {(it.kind !== "event" || it.url) && <Icon className="h-2.5 w-2.5 shrink-0" />}
+                      <span className="truncate">{it.title}</span>
+                    </div>
+                  );
+                })}
+                {dayItems.length > 3 && <div className="text-[10px] text-muted-foreground">+{dayItems.length - 3}</div>}
               </div>
             );
           })}
