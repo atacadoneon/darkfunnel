@@ -91,7 +91,29 @@ export function useConversations() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conversations", filter: `workspace_id=eq.${current.id}` },
-        () => qc.invalidateQueries({ queryKey: ["conversations", current.id] })
+        (payload: { eventType?: string; new?: Partial<ConversationRow> & { id?: string } }) => {
+          // Optimistic patch: aplica imediatamente os campos voláteis (ex.: unread_count)
+          // pra que badges (lista + sino) reflitam o UPDATE sem esperar refetch.
+          const next = payload?.new;
+          if (next?.id && (payload.eventType === "UPDATE" || payload.eventType === "INSERT")) {
+            qc.setQueryData<ConversationRow[] | undefined>(
+              ["conversations", current.id],
+              (prev) => {
+                if (!prev) return prev;
+                let found = false;
+                const updated = prev.map((c) => {
+                  if (c.id !== next.id) return c;
+                  found = true;
+                  return { ...c, ...next } as ConversationRow;
+                });
+                return found ? updated : prev;
+              },
+            );
+            // sino global: invalida soma
+            qc.invalidateQueries({ queryKey: ["unread-total", current.id] });
+          }
+          qc.invalidateQueries({ queryKey: ["conversations", current.id] });
+        }
       )
       .on(
         "postgres_changes",
