@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Phone, PhoneOff, Pause, ChevronRight, Loader2, Copy, CheckCircle2,
+  ArrowLeft, Phone, PhoneOff, Pause, Square, ChevronRight, ChevronsRight, Loader2, Copy, CheckCircle2,
   Sparkles, AlertTriangle, Target as TargetIcon, MessageSquare, Search, X,
   Minimize2, Maximize2, RefreshCw,
 } from "lucide-react";
@@ -193,6 +193,13 @@ export default function DialerRun() {
     if (!id) return;
     await setStatus.mutateAsync({ id, status: "paused" });
     toast.success("Campanha pausada");
+    navigate("/discador");
+  }, [id, setStatus, navigate]);
+
+  const endCampaign = useCallback(async () => {
+    if (!id) return;
+    if (!confirm("Encerrar campanha? Isso marcará como concluída.")) return;
+    await setStatus.mutateAsync({ id, status: "completed" });
     navigate("/discador");
   }, [id, setStatus, navigate]);
 
@@ -564,7 +571,7 @@ export default function DialerRun() {
 
               <footer className="bg-muted/40 px-3 py-1.5 text-[10px] text-muted-foreground border-t flex items-center justify-between">
                 <span>Powered by AI</span>
-                <span className="opacity-60">Esc para fechar</span>
+                <span className="opacity-60">AI Coach</span>
               </footer>
             </>
           )}
@@ -620,20 +627,6 @@ function OutcomeModal({
     if (open) { setOutcome(null); setNotes(""); setSendAuto(defaultAutoMsg); setReagendarAt(""); }
   }, [open, defaultAutoMsg]);
 
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT")) return;
-      if (e.key === "1") setOutcome("atendeu");
-      if (e.key === "2") setOutcome("nao_atendeu");
-      if (e.key === "3") setOutcome("reagendar");
-      if (e.key === "4") setOutcome("convertido");
-      if (e.key === "5") setOutcome("sem_interesse");
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [open]);
 
   const save = async () => {
     if (!queueId || !outcome) { toast.error("Selecione o resultado"); return; }
@@ -653,12 +646,12 @@ function OutcomeModal({
     }
   };
 
-  const options: { v: QueueOutcome; label: string; cls: string; key: string }[] = [
-    { v: "atendeu", label: "Atendeu", cls: "bg-emerald-500/15 border-emerald-500 text-emerald-700 hover:bg-emerald-500/25", key: "1" },
-    { v: "nao_atendeu", label: "Não atendeu", cls: "bg-slate-500/15 border-slate-400 text-slate-700 hover:bg-slate-500/25", key: "2" },
-    { v: "reagendar", label: "Reagendar", cls: "bg-amber-500/15 border-amber-500 text-amber-700 hover:bg-amber-500/25", key: "3" },
-    { v: "convertido", label: "Convertido", cls: "bg-emerald-600/20 border-emerald-600 text-emerald-800 hover:bg-emerald-600/30 font-semibold", key: "4" },
-    { v: "sem_interesse", label: "Sem interesse", cls: "bg-red-500/15 border-red-500 text-red-700 hover:bg-red-500/25", key: "5" },
+  const options: { v: QueueOutcome; label: string; cls: string }[] = [
+    { v: "atendeu", label: "Atendeu", cls: "bg-emerald-500/15 border-emerald-500 text-emerald-700 hover:bg-emerald-500/25" },
+    { v: "nao_atendeu", label: "Não atendeu", cls: "bg-slate-500/15 border-slate-400 text-slate-700 hover:bg-slate-500/25" },
+    { v: "reagendar", label: "Reagendar", cls: "bg-amber-500/15 border-amber-500 text-amber-700 hover:bg-amber-500/25" },
+    { v: "convertido", label: "Convertido", cls: "bg-emerald-600/20 border-emerald-600 text-emerald-800 hover:bg-emerald-600/30 font-semibold" },
+    { v: "sem_interesse", label: "Sem interesse", cls: "bg-red-500/15 border-red-500 text-red-700 hover:bg-red-500/25" },
   ];
 
   return (
@@ -675,12 +668,11 @@ function OutcomeModal({
                 key={o.v}
                 onClick={() => setOutcome(o.v)}
                 className={cn(
-                  "p-3 rounded-md border-2 text-sm transition-all relative",
+                  "p-3 rounded-md border-2 text-sm transition-all",
                   o.cls,
                   outcome === o.v && "ring-2 ring-offset-1 ring-primary",
                 )}
               >
-                <span className="absolute top-1 left-1.5 text-[10px] opacity-60">{o.key}</span>
                 {o.label}
               </button>
             ))}
