@@ -153,7 +153,8 @@ function ChannelRotationCard({
   const { data: slots = [] } = useRotationSlots(rotation?.id ?? null);
   const { data: assignments = [] } = useAssignmentsToday(rotation?.id ?? null);
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState<boolean | null>(null);
+  const isOpen = open ?? !!rotation;
   const [ensuring, setEnsuring] = useState(false);
   const [picker, setPicker] = useState("");
   const [adding, setAdding] = useState(false);
@@ -172,7 +173,7 @@ function ChannelRotationCard({
     }
   };
 
-  const handleToggleOpen = () => setOpen((v) => !v);
+  const handleToggleOpen = () => setOpen(!isOpen);
 
   const handleCreateRotation = async () => {
     try { await ensure(); }
@@ -226,7 +227,7 @@ function ChannelRotationCard({
         onClick={handleToggleOpen}
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
       >
-        {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+        {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
         <div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
           <Phone className="h-4 w-4 text-emerald-600" fill="currentColor" />
         </div>
@@ -265,7 +266,7 @@ function ChannelRotationCard({
         )}
       </button>
 
-      {open && (
+      {isOpen && (
         <CardContent className="border-t pt-4 space-y-4">
           {!rotation ? (
             <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center space-y-3">
