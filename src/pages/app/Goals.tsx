@@ -374,24 +374,20 @@ function GeralTab({ year, month, setYear, setMonth }: {
                 </TableCell>
                 <TableCell className="text-right py-1.5">
                   {r.isWorkingDay ? (
-                    <Input
-                      type="number"
+                    <CurrencyInput
                       disabled={!canEdit || !goal}
-                      className={cn(
-                        "h-7 w-28 ml-auto text-right text-[11px] px-2",
-                        (drafts[r.iso] ?? (r.realizado ? String(r.realizado) : "")) === "" && "bg-muted/40",
-                      )}
-                      placeholder="R$ 0,00"
-                      value={drafts[r.iso] ?? (r.realizado ? String(r.realizado) : "")}
-                      onChange={(e) => setDrafts({ ...drafts, [r.iso]: e.target.value })}
-                      onBlur={(e) => {
-                        if (drafts[r.iso] !== undefined) saveRealized(r.iso, e.target.value);
+                      className="h-7 w-32 ml-auto text-right text-[11px] px-2"
+                      value={drafts[r.iso] ?? (r.realizado ?? 0)}
+                      onChange={(n) => setDrafts({ ...drafts, [r.iso]: n })}
+                      onCommit={(n) => {
+                        if (drafts[r.iso] !== undefined) saveRealized(r.iso, n);
                       }}
                     />
                   ) : (
                     <span className="text-muted-foreground text-[11px]">—</span>
                   )}
                 </TableCell>
+
                 <TableCell className={cn(
                   "text-right text-[11px] font-medium py-1.5",
                   r.isWorkingDay && (r.deficit! > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"),
