@@ -143,12 +143,35 @@ export default function DialerRun() {
           channel: "pstn",
         },
       });
-      if (error) throw error;
+      if (error) {
+        const message = String(error.message ?? "");
+        const isZenviaNumberError = message.includes("numero_destino inválido") || message.includes("número_destino inválido");
+        if (isZenviaNumberError && to.length === 10 && /^\d{2}9\d{7}$/.test(to)) {
+          const mobileWithNinthDigit = `${to.slice(0, 2)}9${to.slice(2)}`;
+          const retry = await supabase.functions.invoke("voice-outbound", {
+            body: {
+              workspace_id: ws.id,
+              to: mobileWithNinthDigit,
+              contact_id: currentItem.contact_id,
+              deal_id: currentItem.deal_id,
+              channel: "pstn",
+            },
+          });
+          if (retry.error) throw retry.error;
+          setActiveCallId((retry.data as any)?.call_id ?? null);
+          setCallStartedAt(new Date().toISOString());
+          setRunState("calling");
+          toast.success(`Chamando ${currentItem.contact?.display_name ?? mobileWithNinthDigit}...`);
+          return;
+        }
+        throw error;
+      }
       setActiveCallId((data as any)?.call_id ?? null);
       setCallStartedAt(new Date().toISOString());
       setRunState("calling");
       toast.success(`Chamando ${currentItem.contact?.display_name ?? to}...`);
     } catch (e: any) {
+      console.error("[Dialer] voice-outbound failed", e);
       toast.error(e?.message ?? "Erro ao ligar");
     }
   }, [ws, currentItem]);
