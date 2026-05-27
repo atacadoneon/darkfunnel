@@ -45,32 +45,66 @@ import {
   type LeadRotation, type RotationSlot,
 } from "@/features/rodizio/hooks";
 
-function presenceDotClass(s?: "online" | "away" | "offline") {
+type PresenceStatus = "online" | "away" | "offline";
+
+function presenceDotClass(s?: PresenceStatus) {
   if (s === "online") return "bg-emerald-500";
   if (s === "away") return "bg-amber-500";
-  return "bg-rose-500";
+  return "bg-muted-foreground/50";
+}
+
+function presenceLabel(s?: PresenceStatus) {
+  if (s === "online") return "Online";
+  if (s === "away") return "Ausente";
+  return "Offline";
+}
+
+function relativeFromNow(iso?: string | null) {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const diff = Math.max(0, Date.now() - t);
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "agora há pouco";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `há ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h} h`;
+  const d = Math.floor(h / 24);
+  return `há ${d} d`;
 }
 
 function MemberBadge({
-  member, presence,
-}: { member?: WorkspaceMember; presence?: "online" | "away" | "offline" }) {
+  member, presence, lastSeenAt,
+}: { member?: WorkspaceMember; presence?: PresenceStatus; lastSeenAt?: string | null }) {
   const name = member?.display_name || member?.email || "Usuário";
   const initial = name.trim().charAt(0).toUpperCase();
+  const rel = relativeFromNow(lastSeenAt);
+  const tip = presence === "online"
+    ? "Online agora"
+    : `${presenceLabel(presence)}${rel ? ` · visto ${rel}` : ""}`;
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <div className="relative shrink-0">
-        <Avatar className="h-7 w-7">
-          {member?.avatar_url && <AvatarImage src={member.avatar_url} />}
-          <AvatarFallback className="text-[10px]">{initial}</AvatarFallback>
-        </Avatar>
-        <span className={cn(
-          "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-background",
-          presenceDotClass(presence),
-        )} />
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="relative shrink-0">
+            <Avatar className="h-7 w-7">
+              {member?.avatar_url && <AvatarImage src={member.avatar_url} />}
+              <AvatarFallback className="text-[10px]">{initial}</AvatarFallback>
+            </Avatar>
+            <span className={cn(
+              "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-background",
+              presenceDotClass(presence),
+            )} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top">{tip}</TooltipContent>
+      </Tooltip>
       <div className="min-w-0">
         <div className="text-sm font-medium truncate">{name}</div>
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{presence ?? "offline"}</div>
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+          {presenceLabel(presence)}{presence !== "online" && rel ? ` · ${rel}` : ""}
+        </div>
       </div>
     </div>
   );
@@ -79,13 +113,14 @@ function MemberBadge({
 const SLOT_GRID = "grid grid-cols-[28px_36px_88px_1fr_150px_64px_40px] gap-2 items-center";
 
 function SlotRow({
-  slot, index, member, presence, activeCount, rotationActive, todayCount,
+  slot, index, member, presence, lastSeenAt, activeCount, rotationActive, todayCount,
   onToggleActive, onToggleSkip, onDelete,
 }: {
   slot: RotationSlot;
   index: number;
   member?: WorkspaceMember;
-  presence?: "online" | "away" | "offline";
+  presence?: PresenceStatus;
+  lastSeenAt?: string | null;
   activeCount: number;
   rotationActive: boolean;
   todayCount: number;
@@ -118,7 +153,7 @@ function SlotRow({
         <Switch checked={slot.is_active} onCheckedChange={handleToggleActive} />
         <span className="text-xs text-muted-foreground">Ativo</span>
       </div>
-      <MemberBadge member={member} presence={presence} />
+      <MemberBadge member={member} presence={presence} lastSeenAt={lastSeenAt} />
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex items-center gap-2">
@@ -146,7 +181,7 @@ function ChannelRotationCard({
   channel: ChannelRow;
   members: WorkspaceMember[];
   membersMap: Record<string, WorkspaceMember>;
-  presence: Record<string, { status: "online" | "away" | "offline" }>;
+  presence: Record<string, { status: PresenceStatus; last_seen_at?: string | null }>;
 }) {
   const { current } = useWorkspace();
   const { data: rotations = [] } = useRotations();
@@ -310,6 +345,7 @@ function ChannelRotationCard({
                       index={idx}
                       member={membersMap[s.user_id]}
                       presence={presence[s.user_id]?.status}
+                      lastSeenAt={presence[s.user_id]?.last_seen_at}
                       activeCount={activeCount}
                       rotationActive={rotation?.is_active ?? false}
                       todayCount={countsByUser[s.user_id] ?? 0}
