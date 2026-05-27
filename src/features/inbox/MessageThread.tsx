@@ -4,8 +4,9 @@ import { ptBR } from "date-fns/locale";
 import {
   FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon,
   RefreshCw, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
-  User as UserIcon, Phone,
+  User as UserIcon, Phone, Mic,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -291,16 +292,45 @@ function parseWaveform(b64?: string): number[] {
   }
 }
 
-function AudioMessage({ m }: { m: MessageRow }) {
+function AudioAvatar({ url, fallback, ptt }: { url?: string | null; fallback: string; ptt: boolean }) {
+  return (
+    <div className="relative w-8 h-8 flex-shrink-0">
+      {url ? (
+        <img src={url} className="w-8 h-8 rounded-full object-cover" alt="" />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-800 text-xs font-medium">
+          {fallback}
+        </div>
+      )}
+      {ptt && (
+        <div
+          className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#53bdeb] flex items-center justify-center"
+          style={{ border: "2px solid var(--wa-bubble-in-bg)" }}
+        >
+          <Mic className="w-2 h-2 text-white" strokeWidth={3} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AudioMessage({ m, isOut, contactAvatar, channelAvatar }: {
+  m: MessageRow;
+  isOut: boolean;
+  contactAvatar?: string | null;
+  channelAvatar?: string | null;
+}) {
   const p = (m.payload ?? {}) as Record<string, unknown>;
   const mediaUrl = p.media_url as string | undefined;
-  const seconds = (p.seconds as number | undefined) ?? 0;
+  const initialSeconds = (p.seconds as number | undefined) ?? 0;
   const waveform = p.waveform as string | undefined;
   const ptt = (p.ptt as boolean | undefined) ?? false;
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(seconds);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(initialSeconds);
+  const [speed, setSpeed] = useState(1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const waveformRef = useRef<HTMLDivElement | null>(null);
   const bars = useMemo(() => parseWaveform(waveform), [waveform]);
 
   if (!mediaUrl) return (
@@ -309,52 +339,112 @@ function AudioMessage({ m }: { m: MessageRow }) {
     </span>
   );
 
-  const toggle = () => {
+  const togglePlay = () => {
     const a = audioRef.current; if (!a) return;
-    if (playing) { a.pause(); setPlaying(false); }
-    else { void a.play(); setPlaying(true); }
+    if (playing) {
+      a.pause();
+      setPlaying(false);
+    } else {
+      a.playbackRate = speed;
+      void a.play();
+      setPlaying(true);
+    }
   };
-  const cur = duration > 0 ? Math.floor(duration * progress) : 0;
+
+  const cycleSpeed = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1;
+    setSpeed(next);
+    if (audioRef.current) audioRef.current.playbackRate = next;
+  };
+
+  const onWaveClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = waveformRef.current; const a = audioRef.current;
+    if (!el || !a || !duration) return;
+    const rect = el.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    a.currentTime = pct * duration;
+    setCurrentTime(a.currentTime);
+  };
+
+  const progress = duration > 0 ? currentTime / duration : 0;
+  const playedBars = Math.floor(progress * bars.length);
+  const currentDisplay = playing || currentTime > 0 ? formatDuration(Math.floor(currentTime)) : formatDuration(duration);
+
+  const contactFallback = "?";
+  const avatar = (
+    <AudioAvatar
+      url={isOut ? channelAvatar : contactAvatar}
+      fallback={isOut ? "E" : contactFallback}
+      ptt={ptt}
+    />
+  );
+
   return (
-    <div className="flex items-center gap-2 min-w-[230px]">
-      {ptt && (
-        <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-          <UserIcon className="h-4 w-4 text-emerald-700" />
-        </div>
-      )}
-      <button onClick={toggle} className="h-8 w-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center shrink-0">
-        {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+    <div className="flex items-center gap-2 min-w-[260px] max-w-[330px] py-1 pb-4 relative">
+      {isOut && avatar}
+      <button
+        onClick={playing && speed > 1 ? cycleSpeed : togglePlay}
+        onDoubleClick={cycleSpeed}
+        className="w-7 h-7 flex items-center justify-center flex-shrink-0"
+        title={playing ? `${speed}x — clique pra mudar velocidade` : "Reproduzir"}
+      >
+        {playing && speed > 1 ? (
+          <span className="text-[12px] font-bold" style={{ color: "#54656f" }}>{speed}x</span>
+        ) : playing ? (
+          <Pause className="w-5 h-5" fill="currentColor" style={{ color: "#54656f" }} />
+        ) : (
+          <Play className="w-5 h-5 ml-0.5" fill="currentColor" style={{ color: "#54656f" }} />
+        )}
       </button>
-      <div className="flex items-end gap-[2px] h-7 flex-1">
+      <div
+        ref={waveformRef}
+        onClick={onWaveClick}
+        className="flex-1 relative flex items-center gap-[2px] h-8 cursor-pointer"
+      >
         {bars.map((h, i) => {
-          const passed = i / bars.length < progress;
+          const isPlayed = i <= playedBars;
           return (
-            <span
+            <div
               key={i}
-              className={cn("w-[2px] rounded-full", passed ? "bg-sky-500" : "bg-black/30")}
-              style={{ height: `${Math.max(15, h * 100)}%` }}
+              className="rounded-full"
+              style={{
+                width: "2px",
+                height: `${Math.max(4, h * 26)}px`,
+                background: isPlayed ? "#54656f" : "#a8a8a8",
+              }}
             />
           );
         })}
+        <div
+          className="absolute w-2.5 h-2.5 rounded-full bg-[#53bdeb] shadow-md pointer-events-none"
+          style={{
+            left: `calc(${progress * 100}% - 5px)`,
+            top: "50%",
+            transform: "translateY(-50%)",
+          }}
+        />
+        <span className="absolute -bottom-4 left-0 text-[11px] tabular-nums" style={{ color: "#667781" }}>
+          {currentDisplay}
+        </span>
       </div>
-      <span className="text-[11px] tabular-nums opacity-70 shrink-0">
-        {playing || progress > 0 ? formatDuration(cur) : formatDuration(duration)}
-      </span>
+      {!isOut && avatar}
       <MediaWithRefresh
         messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
         render={(u, onError) => (
           <audio
             ref={audioRef} src={u} preload="metadata" className="hidden"
             onError={onError}
-            onLoadedMetadata={(e) => { const d = e.currentTarget.duration; if (isFinite(d)) setDuration(d); }}
-            onTimeUpdate={(e) => { if (duration > 0) setProgress(e.currentTarget.currentTime / duration); }}
-            onEnded={() => { setPlaying(false); setProgress(0); }}
+            onLoadedMetadata={(e) => { const d = e.currentTarget.duration; if (isFinite(d) && d > 0) setDuration(d); }}
+            onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+            onEnded={() => { setPlaying(false); setCurrentTime(0); }}
           />
         )}
       />
     </div>
   );
 }
+
 
 /* ============================== Document ============================== */
 
@@ -534,12 +624,14 @@ function ReactionMessage({ m }: { m: MessageRow }) {
 
 const MEDIA_TYPES = new Set(["image", "audio", "video", "document", "sticker", "location", "contact"]);
 
-function renderBody(m: MessageRow, query: string) {
+type RenderCtx = { contactAvatar?: string | null; channelAvatar?: string | null };
+
+function renderBody(m: MessageRow, query: string, ctx: RenderCtx = {}) {
+  const isOut = m.direction === "out";
   switch (m.type) {
     case "text": {
       const body = ((m.payload ?? {}) as Record<string, unknown>).body as string | undefined;
       const text = body ?? "";
-      // emoji-only short → larger
       const onlyEmoji = /^[\p{Emoji}\s]{1,6}$/u.test(text);
       return (
         <span className={cn("whitespace-pre-wrap break-words", onlyEmoji && "text-3xl leading-tight")}>
@@ -549,7 +641,7 @@ function renderBody(m: MessageRow, query: string) {
     }
     case "image":    return <ImageMessage m={m} query={query} />;
     case "video":    return <VideoMessage m={m} query={query} />;
-    case "audio":    return <AudioMessage m={m} />;
+    case "audio":    return <AudioMessage m={m} isOut={isOut} contactAvatar={ctx.contactAvatar} channelAvatar={ctx.channelAvatar} />;
     case "document": return <DocumentMessage m={m} />;
     case "sticker":  return <StickerMessage m={m} />;
     case "location": return <LocationMessage m={m} />;
@@ -566,15 +658,19 @@ function renderBody(m: MessageRow, query: string) {
   }
 }
 
+
 /* ============================== Main ============================== */
 
 type Props = {
   messages: MessageRow[];
   searchQuery?: string;
   activeMatchId?: string | null;
+  contactAvatar?: string | null;
+  channelAvatar?: string | null;
 };
 
-export function MessageThread({ messages: rawMessages, searchQuery = "", activeMatchId = null }: Props) {
+export function MessageThread({ messages: rawMessages, searchQuery = "", activeMatchId = null, contactAvatar = null, channelAvatar = null }: Props) {
+
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
@@ -733,7 +829,7 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
 
                 {isSticker || isReaction ? (
                   <div className={cn("relative max-w-[75%]", isActive && "ring-2 ring-yellow-400 rounded-md")}>
-                    {renderBody(m, searchQuery)}
+                    {renderBody(m, searchQuery, { contactAvatar, channelAvatar })}
                     <div className={cn("mt-0.5 flex items-center gap-1 text-[10px] opacity-70", out ? "justify-end" : "justify-start")}>
                       <span>{format(new Date(m.created_at), "HH:mm")}</span>
                       {out && <StatusChecks status={m.status} />}
@@ -766,7 +862,7 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
                           {quoted && <QuotedPreview quoted={quoted} />}
                         </div>
                       )}
-                      <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
+                      <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery, { contactAvatar, channelAvatar })}</div>
                       <div
                         className={cn(
                           "float-right ml-2 mt-1 flex items-center gap-1 -mb-0.5",
