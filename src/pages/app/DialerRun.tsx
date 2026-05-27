@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Phone, PhoneOff, Pause, ChevronRight, Loader2, Copy, CheckCircle2,
+  ArrowLeft, Phone, PhoneOff, Pause, Square, ChevronRight, ChevronsRight, Loader2, Copy, CheckCircle2,
   Sparkles, AlertTriangle, Target as TargetIcon, MessageSquare, Search, X,
   Minimize2, Maximize2, RefreshCw,
 } from "lucide-react";
@@ -196,20 +196,13 @@ export default function DialerRun() {
     navigate("/discador");
   }, [id, setStatus, navigate]);
 
-  /* --------- Keyboard shortcuts --------- */
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if (e.key === "Escape") { setCoachHidden(true); return; }
-      if (e.key === "l" || e.key === "L") { if (runState === "idle") { e.preventDefault(); void startCall(); } }
-      if (e.key === "x" || e.key === "X") { if (runState === "in_call" || runState === "dialing") { e.preventDefault(); void endCall(); } }
-      if (e.key === "n" || e.key === "N") { e.preventDefault(); void loadNext(); }
-      if (e.key === "p" || e.key === "P") { e.preventDefault(); void pauseCampaign(); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [runState, startCall, endCall, loadNext, pauseCampaign]);
+  const endCampaign = useCallback(async () => {
+    if (!id) return;
+    if (!confirm("Encerrar campanha? Isso marcará como concluída.")) return;
+    await setStatus.mutateAsync({ id, status: "completed" });
+    navigate("/discador");
+  }, [id, setStatus, navigate]);
+
 
   const insertIntoComposer = useCallback((text: string) => {
     if (!currentItem?.conversation_id) {
@@ -265,7 +258,6 @@ export default function DialerRun() {
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md gap-2 h-11 px-5 font-semibold"
             >
               <Phone className="h-4 w-4" /> LIGAR
-              <kbd className="ml-1 text-[10px] opacity-80 bg-white/15 px-1 rounded">L</kbd>
             </Button>
           )}
 
@@ -285,7 +277,6 @@ export default function DialerRun() {
               <CallTimer startedAt={callStartedAt} className="text-sm font-mono font-semibold tabular-nums" />
               <Button size="sm" variant="destructive" onClick={endCall} className="gap-1 h-8">
                 <PhoneOff className="h-3.5 w-3.5" /> Encerrar
-                <kbd className="ml-1 text-[10px] opacity-80 bg-white/15 px-1 rounded">X</kbd>
               </Button>
             </div>
           )}
@@ -295,13 +286,15 @@ export default function DialerRun() {
             onClick={loadNext}
             className="bg-primary text-primary-foreground shadow gap-2 h-11 px-4 font-semibold"
           >
-            Próximo <ChevronRight className="h-4 w-4" />
-            <kbd className="text-[10px] opacity-80 bg-white/15 px-1 rounded">N</kbd>
+            Próximo lead <ChevronRight className="h-4 w-4" />
           </Button>
 
           <Button size="lg" variant="outline" onClick={pauseCampaign} className="gap-2 h-11">
             <Pause className="h-4 w-4" /> Pausar
-            <kbd className="text-[10px] opacity-70 border rounded px-1">P</kbd>
+          </Button>
+
+          <Button size="lg" variant="outline" onClick={endCampaign} className="gap-2 h-11 text-destructive hover:text-destructive">
+            <Square className="h-4 w-4" /> Encerrar
           </Button>
         </div>
       </header>
@@ -331,11 +324,14 @@ export default function DialerRun() {
               const isCurrent = q.id === currentItem?.id;
               const isDone = q.status === "completed";
               return (
-                <button
+                <div
                   key={q.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => selectLead(q)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectLead(q); } }}
                   className={cn(
-                    "w-full text-left p-2.5 flex items-center gap-2.5 border-b transition-colors hover:bg-muted/50",
+                    "group w-full text-left p-2.5 flex items-center gap-2.5 border-b transition-colors hover:bg-muted/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     isCurrent && "bg-primary/10 border-l-2 border-l-primary",
                     isDone && !isCurrent && "opacity-50",
                   )}
@@ -366,7 +362,17 @@ export default function DialerRun() {
                       {q.outcome === "reagendar" && <Badge className="bg-sky-500/15 text-sky-700 border-sky-500/30 text-[9px] h-3.5 px-1">Reagendar</Badge>}
                     </div>
                   </div>
-                </button>
+                  {q.status === "pending" && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); void loadNext(); }}
+                      title="Pular este lead"
+                      className="opacity-0 group-hover:opacity-100 h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -578,7 +584,7 @@ export default function DialerRun() {
 
               <footer className="bg-muted/40 px-3 py-1.5 text-[10px] text-muted-foreground border-t flex items-center justify-between">
                 <span>Powered by AI</span>
-                <span className="opacity-60">Esc para fechar</span>
+                <span className="opacity-60">AI Coach</span>
               </footer>
             </>
           )}
@@ -634,20 +640,6 @@ function OutcomeModal({
     if (open) { setOutcome(null); setNotes(""); setSendAuto(defaultAutoMsg); setReagendarAt(""); }
   }, [open, defaultAutoMsg]);
 
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT")) return;
-      if (e.key === "1") setOutcome("atendeu");
-      if (e.key === "2") setOutcome("nao_atendeu");
-      if (e.key === "3") setOutcome("reagendar");
-      if (e.key === "4") setOutcome("convertido");
-      if (e.key === "5") setOutcome("sem_interesse");
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [open]);
 
   const save = async () => {
     if (!queueId || !outcome) { toast.error("Selecione o resultado"); return; }
@@ -667,12 +659,12 @@ function OutcomeModal({
     }
   };
 
-  const options: { v: QueueOutcome; label: string; cls: string; key: string }[] = [
-    { v: "atendeu", label: "Atendeu", cls: "bg-emerald-500/15 border-emerald-500 text-emerald-700 hover:bg-emerald-500/25", key: "1" },
-    { v: "nao_atendeu", label: "Não atendeu", cls: "bg-slate-500/15 border-slate-400 text-slate-700 hover:bg-slate-500/25", key: "2" },
-    { v: "reagendar", label: "Reagendar", cls: "bg-amber-500/15 border-amber-500 text-amber-700 hover:bg-amber-500/25", key: "3" },
-    { v: "convertido", label: "Convertido", cls: "bg-emerald-600/20 border-emerald-600 text-emerald-800 hover:bg-emerald-600/30 font-semibold", key: "4" },
-    { v: "sem_interesse", label: "Sem interesse", cls: "bg-red-500/15 border-red-500 text-red-700 hover:bg-red-500/25", key: "5" },
+  const options: { v: QueueOutcome; label: string; cls: string }[] = [
+    { v: "atendeu", label: "Atendeu", cls: "bg-emerald-500/15 border-emerald-500 text-emerald-700 hover:bg-emerald-500/25" },
+    { v: "nao_atendeu", label: "Não atendeu", cls: "bg-slate-500/15 border-slate-400 text-slate-700 hover:bg-slate-500/25" },
+    { v: "reagendar", label: "Reagendar", cls: "bg-amber-500/15 border-amber-500 text-amber-700 hover:bg-amber-500/25" },
+    { v: "convertido", label: "Convertido", cls: "bg-emerald-600/20 border-emerald-600 text-emerald-800 hover:bg-emerald-600/30 font-semibold" },
+    { v: "sem_interesse", label: "Sem interesse", cls: "bg-red-500/15 border-red-500 text-red-700 hover:bg-red-500/25" },
   ];
 
   return (
@@ -689,12 +681,11 @@ function OutcomeModal({
                 key={o.v}
                 onClick={() => setOutcome(o.v)}
                 className={cn(
-                  "p-3 rounded-md border-2 text-sm transition-all relative",
+                  "p-3 rounded-md border-2 text-sm transition-all",
                   o.cls,
                   outcome === o.v && "ring-2 ring-offset-1 ring-primary",
                 )}
               >
-                <span className="absolute top-1 left-1.5 text-[10px] opacity-60">{o.key}</span>
                 {o.label}
               </button>
             ))}
@@ -720,11 +711,11 @@ function OutcomeModal({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={save} disabled={!outcome || setOutcomeM.isPending} className="gap-1">
+        <DialogFooter className="flex-col sm:flex-col gap-2">
+          <Button onClick={save} disabled={!outcome || setOutcomeM.isPending} className="gap-1 w-full bg-primary text-primary-foreground">
             <CheckCircle2 className="h-4 w-4" /> Salvar e próximo
           </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full">Cancelar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
