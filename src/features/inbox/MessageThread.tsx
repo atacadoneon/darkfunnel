@@ -862,7 +862,7 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
                           {quoted && <QuotedPreview quoted={quoted} />}
                         </div>
                       )}
-                      <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
+                      <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery, { contactAvatar, channelAvatar })}</div>
                       <div
                         className={cn(
                           "float-right ml-2 mt-1 flex items-center gap-1 -mb-0.5",
