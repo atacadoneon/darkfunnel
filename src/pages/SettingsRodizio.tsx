@@ -113,13 +113,14 @@ function MemberBadge({
 const SLOT_GRID = "grid grid-cols-[28px_36px_88px_1fr_150px_64px_40px] gap-2 items-center";
 
 function SlotRow({
-  slot, index, member, presence, activeCount, rotationActive, todayCount,
+  slot, index, member, presence, lastSeenAt, activeCount, rotationActive, todayCount,
   onToggleActive, onToggleSkip, onDelete,
 }: {
   slot: RotationSlot;
   index: number;
   member?: WorkspaceMember;
-  presence?: "online" | "away" | "offline";
+  presence?: PresenceStatus;
+  lastSeenAt?: string | null;
   activeCount: number;
   rotationActive: boolean;
   todayCount: number;
@@ -152,7 +153,7 @@ function SlotRow({
         <Switch checked={slot.is_active} onCheckedChange={handleToggleActive} />
         <span className="text-xs text-muted-foreground">Ativo</span>
       </div>
-      <MemberBadge member={member} presence={presence} />
+      <MemberBadge member={member} presence={presence} lastSeenAt={lastSeenAt} />
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex items-center gap-2">
