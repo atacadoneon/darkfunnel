@@ -108,6 +108,23 @@ export function InboxFilters({ filters, onChange, resultCount }: Props) {
         />
       </div>
 
+      <div className="flex items-center gap-1">
+        {(["all","whatsapp","instagram"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => update("channelKind", k)}
+            className={`h-6 px-2 rounded-full text-[10px] border transition-colors ${
+              filters.channelKind === k
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-input hover:bg-muted"
+            }`}
+          >
+            {k === "all" ? "Todos" : k === "whatsapp" ? "WhatsApp" : "Instagram"}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-center gap-2">
         <Popover>
           <PopoverTrigger asChild>
