@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog, History } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog, History, Facebook, Send as TelegramIcon, Mail, Code } from "lucide-react";
 import { ImportHistoryDialog } from "@/features/channels/ImportHistoryDialog";
 import { isFeatureEnabled } from "@/lib/workspace-features";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useChannels, type ChannelRow, type ChannelStatus } from "@/features/channels/hooks";
 import { ChannelDialog } from "@/features/channels/ChannelDialog";
+import { InstagramConnectCard, ComingSoonChannel } from "@/features/channels/InstagramConnectCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
