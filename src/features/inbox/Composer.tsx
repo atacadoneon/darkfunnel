@@ -113,6 +113,18 @@ export function Composer({ conversation }: Props) {
     return () => window.removeEventListener("inbox:reply", handler as EventListener);
   }, []);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { text: string; conversationId?: string } | undefined;
+      if (!detail?.text) return;
+      if (detail.conversationId && detail.conversationId !== conversation.id) return;
+      setText((prev) => (prev ? `${prev}\n${detail.text}` : detail.text));
+      setTimeout(() => ref.current?.focus(), 0);
+    };
+    window.addEventListener("inbox:insert-text", handler as EventListener);
+    return () => window.removeEventListener("inbox:insert-text", handler as EventListener);
+  }, [conversation.id]);
+
   const handleFile = (f: File | undefined | null) => {
     if (!f) return;
     if (!isUazapi && !isInstagram) {

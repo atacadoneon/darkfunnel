@@ -301,3 +301,54 @@ export function useLastMessagesByConversation(conversationIds: string[]) {
   return query;
 }
 
+/**
+ * Fetch a single conversation row with the same shape used by the inbox list,
+ * so the same Composer / Header / ContactPanel components can be reused in
+ * other surfaces (e.g. the dialer operating screen).
+ */
+export function useConversationById(conversationId: string | null) {
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: ["conversation", conversationId],
+    enabled: !!conversationId,
+    queryFn: async (): Promise<ConversationRow | null> => {
+      const { data, error } = await supabase
+        .from("conversations")
+        .select(
+          "id,contact_id,channel_id,status,unread_count,last_message_at,last_inbound_at,last_outbound_at,window_expires_at,assigned_user_id,attribution_source,created_at,updated_at,contacts(display_name,phone_e164,profile_pic_url,profile_pic_preview_url,contact_tags(tag_id),deals(id,value_cents,title,status,pipeline_stages(name,color))),channels(kind,display_name),messages(direction,type,payload,status,created_at)"
+        )
+        .eq("id", conversationId!)
+        .order("created_at", { foreignTable: "messages", ascending: false })
+        .limit(1, { foreignTable: "messages" })
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const row = data as unknown as ConversationRow & {
+        messages?: Array<{ direction: "in" | "out"; type: string; payload: Record<string, unknown> | null; status: string; created_at: string }>;
+        contacts: (NonNullable<ConversationRow["contacts"]> & { deals?: Array<{ id: string; value_cents: number | null; title: string | null; status: string | null; pipeline_stages: { name: string | null; color: string | null } | null }> }) | null;
+      };
+      const m = row.messages?.[0];
+      row.last_message_preview = m ? formatLastMessagePreview(m.direction, m.type, m.payload) : null;
+      row.last_message_direction = m?.direction ?? null;
+      row.last_message_status = m?.status ?? null;
+      const openDeals = (row.contacts?.deals ?? []).filter((d) => d.status === "open");
+      row.open_deals = openDeals.length ? openDeals.map((d) => ({ id: d.id, value_cents: d.value_cents, title: d.title, pipeline_stages: d.pipeline_stages })) : null;
+      return row as ConversationRow;
+    },
+    staleTime: 10_000,
+  });
+
+  useEffect(() => {
+    if (!conversationId) return;
+    const ch = supabase
+      .channel(`conv-one:${conversationId}:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversations", filter: `id=eq.${conversationId}` },
+        () => qc.invalidateQueries({ queryKey: ["conversation", conversationId] }))
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [conversationId, qc]);
+
+  return query;
+}
+
+
