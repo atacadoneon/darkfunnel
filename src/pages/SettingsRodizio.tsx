@@ -266,7 +266,7 @@ function ChannelRotationCard({
         )}
       </button>
 
-      {open && (
+      {isOpen && (
         <CardContent className="border-t pt-4 space-y-4">
           {!rotation ? (
             <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center space-y-3">
