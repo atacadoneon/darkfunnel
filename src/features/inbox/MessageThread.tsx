@@ -1,90 +1,43 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon, RefreshCw, Reply, Forward } from "lucide-react";
+import {
+  FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon,
+  RefreshCw, Reply, Forward, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
+  User as UserIcon, Phone,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MessageStatusIcon } from "@/components/messages/MessageStatusIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
 import type { MessageRow } from "./hooks";
 
-function RefreshMediaButton({ messageId, conversationId, onRefreshed }: { messageId: string; conversationId: string; onRefreshed: (url: string) => void }) {
-  const [loading, setLoading] = useState(false);
-  const qc = useQueryClient();
-  return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      disabled={loading}
-      onClick={async () => {
-        setLoading(true);
-        const { data, error } = await supabase.functions.invoke("refresh-media", { body: { message_id: messageId } });
-        setLoading(false);
-        if (error || !data?.ok || !data?.media_url) {
-          toast.error("Não foi possível recarregar a mídia");
-          return;
-        }
-        onRefreshed(data.media_url as string);
-        qc.invalidateQueries({ queryKey: ["messages", conversationId] });
-        toast.success(data.persisted_in_storage ? "Mídia recarregada e armazenada" : "Mídia recarregada");
-      }}
-    >
-      <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
-      Recarregar mídia
-    </Button>
-  );
-}
-
-function MediaWithRefresh({
-  messageId,
-  conversationId,
-  url,
-  render,
-}: {
-  messageId: string;
-  conversationId: string;
-  url: string;
-  render: (currentUrl: string, onError: () => void) => React.ReactNode;
-}) {
-  const [currentUrl, setCurrentUrl] = useState(url);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => { setCurrentUrl(url); setFailed(false); }, [url]);
-  useEffect(() => {
-    let cancelled = false;
-    fetch(currentUrl, { method: "HEAD" })
-      .then((r) => { if (!cancelled && (r.status === 404 || r.status === 410)) setFailed(true); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [currentUrl]);
-  if (failed) {
-    return (
-      <div className="flex flex-col items-start gap-2 rounded-md border bg-background/40 p-2">
-        <span className="text-xs opacity-70">Mídia expirada ou indisponível.</span>
-        <RefreshMediaButton
-          messageId={messageId}
-          conversationId={conversationId}
-          onRefreshed={(u) => { setCurrentUrl(u); setFailed(false); }}
-        />
-      </div>
-    );
-  }
-  return <>{render(currentUrl, () => setFailed(true))}</>;
-}
-
+/* ============================== Helpers ============================== */
 
 function dayLabel(d: Date): string {
   if (isToday(d)) return "Hoje";
   if (isYesterday(d)) return "Ontem";
   const diff = differenceInCalendarDays(new Date(), d);
   if (diff < 7) return format(d, "EEEE", { locale: ptBR }).replace(/^./, (c) => c.toUpperCase());
-  return format(d, "dd/MM/yyyy");
+  return format(d, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
 }
 
+function formatBytes(b?: number) {
+  if (!b && b !== 0) return null;
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${Math.round(b / 1024)} kB`;
+  return `${(b / 1024 / 1024).toFixed(1)} MB`;
+}
 
+function formatDuration(s?: number) {
+  if (!s && s !== 0) return "0:00";
+  const m = Math.floor(s / 60);
+  const ss = Math.floor(s % 60);
+  return `${m}:${String(ss).padStart(2, "0")}`;
+}
 
 function highlight(text: string, query: string) {
   if (!query || query.length < 2) return text;
@@ -95,142 +48,460 @@ function highlight(text: string, query: string) {
   );
 }
 
-function unavailable(Icon: typeof FileText, label: string) {
+function linkify(text: string) {
+  const re = /(https?:\/\/[^\s]+)/g;
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(
+      <a key={m.index} href={m[0]} target="_blank" rel="noreferrer" className="wa-link">
+        {m[0]}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+/* ============================== Bubble tail SVG ============================== */
+
+function BubbleTail({ side }: { side: "left" | "right" }) {
+  const fill = side === "right" ? "var(--wa-bubble-out-bg)" : "var(--wa-bubble-in-bg)";
+  if (side === "right") {
+    return (
+      <svg className="wa-tail-out" viewBox="0 0 8 13" aria-hidden>
+        <path d="M0 0h5l3 13C5 11 1 7 0 0z" fill={fill} />
+      </svg>
+    );
+  }
   return (
-    <span className="inline-flex items-center gap-1.5 italic opacity-70">
-      <Icon className="h-4 w-4" /> {label} (mídia indisponível)
-    </span>
+    <svg className="wa-tail-in" viewBox="0 0 8 13" aria-hidden>
+      <path d="M8 0H3L0 13c3-2 7-6 8-13z" fill={fill} />
+    </svg>
   );
 }
 
-function renderBody(m: MessageRow, query: string) {
-  const p = (m.payload ?? {}) as Record<string, unknown>;
-  const mediaUrl = (p.media_url as string | undefined) || undefined;
-  const caption = (p.body as string | undefined) || (p.caption as string | undefined) || "";
+/* ============================== Status checks ============================== */
 
-  if (m.type === "text")
-    return <span className="whitespace-pre-wrap break-words">{highlight(String(p.body ?? ""), query)}</span>;
-
-  if (m.type === "image") {
-    if (!mediaUrl) return unavailable(ImageIcon, "📷 imagem");
+function StatusChecks({ status }: { status: string }) {
+  if (status === "failed") return <AlertCircle className="h-3 w-3 text-red-500" aria-label="falhou" />;
+  if (status === "queued" || status === "sending")
+    return <Clock className="h-3 w-3 opacity-70 animate-pulse" aria-label="enviando" />;
+  const isRead = status === "read";
+  const isDelivered = isRead || status === "delivered";
+  const color = isRead ? "var(--wa-check-read)" : "var(--wa-check-sent)";
+  if (isDelivered) {
     return (
-      <div className="space-y-1">
-        <MediaWithRefresh
-          messageId={m.id} conversationId={m.conversation_id}
-          url={mediaUrl}
-          render={(u, onError) => (
-            <a href={u} target="_blank" rel="noreferrer">
-              <img src={u} loading="lazy" onError={onError} className="max-h-80 w-full rounded object-cover" alt={caption || "imagem"} />
-            </a>
-          )}
-        />
-        {caption && <div className="px-1 text-sm whitespace-pre-wrap break-words">{highlight(caption, query)}</div>}
-      </div>
+      <svg width="16" height="11" viewBox="0 0 16 11" aria-label={isRead ? "lida" : "entregue"}>
+        <path d="M11.07 1.84 4.93 8 1.85 4.93l-.92.92L4.93 9.84l7.06-7.08-.92-.92zM15 1.84 8.84 8l-.74-.74 6.16-6.16.74.74z" fill={color}/>
+      </svg>
     );
   }
-
-  if (m.type === "audio") {
-    if (!mediaUrl) return unavailable(Music, "🎙 áudio");
-    const seconds = p.seconds as number | undefined;
-    return (
-      <div className="space-y-1">
-        <MediaWithRefresh
-          messageId={m.id} conversationId={m.conversation_id}
-          url={mediaUrl}
-          render={(u, onError) => (
-            <audio controls preload="metadata" src={u} onError={onError} className="h-10 w-full max-w-[280px]" />
-          )}
-        />
-        <div className="px-1 text-xs opacity-70">🎙 áudio{seconds ? ` · ${seconds}s` : ""}</div>
-      </div>
-    );
-  }
-
-  if (m.type === "video") {
-    if (!mediaUrl) return unavailable(VideoIcon, "🎬 vídeo");
-    return (
-      <div className="space-y-1">
-        <MediaWithRefresh
-          messageId={m.id} conversationId={m.conversation_id}
-          url={mediaUrl}
-          render={(u, onError) => (
-            <video controls preload="metadata" src={u} onError={onError} className="max-h-80 w-full max-w-[320px] rounded" />
-          )}
-        />
-        {caption && <div className="px-1 text-sm whitespace-pre-wrap break-words">{highlight(caption, query)}</div>}
-      </div>
-    );
-  }
-
-  if (m.type === "document") {
-    if (!mediaUrl) return unavailable(FileText, "📎 documento");
-    const filename = (p.filename as string | undefined) || "arquivo";
-    const mime = (p.mime as string | undefined) || "";
-    return (
-      <MediaWithRefresh
-        messageId={m.id} conversationId={m.conversation_id}
-        url={mediaUrl}
-        render={(u) => (
-          <a
-            href={u}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-2 rounded-md border bg-background/40 p-2 hover:bg-background/60 max-w-[300px]"
-          >
-            <FileText className="h-6 w-6 shrink-0 opacity-80" />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">{filename}</div>
-              {mime && <div className="truncate text-xs opacity-60">{mime}</div>}
-            </div>
-            <Download className="h-4 w-4 shrink-0 opacity-70" />
-          </a>
-        )}
-      />
-    );
-  }
-
-  if (m.type === "sticker") {
-    if (!mediaUrl) return unavailable(ImageIcon, "sticker");
-    return (
-      <MediaWithRefresh
-        messageId={m.id} conversationId={m.conversation_id}
-        url={mediaUrl}
-        render={(u, onError) => (
-          <img src={u} onError={onError} className="h-32 w-32 rounded object-contain" alt="sticker" />
-        )}
-      />
-    );
-  }
-
-
-  if (m.type === "location") {
-    const lat = p.lat as number | undefined;
-    const lng = p.lng as number | undefined;
-    if (lat == null || lng == null) return unavailable(MapPin, "📍 localização");
-    const name = (p.name as string | undefined) || `${lat}, ${lng}`;
-    return (
-      <a
-        href={`https://www.google.com/maps?q=${lat},${lng}`}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-2 rounded-md border bg-background/40 p-2 hover:bg-background/60"
-      >
-        <MapPin className="h-5 w-5 opacity-80" />
-        <span className="text-sm">{name}</span>
-      </a>
-    );
-  }
-
-  if (m.type === "reaction") {
-    const emoji = (p.emoji as string | undefined) || "👍";
-    return <span className="text-2xl">{emoji}</span>;
-  }
-
-  if (m.type === "template") return <span className="italic opacity-80">📋 template ({String(p.name ?? "")})</span>;
-  return <span className="italic opacity-60">[{m.type}]</span>;
+  return (
+    <svg width="16" height="11" viewBox="0 0 16 11" aria-label="enviada">
+      <path d="M10.91 1.84 4.77 8 1.69 4.93l-.92.92 4 4.01 7.06-7.08-.92-.94z" fill={color}/>
+    </svg>
+  );
 }
 
-const MEDIA_TYPES = new Set(["image", "audio", "video", "document", "sticker", "location"]);
+/* ============================== Media refresh wrapper ============================== */
+
+function RefreshMediaButton({ messageId, conversationId, onRefreshed }: { messageId: string; conversationId: string; onRefreshed: (url: string) => void; }) {
+  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+  return (
+    <Button
+      type="button" size="sm" variant="outline" disabled={loading}
+      onClick={async () => {
+        setLoading(true);
+        const { data, error } = await supabase.functions.invoke("refresh-media", { body: { message_id: messageId } });
+        setLoading(false);
+        if (error || !data?.ok || !data?.media_url) { toast.error("Não foi possível recarregar a mídia"); return; }
+        onRefreshed(data.media_url as string);
+        qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+        toast.success("Mídia recarregada");
+      }}
+    >
+      <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
+      Recarregar mídia
+    </Button>
+  );
+}
+
+function MediaWithRefresh({
+  messageId, conversationId, url, render,
+}: {
+  messageId: string; conversationId: string; url: string;
+  render: (currentUrl: string, onError: () => void) => React.ReactNode;
+}) {
+  const [currentUrl, setCurrentUrl] = useState(url);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setCurrentUrl(url); setFailed(false); }, [url]);
+  if (failed) {
+    return (
+      <div className="flex flex-col items-start gap-2 rounded-md border bg-background/40 p-2">
+        <span className="text-xs opacity-70">Mídia expirada ou indisponível.</span>
+        <RefreshMediaButton
+          messageId={messageId} conversationId={conversationId}
+          onRefreshed={(u) => { setCurrentUrl(u); setFailed(false); }}
+        />
+      </div>
+    );
+  }
+  return <>{render(currentUrl, () => setFailed(true))}</>;
+}
+
+/* ============================== Forwarded / Quoted ============================== */
+
+function ForwardedHeader() {
+  return (
+    <div className="flex items-center gap-1 text-[12px] italic mb-1" style={{ color: "var(--wa-forwarded)" }}>
+      <CornerDownRight className="h-3 w-3" /> Encaminhada
+    </div>
+  );
+}
+
+function QuotedPreview({ quoted }: { quoted: { sender?: string; text?: string; type?: string } }) {
+  const preview =
+    quoted.text ||
+    (quoted.type === "image" ? "📷 Foto" :
+     quoted.type === "video" ? "🎬 Vídeo" :
+     quoted.type === "audio" ? "🎙 Áudio" :
+     quoted.type === "document" ? "📄 Documento" : "Mídia");
+  return (
+    <div
+      className="mb-1.5 rounded-md px-2 py-1.5 border-l-4 text-[13px] leading-tight"
+      style={{ background: "var(--wa-quote-bg)", borderColor: "var(--wa-quote-border)" }}
+    >
+      <div className="font-medium" style={{ color: "var(--wa-quote-border)" }}>
+        {quoted.sender || "Você"}
+      </div>
+      <div className="truncate opacity-80">{preview}</div>
+    </div>
+  );
+}
+
+/* ============================== Image with lightbox ============================== */
+
+function ImageMessage({ m, query }: { m: MessageRow; query: string }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const mediaUrl = p.media_url as string | undefined;
+  const caption = (p.body as string | undefined) || (p.caption as string | undefined) || "";
+  const width = p.width as number | undefined;
+  const height = p.height as number | undefined;
+  const thumb = p.thumbnail_b64 as string | undefined;
+  const [open, setOpen] = useState(false);
+  if (!mediaUrl) return (
+    <span className="inline-flex items-center gap-1.5 italic opacity-70 text-sm p-1">
+      <ImageIcon className="h-4 w-4" /> 📷 imagem (indisponível)
+    </span>
+  );
+  const ratio = width && height ? width / height : 4 / 3;
+  const maxW = 330;
+  const displayW = Math.min(maxW, width || maxW);
+  const displayH = displayW / ratio;
+  return (
+    <>
+      <div className="space-y-1">
+        <button
+          type="button" onClick={() => setOpen(true)}
+          className="block overflow-hidden rounded-md bg-black/5"
+          style={{ width: displayW, height: displayH }}
+        >
+          <MediaWithRefresh
+            messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
+            render={(u, onError) => (
+              <img
+                src={u} loading="lazy" onError={onError} alt={caption || "imagem"}
+                className="h-full w-full object-cover"
+                style={thumb ? { backgroundImage: `url(data:image/jpeg;base64,${thumb})`, backgroundSize: "cover" } : undefined}
+              />
+            )}
+          />
+        </button>
+        {caption && (
+          <div className="px-1 text-sm whitespace-pre-wrap break-words">{highlight(caption, query)}</div>
+        )}
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-0 flex items-center justify-center">
+          <button onClick={() => setOpen(false)} className="absolute right-3 top-3 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80">
+            <X className="h-5 w-5" />
+          </button>
+          <a href={mediaUrl} download className="absolute right-14 top-3 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80" target="_blank" rel="noreferrer">
+            <Download className="h-5 w-5" />
+          </a>
+          <img src={mediaUrl} alt={caption || "imagem"} className="max-h-[95vh] max-w-[95vw] object-contain" />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/* ============================== Video ============================== */
+
+function VideoMessage({ m, query }: { m: MessageRow; query: string }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const mediaUrl = p.media_url as string | undefined;
+  const caption = (p.body as string | undefined) || (p.caption as string | undefined) || "";
+  if (!mediaUrl) return (
+    <span className="inline-flex items-center gap-1.5 italic opacity-70 text-sm p-1">
+      <VideoIcon className="h-4 w-4" /> 🎬 vídeo (indisponível)
+    </span>
+  );
+  return (
+    <div className="space-y-1">
+      <MediaWithRefresh
+        messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
+        render={(u, onError) => (
+          <video controls preload="metadata" src={u} onError={onError} className="max-h-80 w-full max-w-[330px] rounded-md" />
+        )}
+      />
+      {caption && <div className="px-1 text-sm whitespace-pre-wrap break-words">{highlight(caption, query)}</div>}
+    </div>
+  );
+}
+
+/* ============================== Audio (PTT + waveform) ============================== */
+
+function parseWaveform(b64?: string): number[] {
+  if (!b64) return Array(40).fill(0.4);
+  try {
+    const bin = atob(b64);
+    const arr: number[] = [];
+    for (let i = 0; i < bin.length; i++) arr.push(bin.charCodeAt(i) / 255);
+    if (arr.length === 0) return Array(40).fill(0.4);
+    // Downsample/upsample to ~40 bars
+    const target = 40;
+    const out: number[] = [];
+    for (let i = 0; i < target; i++) {
+      const idx = Math.floor((i / target) * arr.length);
+      out.push(Math.max(0.15, arr[idx] ?? 0.4));
+    }
+    return out;
+  } catch {
+    return Array(40).fill(0.4);
+  }
+}
+
+function AudioMessage({ m }: { m: MessageRow }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const mediaUrl = p.media_url as string | undefined;
+  const seconds = (p.seconds as number | undefined) ?? 0;
+  const waveform = p.waveform as string | undefined;
+  const ptt = (p.ptt as boolean | undefined) ?? false;
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(seconds);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const bars = useMemo(() => parseWaveform(waveform), [waveform]);
+
+  if (!mediaUrl) return (
+    <span className="inline-flex items-center gap-1.5 italic opacity-70 text-sm p-1">
+      <Music className="h-4 w-4" /> 🎙 áudio (indisponível)
+    </span>
+  );
+
+  const toggle = () => {
+    const a = audioRef.current; if (!a) return;
+    if (playing) { a.pause(); setPlaying(false); }
+    else { void a.play(); setPlaying(true); }
+  };
+  const cur = duration > 0 ? Math.floor(duration * progress) : 0;
+  return (
+    <div className="flex items-center gap-2 min-w-[230px]">
+      {ptt && (
+        <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+          <UserIcon className="h-4 w-4 text-emerald-700" />
+        </div>
+      )}
+      <button onClick={toggle} className="h-8 w-8 rounded-full bg-black/10 hover:bg-black/20 flex items-center justify-center shrink-0">
+        {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+      </button>
+      <div className="flex items-end gap-[2px] h-7 flex-1">
+        {bars.map((h, i) => {
+          const passed = i / bars.length < progress;
+          return (
+            <span
+              key={i}
+              className={cn("w-[2px] rounded-full", passed ? "bg-sky-500" : "bg-black/30")}
+              style={{ height: `${Math.max(15, h * 100)}%` }}
+            />
+          );
+        })}
+      </div>
+      <span className="text-[11px] tabular-nums opacity-70 shrink-0">
+        {playing || progress > 0 ? formatDuration(cur) : formatDuration(duration)}
+      </span>
+      <MediaWithRefresh
+        messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
+        render={(u, onError) => (
+          <audio
+            ref={audioRef} src={u} preload="metadata" className="hidden"
+            onError={onError}
+            onLoadedMetadata={(e) => { const d = e.currentTarget.duration; if (isFinite(d)) setDuration(d); }}
+            onTimeUpdate={(e) => { if (duration > 0) setProgress(e.currentTarget.currentTime / duration); }}
+            onEnded={() => { setPlaying(false); setProgress(0); }}
+          />
+        )}
+      />
+    </div>
+  );
+}
+
+/* ============================== Document ============================== */
+
+function DocumentMessage({ m }: { m: MessageRow }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const mediaUrl = p.media_url as string | undefined;
+  const filename = (p.filename as string | undefined) || "arquivo";
+  const mime = (p.mime as string | undefined) || "";
+  const size = p.size as number | undefined;
+  const pages = p.pages as number | undefined;
+  const ext = (filename.split(".").pop() || mime.split("/").pop() || "FILE").toUpperCase().slice(0, 4);
+  const sizeFmt = formatBytes(size);
+  if (!mediaUrl) return (
+    <span className="inline-flex items-center gap-1.5 italic opacity-70 text-sm p-1">
+      <FileText className="h-4 w-4" /> 📎 documento (indisponível)
+    </span>
+  );
+  return (
+    <MediaWithRefresh
+      messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
+      render={(u) => (
+        <a
+          href={u} target="_blank" rel="noreferrer"
+          className="flex items-center gap-3 rounded-md p-2 min-w-[260px] max-w-[320px] hover:opacity-90 transition-opacity"
+          style={{ background: "var(--wa-doc-bg)" }}
+        >
+          <div className="h-11 w-9 rounded-sm bg-white/80 dark:bg-white/10 flex flex-col items-center justify-center shrink-0 border border-black/10 dark:border-white/10">
+            <FileText className="h-4 w-4 opacity-70" />
+            <span className="text-[8px] font-bold opacity-70 mt-0.5">{ext}</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium">{filename}</div>
+            <div className="truncate text-[11px] opacity-60">
+              {pages ? `${pages} ${pages === 1 ? "página" : "páginas"}` : null}
+              {pages && (ext || sizeFmt) ? " · " : ""}
+              {ext}{sizeFmt ? ` · ${sizeFmt}` : ""}
+            </div>
+          </div>
+          <Download className="h-4 w-4 opacity-70 shrink-0" />
+        </a>
+      )}
+    />
+  );
+}
+
+/* ============================== Sticker / Location / Contact / Reaction ============================== */
+
+function StickerMessage({ m }: { m: MessageRow }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const mediaUrl = p.media_url as string | undefined;
+  if (!mediaUrl) return null;
+  return (
+    <MediaWithRefresh
+      messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
+      render={(u, onError) => (
+        <img src={u} onError={onError} alt="sticker" className="h-24 w-24 object-contain" />
+      )}
+    />
+  );
+}
+
+function LocationMessage({ m }: { m: MessageRow }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const lat = p.lat as number | undefined;
+  const lng = p.lng as number | undefined;
+  if (lat == null || lng == null) return (
+    <span className="inline-flex items-center gap-1.5 italic opacity-70 text-sm p-1">
+      <MapPin className="h-4 w-4" /> 📍 localização (indisponível)
+    </span>
+  );
+  const name = (p.name as string | undefined) || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  const mapImg = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=300x150&markers=${lat},${lng},red-pushpin`;
+  return (
+    <a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noreferrer" className="block w-[260px] rounded-md overflow-hidden">
+      <img src={mapImg} alt="mapa" className="h-[130px] w-full object-cover bg-black/10" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <MapPin className="h-4 w-4 opacity-80 shrink-0" />
+        <span className="text-sm truncate">{name}</span>
+      </div>
+    </a>
+  );
+}
+
+function ContactMessage({ m }: { m: MessageRow }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const vcard = (p.vcard as string | undefined) || "";
+  const displayName = (p.display_name as string | undefined) || "Contato";
+  const telMatch = vcard.match(/TEL[^:]*:([^\r\n]+)/i);
+  const tel = telMatch ? telMatch[1].trim() : null;
+  return (
+    <div className="min-w-[230px]">
+      <div className="flex items-center gap-2 px-1 py-1.5">
+        <div className="h-9 w-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-700 font-medium">
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium truncate text-sm">{displayName}</div>
+          {tel && (
+            <div className="flex items-center gap-1 text-xs opacity-70">
+              <Phone className="h-3 w-3" /> {tel}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReactionMessage({ m }: { m: MessageRow }) {
+  const p = (m.payload ?? {}) as Record<string, unknown>;
+  const emoji = (p.emoji as string | undefined) || "👍";
+  return <span className="text-3xl leading-none">{emoji}</span>;
+}
+
+/* ============================== Body dispatch ============================== */
+
+const MEDIA_TYPES = new Set(["image", "audio", "video", "document", "sticker", "location", "contact"]);
+
+function renderBody(m: MessageRow, query: string) {
+  switch (m.type) {
+    case "text": {
+      const body = ((m.payload ?? {}) as Record<string, unknown>).body as string | undefined;
+      const text = body ?? "";
+      // emoji-only short → larger
+      const onlyEmoji = /^[\p{Emoji}\s]{1,6}$/u.test(text);
+      return (
+        <span className={cn("whitespace-pre-wrap break-words", onlyEmoji && "text-3xl leading-tight")}>
+          {query ? highlight(text, query) : linkify(text)}
+        </span>
+      );
+    }
+    case "image":    return <ImageMessage m={m} query={query} />;
+    case "video":    return <VideoMessage m={m} query={query} />;
+    case "audio":    return <AudioMessage m={m} />;
+    case "document": return <DocumentMessage m={m} />;
+    case "sticker":  return <StickerMessage m={m} />;
+    case "location": return <LocationMessage m={m} />;
+    case "contact":  return <ContactMessage m={m} />;
+    case "reaction": return <ReactionMessage m={m} />;
+    case "template": {
+      const p = (m.payload ?? {}) as Record<string, unknown>;
+      return <span className="italic opacity-80">📋 template ({String(p.name ?? "")})</span>;
+    }
+    case "system":
+      return null;
+    default:
+      return <span className="italic opacity-60">[{m.type}]</span>;
+  }
+}
+
+/* ============================== Main ============================== */
 
 type Props = {
   messages: MessageRow[];
@@ -241,12 +512,10 @@ type Props = {
 export function MessageThread({ messages, searchQuery = "", activeMatchId = null }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
   const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = ref.current; if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
@@ -264,86 +533,114 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
 
   return (
     <>
-    <div
-      ref={ref}
-      className="flex-1 overflow-y-auto overscroll-contain scrollbar-hide p-4 space-y-1 bg-[#efeae2] dark:bg-[#0b141a]"
-    >
-      {messages.map((m, idx) => {
-        const out = m.direction === "out";
-        const prev = messages[idx - 1];
-        const grouped = prev && prev.direction === m.direction;
-        const isActive = m.id === activeMatchId;
-        const isMedia = MEDIA_TYPES.has(m.type);
-        const curDate = new Date(m.created_at);
-        const showDay = !prev || differenceInCalendarDays(curDate, new Date(prev.created_at)) !== 0;
-        return (
-          <div key={m.id}>
-            {showDay && (
-              <div className="flex justify-center my-3">
-                <span className="px-2.5 py-0.5 rounded-md bg-white/80 dark:bg-[#202c33]/80 text-[11px] text-[#54656f] dark:text-white/70 shadow-sm">
-                  {dayLabel(curDate)}
-                </span>
+      <div ref={ref} className="wa-thread flex-1 overflow-y-auto overscroll-contain scrollbar-hide px-[5%] py-4 space-y-0.5">
+        {messages.map((m, idx) => {
+          const out = m.direction === "out";
+          const prev = messages[idx - 1];
+          const next = messages[idx + 1];
+          const showDay = !prev || differenceInCalendarDays(new Date(m.created_at), new Date(prev.created_at)) !== 0;
+          const grouped = prev && prev.direction === m.direction && !showDay;
+          const isLastInGroup = !next || next.direction !== m.direction;
+          const isActive = m.id === activeMatchId;
+          const p = (m.payload ?? {}) as Record<string, unknown>;
+          const forwarded = !!p.forwarded;
+          const quoted = (p.quoted_id || p.quoted_text) ? { sender: p.quoted_sender as string | undefined, text: p.quoted_text as string | undefined, type: p.quoted_type as string | undefined } : null;
+          const isSticker = m.type === "sticker";
+          const isReaction = m.type === "reaction";
+          const isSystem = m.type === "system";
+          const isMedia = MEDIA_TYPES.has(m.type);
+
+          if (isSystem) {
+            return (
+              <div key={m.id} className="flex justify-center my-2">
+                <span className="wa-date-pill">{(p.body as string | undefined) || "—"}</span>
               </div>
-            )}
-            <div
-              ref={(el) => { itemRefs.current[m.id] = el; }}
-              className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped && !showDay ? "mt-0.5" : "mt-2")}
-            >
-              {out && (
-                <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                    <Forward className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
-                    <Reply className="h-3.5 w-3.5" />
-                  </Button>
+            );
+          }
+
+          return (
+            <div key={m.id}>
+              {showDay && (
+                <div className="flex justify-center my-3">
+                  <span className="wa-date-pill">{dayLabel(new Date(m.created_at))}</span>
                 </div>
               )}
               <div
-                className={cn(
-                  "relative max-w-[75%] rounded-lg text-sm shadow-sm transition-shadow",
-                  isMedia ? "p-1.5" : "px-2.5 py-1.5",
-                  out
-                    ? "bg-[#d9fdd3] text-black dark:bg-[#005c4b] dark:text-white"
-                    : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-white",
-                  isActive && "ring-2 ring-yellow-400 ring-offset-1",
-                  (m.payload as Record<string, unknown> | null)?._optimistic && "opacity-70"
-                )}
+                ref={(el) => { itemRefs.current[m.id] = el; }}
+                className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
               >
+                {out && (
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                      <Forward className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
+                      <Reply className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
 
-                <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
-                <div
-                  className={cn(
-                    "float-right -mb-0.5 ml-2 mt-1 flex items-center gap-1 text-[10px]",
-                    out ? "text-[#667781] dark:text-white/60" : "text-[#667781] dark:text-white/50"
-                  )}
-                >
-                  <span>{format(curDate, "HH:mm")}</span>
-                  {out && <MessageStatusIcon status={m.status} />}
-                </div>
+                {isSticker || isReaction ? (
+                  <div className={cn("relative max-w-[75%]", isActive && "ring-2 ring-yellow-400 rounded-md")}>
+                    {renderBody(m, searchQuery)}
+                    <div className={cn("mt-0.5 flex items-center gap-1 text-[10px] opacity-70", out ? "justify-end" : "justify-start")}>
+                      <span>{format(new Date(m.created_at), "HH:mm")}</span>
+                      {out && <StatusChecks status={m.status} />}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      "wa-bubble",
+                      out ? "wa-bubble-out" : "wa-bubble-in",
+                      isMedia ? "p-[3px]" : "px-2 py-[6px]",
+                      isActive && "ring-2 ring-yellow-400 ring-offset-1",
+                      (p as { _optimistic?: boolean })._optimistic && "opacity-70"
+                    )}
+                  >
+                    {isLastInGroup && !grouped && <BubbleTail side={out ? "right" : "left"} />}
+                    {(forwarded || quoted) && (
+                      <div className={cn(isMedia ? "px-1.5 pt-1" : "")}>
+                        {forwarded && <ForwardedHeader />}
+                        {quoted && <QuotedPreview quoted={quoted} />}
+                      </div>
+                    )}
+                    <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
+                    <div
+                      className={cn(
+                        "float-right ml-2 mt-1 flex items-center gap-1 -mb-0.5",
+                        isMedia && "absolute right-2 bottom-1.5 bg-black/35 text-white rounded-md px-1.5 py-[1px]"
+                      )}
+                    >
+                      <span className={cn("wa-time", isMedia && "!text-white !opacity-100")} style={isMedia ? { color: "#fff" } : undefined}>
+                        {format(new Date(m.created_at), "HH:mm")}
+                      </span>
+                      {out && <StatusChecks status={m.status} />}
+                    </div>
+                  </div>
+                )}
+
+                {!out && (
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
+                      <Reply className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
+                      <Forward className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </div>
-              {!out && (
-                <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Responder" onClick={() => handleReply(m)}>
-                    <Reply className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                    <Forward className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
             </div>
+          );
+        })}
+        {messages.length === 0 && (
+          <div className="text-center text-sm text-muted-foreground py-8">
+            Sem mensagens nesta conversa.
           </div>
-        );
-      })}
-      {messages.length === 0 && (
-        <div className="text-center text-sm text-muted-foreground py-8">
-          Sem mensagens nesta conversa.
-        </div>
-      )}
-    </div>
-    <ForwardMessageDialog open={!!forwardMsg} onOpenChange={(v) => { if (!v) setForwardMsg(null); }} message={forwardMsg} />
+        )}
+      </div>
+      <ForwardMessageDialog open={!!forwardMsg} onOpenChange={(v) => { if (!v) setForwardMsg(null); }} message={forwardMsg} />
     </>
   );
 }
-
