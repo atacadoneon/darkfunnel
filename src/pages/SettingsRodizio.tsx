@@ -16,7 +16,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical, Trash2, Plus, Loader2, Users,
-  ChevronDown, ChevronRight, MessageCircle,
+  ChevronDown, ChevronRight, MessageCircle, Phone,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip } from "recharts";
 import { toast } from "sonner";
