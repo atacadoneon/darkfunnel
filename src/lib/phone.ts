@@ -29,7 +29,11 @@ export const PHONE_REQUIRED_MSG = "Telefone é obrigatório";
 export function toZenviaBR(input: string | null | undefined): string {
   if (!input) return "";
   let d = String(input).replace(/\D/g, "");
-  if (d.startsWith("55") && d.length > 11) d = d.slice(2);
+  // Remove country code 55 (com ou sem 9º dígito): "+5548999999999" → "48999999999"
+  if (d.startsWith("55") && (d.length === 12 || d.length === 13)) d = d.slice(2);
+  // Remove prefixo de operadora 0XX: "04832830151" → "4832830151"
+  if (d.startsWith("0") && (d.length === 11 || d.length === 12)) d = d.slice(1);
+  // Remove sufixo zero indevido / espaços já tratados
   return d;
 }
 
