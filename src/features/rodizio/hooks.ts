@@ -6,6 +6,7 @@ import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 export type LeadRotation = {
   id: string;
   workspace_id: string;
+  channel_id: string | null;
   name: string;
   is_active: boolean;
   created_at: string;
