@@ -143,9 +143,9 @@ export function useAssignmentsToday(rotationId: string | null) {
       start.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("rotation_assignments" as never)
-        .select("*")
+        .select("id,rotation_id,workspace_id,assigned_user_id,created_at")
         .eq("rotation_id", rotationId!)
-        .gte("assigned_at", start.toISOString());
+        .gte("created_at", start.toISOString());
       if (error) return [];
       return (data ?? []) as unknown as RotationAssignment[];
     },
