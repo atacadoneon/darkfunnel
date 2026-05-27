@@ -37,6 +37,7 @@ import Dialer from "@/pages/app/Dialer";
 import DialerRun from "@/pages/app/DialerRun";
 import Prospeccao from "@/pages/app/Prospeccao";
 import EquipeOnline from "@/pages/app/EquipeOnline";
+import Payments from "@/pages/app/Payments";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
 import SettingsRodizio from "@/pages/SettingsRodizio";
@@ -121,6 +122,7 @@ const App = () => (
                     <Route path="settings" element={<Settings />} />
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
+                    <Route path="pagamentos" element={<Payments />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="admin" element={<Admin />} />
