@@ -41,6 +41,7 @@ export type InboxFilters = {
   text: string;
   message: string;
   channelId: string | null;
+  channelKind: "all" | "whatsapp" | "instagram";
   assignee: string | null;
   tagId: string | null;
   status: string | null;
@@ -51,6 +52,7 @@ export const DEFAULT_FILTERS: InboxFilters = {
   text: "",
   message: "",
   channelId: null,
+  channelKind: "all",
   assignee: null,
   tagId: null,
   status: null,
