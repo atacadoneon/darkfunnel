@@ -235,8 +235,9 @@ export function useUpdateStage() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (v: { id: string; name?: string; color?: string }) => {
-      const { error } = await supabase.from("pipeline_stages").update(v).eq("id", v.id);
+    mutationFn: async (v: { id: string; name?: string; color?: string; default_objective?: string | null; auto_no_answer_message?: string | null }) => {
+      const { id, ...patch } = v;
+      const { error } = await supabase.from("pipeline_stages").update(patch as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pipeline_stages", current?.id] }),

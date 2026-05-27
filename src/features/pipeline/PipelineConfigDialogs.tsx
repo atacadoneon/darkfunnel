@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Trash2, Plus, Copy, Eye, EyeOff, Webhook, Timer, AlertCircle, X, RefreshCw } from "lucide-react";
+import { Pencil, Trash2, Plus, Copy, Eye, EyeOff, Webhook, Timer, AlertCircle, X, RefreshCw, Target, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useStages } from "./hooks";
@@ -70,19 +71,9 @@ export function StagesDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           </div>
         ) : (
           <>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
               {stages.map((s) => (
-                <div key={s.id} className="flex items-center gap-2 p-2 rounded-md border">
-                  <span className="h-3 w-3 rounded-full" style={{ background: s.color }} />
-                  <Input value={s.name} onChange={(e) => update.mutate({ id: s.id, name: e.target.value })}
-                    className="h-8 border-none focus-visible:ring-0 px-1" />
-                  {s.is_won && <Badge variant="outline" className="text-xs">Ganho</Badge>}
-                  {s.is_lost && <Badge variant="outline" className="text-xs">Perdido</Badge>}
-                  <button onClick={() => { if (confirm(`Remover etapa "${s.name}"? Os leads precisam ser movidos antes.`)) del.mutate(s.id); }}
-                    className="text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                <StageRow key={s.id} stage={s} onUpdate={(patch) => update.mutate({ id: s.id, ...patch })} onDelete={() => { if (confirm(`Remover etapa "${s.name}"? Os leads precisam ser movidos antes.`)) del.mutate(s.id); }} />
               ))}
             </div>
             <DialogFooter>
@@ -92,6 +83,56 @@ export function StagesDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function StageRow({ stage, onUpdate, onDelete }: { stage: any; onUpdate: (p: { name?: string; default_objective?: string | null; auto_no_answer_message?: string | null }) => void; onDelete: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [objective, setObjective] = useState<string>(stage.default_objective ?? "");
+  const [autoMsg, setAutoMsg] = useState<string>(stage.auto_no_answer_message ?? "");
+  return (
+    <div className="rounded-md border">
+      <div className="flex items-center gap-2 p-2">
+        <span className="h-3 w-3 rounded-full" style={{ background: stage.color }} />
+        <Input defaultValue={stage.name} onBlur={(e) => e.target.value !== stage.name && onUpdate({ name: e.target.value })}
+          className="h-8 border-none focus-visible:ring-0 px-1" />
+        {stage.is_won && <Badge variant="outline" className="text-xs">Ganho</Badge>}
+        {stage.is_lost && <Badge variant="outline" className="text-xs">Perdido</Badge>}
+        <button onClick={() => setExpanded((v) => !v)} className="text-muted-foreground hover:text-foreground" title="Configurar Discador">
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+        <button onClick={onDelete} className="text-muted-foreground hover:text-destructive">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      {expanded && (
+        <div className="border-t p-3 space-y-3 bg-muted/30">
+          <div>
+            <Label className="flex items-center gap-1.5 text-xs"><Target className="h-3 w-3" /> Objetivo padrão da etapa</Label>
+            <Textarea
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+              onBlur={() => objective !== (stage.default_objective ?? "") && onUpdate({ default_objective: objective || null })}
+              placeholder="Ex: Qualificar interesse e marcar reunião curta"
+              rows={2}
+              className="mt-1 text-xs"
+            />
+          </div>
+          <div>
+            <Label className="flex items-center gap-1.5 text-xs"><MessageCircle className="h-3 w-3" /> Mensagem automática (no-answer)</Label>
+            <Textarea
+              value={autoMsg}
+              onChange={(e) => setAutoMsg(e.target.value)}
+              onBlur={() => autoMsg !== (stage.auto_no_answer_message ?? "") && onUpdate({ auto_no_answer_message: autoMsg || null })}
+              placeholder="Oi {{nome}}, tentei te ligar agora. Pode falar?"
+              rows={2}
+              className="mt-1 text-xs"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">Variáveis: {`{{nome}}`}</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
