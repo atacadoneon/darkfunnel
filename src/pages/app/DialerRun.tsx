@@ -52,7 +52,6 @@ export default function DialerRun() {
   const { data: queue = [] } = useQueue(id ?? null);
   const { data: stages = [] } = useStages();
   const setStatus = useSetCampaignStatus();
-  const setOutcomeM = useSetOutcome();
   const aiCoach = useAiCoach();
 
   const [currentItem, setCurrentItem] = useState<DialerQueueItem | null>(null);
