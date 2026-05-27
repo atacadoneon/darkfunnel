@@ -732,7 +732,9 @@ export default function Goals() {
   const [tab, setTab] = useState<TabKey>("geral");
 
   return (
-    <div className="p-3 space-y-3 max-w-[1400px] mx-auto">
+    <div className="h-full overflow-y-auto">
+      <div className="p-3 space-y-3 max-w-[1400px] mx-auto">
+
       <PageHeader workspace={current?.name} />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
