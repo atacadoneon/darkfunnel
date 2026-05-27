@@ -793,7 +793,17 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
           </div>
         )}
       </div>
+      {!atBottom && newCount > 0 && (
+        <button
+          type="button"
+          onClick={scrollToBottom}
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-lg hover:bg-emerald-700 transition-colors"
+        >
+          {newCount} nova{newCount > 1 ? "s" : ""} mensagem{newCount > 1 ? "s" : ""} ↓
+        </button>
+      )}
       <ForwardMessageDialog open={!!forwardMsg} onOpenChange={(v) => { if (!v) setForwardMsg(null); }} message={forwardMsg} />
     </>
   );
 }
+
