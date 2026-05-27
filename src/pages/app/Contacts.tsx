@@ -84,7 +84,7 @@ export default function Contacts() {
         .eq("id", toArchive.id);
       if (error) throw error;
       toast.success(isArchived ? "Contato restaurado" : "Contato arquivado");
-      qc.invalidateQueries({ queryKey: ["contacts", current.id] });
+      qc.invalidateQueries({ queryKey: ["contacts-infinite", current.id] });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
