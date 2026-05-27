@@ -118,6 +118,7 @@ const App = () => (
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
                     <Route path="settings/wallet" element={<Wallet />} />
+                    <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="admin" element={<Admin />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
