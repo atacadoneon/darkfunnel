@@ -30,6 +30,41 @@ const DAY_SHORT = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const brl = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 
+function CurrencyInput({
+  value, onChange, onCommit, disabled, className, placeholder,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  onCommit?: (n: number) => void;
+  disabled?: boolean;
+  className?: string;
+  placeholder?: string;
+}) {
+  const format = (n: number) =>
+    n > 0
+      ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 })
+      : "";
+  const [text, setText] = useState(format(value));
+  useEffect(() => { setText(format(value)); }, [value]);
+  return (
+    <Input
+      inputMode="numeric"
+      disabled={disabled}
+      className={className}
+      placeholder={placeholder ?? "R$ 0,00"}
+      value={text}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, "");
+        const n = digits ? Number(digits) / 100 : 0;
+        setText(format(n));
+        onChange(n);
+      }}
+      onBlur={() => onCommit?.(value)}
+    />
+  );
+}
+
+
 function isoLocal(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -148,7 +183,7 @@ function GeralTab({ year, month, setYear, setMonth }: {
   const [mask, setMask] = useState<number>(0b0111110);
   const [holidays, setHolidays] = useState<string[]>([]);
   const [newHoliday, setNewHoliday] = useState("");
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     setTarget(Number(goal?.target_amount ?? 0));
@@ -168,9 +203,7 @@ function GeralTab({ year, month, setYear, setMonth }: {
       holidays: goal?.holidays ?? holidays,
     };
     const merged: GoalDailyActual[] = [...actuals];
-    Object.entries(drafts).forEach(([date, v]) => {
-      if (v === "") return;
-      const amount = Number(v); if (Number.isNaN(amount)) return;
+    Object.entries(drafts).forEach(([date, amount]) => {
       const i = merged.findIndex((a) => a.date === date);
       const row = { id: "draft", goal_id: goal?.id ?? "", date, amount, created_at: "", updated_at: "" } as any;
       row.actual_amount = amount;
@@ -195,15 +228,14 @@ function GeralTab({ year, month, setYear, setMonth }: {
     } catch (e) { toast.error((e as Error).message); }
   };
 
-  const saveRealized = async (date: string, value: string) => {
+  const saveRealized = async (date: string, amount: number) => {
     if (!goal) return toast.error("Salve a configuração primeiro");
-    if (value === "" || value === undefined) return;
-    const amount = Number(value) || 0;
     try {
       await upsertActual.mutateAsync({ goal_id: goal.id, date, amount });
       setDrafts((d) => { const c = { ...d }; delete c[date]; return c; });
     } catch (e) { toast.error((e as Error).message); }
   };
+
 
   return (
     <div className="space-y-3">
@@ -238,9 +270,10 @@ function GeralTab({ year, month, setYear, setMonth }: {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-[11px]">Meta Mensal (R$)</Label>
-            <Input type="number" value={target} disabled={!canEdit} className="h-8 text-xs"
-              onChange={(e) => setTarget(Number(e.target.value) || 0)} />
+            <Label className="text-[11px]">Meta Mensal</Label>
+            <CurrencyInput value={target} disabled={!canEdit} className="h-8 text-xs"
+              onChange={(n) => setTarget(n)} />
+
           </div>
         </div>
 
@@ -341,24 +374,20 @@ function GeralTab({ year, month, setYear, setMonth }: {
                 </TableCell>
                 <TableCell className="text-right py-1.5">
                   {r.isWorkingDay ? (
-                    <Input
-                      type="number"
+                    <CurrencyInput
                       disabled={!canEdit || !goal}
-                      className={cn(
-                        "h-7 w-28 ml-auto text-right text-[11px] px-2",
-                        (drafts[r.iso] ?? (r.realizado ? String(r.realizado) : "")) === "" && "bg-muted/40",
-                      )}
-                      placeholder="R$ 0,00"
-                      value={drafts[r.iso] ?? (r.realizado ? String(r.realizado) : "")}
-                      onChange={(e) => setDrafts({ ...drafts, [r.iso]: e.target.value })}
-                      onBlur={(e) => {
-                        if (drafts[r.iso] !== undefined) saveRealized(r.iso, e.target.value);
+                      className="h-7 w-32 ml-auto text-right text-[11px] px-2"
+                      value={drafts[r.iso] ?? (r.realizado ?? 0)}
+                      onChange={(n) => setDrafts({ ...drafts, [r.iso]: n })}
+                      onCommit={(n) => {
+                        if (drafts[r.iso] !== undefined) saveRealized(r.iso, n);
                       }}
                     />
                   ) : (
                     <span className="text-muted-foreground text-[11px]">—</span>
                   )}
                 </TableCell>
+
                 <TableCell className={cn(
                   "text-right text-[11px] font-medium py-1.5",
                   r.isWorkingDay && (r.deficit! > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"),
@@ -732,7 +761,9 @@ export default function Goals() {
   const [tab, setTab] = useState<TabKey>("geral");
 
   return (
-    <div className="p-3 space-y-3 max-w-[1400px] mx-auto">
+    <div className="h-full overflow-y-auto">
+      <div className="p-3 space-y-3 max-w-[1400px] mx-auto">
+
       <PageHeader workspace={current?.name} />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -754,6 +785,8 @@ export default function Goals() {
       {tab === "geral" && <GeralTab year={year} month={month} setYear={setYear} setMonth={setMonth} />}
       {tab === "setoriais" && <SetoresTab year={year} month={month} />}
       {tab === "vendedores" && <VendedoresTab year={year} month={month} />}
+      </div>
     </div>
   );
 }
+
