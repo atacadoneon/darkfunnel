@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  ChevronDown, Reply, Forward as ForwardIcon, Pin, Star, Trash2,
+  ChevronDown, Reply, Forward as ForwardIcon, Pin, Star, Trash2, FileText,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -14,28 +14,28 @@ import type { MessageRow } from "./hooks";
 
 const SEVEN_MIN_MS = 7 * 60 * 1000;
 
-async function patchPayload(m: MessageRow, patch: Record<string, unknown>) {
-  const payload = { ...(m.payload ?? {}), ...patch };
-  const { error } = await supabase.from("messages").update({ payload }).eq("id", m.id);
-  if (error) throw error;
-}
-
+/** Reads dedicated columns first, falls back to payload (back-compat). */
 export function isDeletedForMe(m: MessageRow, userId: string | null | undefined): boolean {
   if (!userId) return false;
+  const col = m.deleted_for_user_ids;
+  if (Array.isArray(col)) return col.includes(userId);
   const arr = (m.payload as { deleted_for_user_ids?: unknown })?.deleted_for_user_ids;
   return Array.isArray(arr) && arr.includes(userId);
 }
 
 export function isDeletedForAll(m: MessageRow): boolean {
-  return !!(m.payload as { deleted_for_all_at?: unknown })?.deleted_for_all_at;
+  return !!m.deleted_for_all_at
+    || !!(m.payload as { deleted_for_all_at?: unknown })?.deleted_for_all_at;
 }
 
 export function isPinned(m: MessageRow): boolean {
-  return !!(m.payload as { pinned_at?: unknown })?.pinned_at;
+  return !!m.pinned_at || !!(m.payload as { pinned_at?: unknown })?.pinned_at;
 }
 
 export function isStarred(m: MessageRow, userId: string | null | undefined): boolean {
   if (!userId) return false;
+  const col = m.starred_by_user_ids;
+  if (Array.isArray(col)) return col.includes(userId);
   const arr = (m.payload as { starred_by_user_ids?: unknown })?.starred_by_user_ids;
   return Array.isArray(arr) && arr.includes(userId);
 }
@@ -58,41 +58,49 @@ export function MessageActions({ message, side, onReply, onForward }: Props) {
 
   const togglePin = async () => {
     try {
-      await patchPayload(message, { pinned_at: isPinned(message) ? null : new Date().toISOString() });
+      const { error } = await supabase.rpc("pin_message", { _message_id: message.id });
+      if (error) throw error;
       invalidate();
     } catch (e) { toast.error((e as Error).message); }
   };
 
   const toggleStar = async () => {
-    if (!user) return;
     try {
-      const arr = ((message.payload as { starred_by_user_ids?: string[] })?.starred_by_user_ids ?? []) as string[];
-      const next = arr.includes(user.id) ? arr.filter((x) => x !== user.id) : [...arr, user.id];
-      await patchPayload(message, { starred_by_user_ids: next });
+      const { error } = await supabase.rpc("toggle_star_message", { _message_id: message.id });
+      if (error) throw error;
       invalidate();
     } catch (e) { toast.error((e as Error).message); }
   };
 
   const deleteForMe = async () => {
-    if (!user) return;
     try {
-      const arr = ((message.payload as { deleted_for_user_ids?: string[] })?.deleted_for_user_ids ?? []) as string[];
-      if (!arr.includes(user.id)) arr.push(user.id);
-      await patchPayload(message, { deleted_for_user_ids: arr });
+      const { error } = await supabase.rpc("delete_message_for_me", { _message_id: message.id });
+      if (error) throw error;
       invalidate();
     } catch (e) { toast.error((e as Error).message); }
   };
 
   const deleteForAll = async () => {
     try {
-      await patchPayload(message, { deleted_for_all_at: new Date().toISOString() });
+      const { error } = await supabase.rpc("delete_message_for_all", { _message_id: message.id });
+      if (error) throw error;
       invalidate();
+    } catch (e) { toast.error((e as Error).message); }
+  };
+
+  const toNote = async () => {
+    try {
+      const { error } = await supabase.rpc("message_to_note", { _message_id: message.id });
+      if (error) throw error;
+      toast.success("Mensagem salva como nota");
     } catch (e) { toast.error((e as Error).message); }
   };
 
   const isOut = side === "out";
   const recent = Date.now() - new Date(message.created_at).getTime() < SEVEN_MIN_MS;
   const canDeleteForAll = isOut && recent;
+  const starred = isStarred(message, user?.id);
+  const pinned = isPinned(message);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -119,11 +127,14 @@ export function MessageActions({ message, side, onReply, onForward }: Props) {
           <ForwardIcon className="h-4 w-4 text-muted-foreground" /> Encaminhar
         </DropdownMenuItem>
         <DropdownMenuItem onClick={togglePin} className="gap-3 px-4 py-2.5 text-[14px] cursor-pointer">
-          <Pin className="h-4 w-4 text-muted-foreground" /> {isPinned(message) ? "Desafixar" : "Fixar"}
+          <Pin className="h-4 w-4 text-muted-foreground" /> {pinned ? "Desafixar" : "Fixar"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={toggleStar} className="gap-3 px-4 py-2.5 text-[14px] cursor-pointer">
-          <Star className={`h-4 w-4 ${isStarred(message, user?.id) ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`} />
-          {isStarred(message, user?.id) ? "Remover dos favoritos" : "Favoritar"}
+          <Star className={`h-4 w-4 ${starred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`} />
+          {starred ? "Remover dos favoritos" : "Favoritar"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={toNote} className="gap-3 px-4 py-2.5 text-[14px] cursor-pointer">
+          <FileText className="h-4 w-4 text-muted-foreground" /> Salvar como nota
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>
