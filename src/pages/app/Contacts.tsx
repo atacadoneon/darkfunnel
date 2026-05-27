@@ -24,8 +24,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
-import { useContacts, type Contact, IDENTITY_LABELS } from "@/features/contacts/hooks";
+import { useContactsInfinite, type Contact, IDENTITY_LABELS } from "@/features/contacts/hooks";
 import { ContactDialog, IDENTITY_ICON } from "@/features/contacts/ContactDialog";
+import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
+import { ListFooter } from "@/components/lists/ListFooter";
 import {
   MoreHorizontal,
   Search,
@@ -45,13 +47,23 @@ export default function Contacts() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
-  const { data: contacts = [], isLoading } = useContacts(search, showArchived);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useContactsInfinite(search, showArchived);
+  const contacts = useMemo<Contact[]>(
+    () => data?.pages.flatMap((p) => p.items) ?? [],
+    [data],
+  );
+  const total = data?.pages[0]?.total ?? 0;
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [toArchive, setToArchive] = useState<Contact | null>(null);
 
-  const total = contacts.length;
   const withChannels = useMemo(
     () => contacts.filter((c) => (c.identities ?? []).length > 0).length,
     [contacts]
