@@ -113,7 +113,7 @@ function MemberBadge({
 const SLOT_GRID = "grid grid-cols-[28px_36px_88px_1fr_150px_64px_40px] gap-2 items-center";
 
 function SlotRow({
-  slot, index, member, presence, lastSeenAt, activeCount, rotationActive, todayCount,
+  slot, index, member, presence, lastSeenAt, activeCount, rotationActive, todayCount, isNext,
   onToggleActive, onToggleSkip, onDelete,
 }: {
   slot: RotationSlot;
@@ -124,6 +124,7 @@ function SlotRow({
   activeCount: number;
   rotationActive: boolean;
   todayCount: number;
+  isNext?: boolean;
   onToggleActive: () => void;
   onToggleSkip: () => void;
   onDelete: () => void;
@@ -143,7 +144,11 @@ function SlotRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn(SLOT_GRID, "px-2 py-2 border-b last:border-b-0 bg-background")}
+      className={cn(
+        SLOT_GRID,
+        "px-2 py-2 border-b last:border-b-0 bg-background",
+        isNext && "bg-blue-500/5",
+      )}
     >
       <button className="cursor-grab text-muted-foreground hover:text-foreground" {...attributes} {...listeners} aria-label="Reordenar">
         <GripVertical className="h-4 w-4" />
@@ -151,7 +156,18 @@ function SlotRow({
       <span className="text-xs text-muted-foreground tabular-nums text-center">{index + 1}</span>
       <div className="flex items-center gap-2">
         <Switch checked={slot.is_active} onCheckedChange={handleToggleActive} />
-        <span className="text-xs text-muted-foreground">Ativo</span>
+        {isNext ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge className="bg-blue-500 hover:bg-blue-500 text-white border-0 px-1.5 py-0 h-5 text-[10px] font-semibold uppercase tracking-wide">
+                Próximo
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="top">Próximo a receber lead deste rodízio</TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="text-xs text-muted-foreground">Ativo</span>
+        )}
       </div>
       <MemberBadge member={member} presence={presence} lastSeenAt={lastSeenAt} />
       <Tooltip>
