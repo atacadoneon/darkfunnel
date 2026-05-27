@@ -196,20 +196,6 @@ export default function DialerRun() {
     navigate("/discador");
   }, [id, setStatus, navigate]);
 
-  /* --------- Keyboard shortcuts --------- */
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if (e.key === "Escape") { setCoachHidden(true); return; }
-      if (e.key === "l" || e.key === "L") { if (runState === "idle") { e.preventDefault(); void startCall(); } }
-      if (e.key === "x" || e.key === "X") { if (runState === "in_call" || runState === "dialing") { e.preventDefault(); void endCall(); } }
-      if (e.key === "n" || e.key === "N") { e.preventDefault(); void loadNext(); }
-      if (e.key === "p" || e.key === "P") { e.preventDefault(); void pauseCampaign(); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [runState, startCall, endCall, loadNext, pauseCampaign]);
 
   const insertIntoComposer = useCallback((text: string) => {
     if (!currentItem?.conversation_id) {
