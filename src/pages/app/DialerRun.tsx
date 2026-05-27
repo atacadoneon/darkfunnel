@@ -324,11 +324,14 @@ export default function DialerRun() {
               const isCurrent = q.id === currentItem?.id;
               const isDone = q.status === "completed";
               return (
-                <button
+                <div
                   key={q.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => selectLead(q)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectLead(q); } }}
                   className={cn(
-                    "w-full text-left p-2.5 flex items-center gap-2.5 border-b transition-colors hover:bg-muted/50",
+                    "group w-full text-left p-2.5 flex items-center gap-2.5 border-b transition-colors hover:bg-muted/50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     isCurrent && "bg-primary/10 border-l-2 border-l-primary",
                     isDone && !isCurrent && "opacity-50",
                   )}
@@ -359,7 +362,17 @@ export default function DialerRun() {
                       {q.outcome === "reagendar" && <Badge className="bg-sky-500/15 text-sky-700 border-sky-500/30 text-[9px] h-3.5 px-1">Reagendar</Badge>}
                     </div>
                   </div>
-                </button>
+                  {q.status === "pending" && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); void loadNext(); }}
+                      title="Pular este lead"
+                      className="opacity-0 group-hover:opacity-100 h-7 w-7 inline-flex items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -698,11 +711,11 @@ function OutcomeModal({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={save} disabled={!outcome || setOutcomeM.isPending} className="gap-1">
+        <DialogFooter className="flex-col sm:flex-col gap-2">
+          <Button onClick={save} disabled={!outcome || setOutcomeM.isPending} className="gap-1 w-full bg-primary text-primary-foreground">
             <CheckCircle2 className="h-4 w-4" /> Salvar e próximo
           </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full">Cancelar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
