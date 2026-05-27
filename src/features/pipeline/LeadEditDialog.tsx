@@ -125,6 +125,7 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
           </div>
         </Tabs>
       </DialogContent>
+      {payOpen && <PaymentLinkDialog open={payOpen} onOpenChange={setPayOpen} dealId={dealId} />}
     </Dialog>
   );
 }
