@@ -3,7 +3,7 @@ import { format, isToday, isYesterday, differenceInCalendarDays } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon,
-  RefreshCw, Forward, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
+  RefreshCw, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
   User as UserIcon, Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
 import { ReactionPicker, ReactionChips } from "./ReactionPicker";
+import { MessageActions, isDeletedForMe, isDeletedForAll, isPinned } from "./MessageActions";
+import { PinnedMessagesBar } from "./PinnedMessagesBar";
+import { useAuth } from "@/features/auth/AuthProvider";
 import type { MessageRow } from "./hooks";
 
 /* ============================== Helpers ============================== */
