@@ -76,8 +76,10 @@ function MemberBadge({
   );
 }
 
+const SLOT_GRID = "grid grid-cols-[28px_36px_88px_1fr_150px_64px_40px] gap-2 items-center";
+
 function SlotRow({
-  slot, index, member, presence, activeCount, rotationActive,
+  slot, index, member, presence, activeCount, rotationActive, todayCount,
   onToggleActive, onToggleSkip, onDelete,
 }: {
   slot: RotationSlot;
@@ -86,6 +88,7 @@ function SlotRow({
   presence?: "online" | "away" | "offline";
   activeCount: number;
   rotationActive: boolean;
+  todayCount: number;
   onToggleActive: () => void;
   onToggleSkip: () => void;
   onDelete: () => void;
@@ -105,17 +108,17 @@ function SlotRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-[28px_28px_1fr_120px_140px_40px] gap-2 items-center px-2 py-2 border-b last:border-b-0 bg-background"
+      className={cn(SLOT_GRID, "px-2 py-2 border-b last:border-b-0 bg-background")}
     >
       <button className="cursor-grab text-muted-foreground hover:text-foreground" {...attributes} {...listeners} aria-label="Reordenar">
         <GripVertical className="h-4 w-4" />
       </button>
-      <span className="text-xs text-muted-foreground tabular-nums">{index + 1}</span>
-      <MemberBadge member={member} presence={presence} />
+      <span className="text-xs text-muted-foreground tabular-nums text-center">{index + 1}</span>
       <div className="flex items-center gap-2">
         <Switch checked={slot.is_active} onCheckedChange={handleToggleActive} />
         <span className="text-xs text-muted-foreground">Ativo</span>
       </div>
+      <MemberBadge member={member} presence={presence} />
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex items-center gap-2">
@@ -127,6 +130,7 @@ function SlotRow({
           Se ligado, o lead pula para o próximo vendedor quando este estiver offline.
         </TooltipContent>
       </Tooltip>
+      <span className="text-sm font-medium tabular-nums text-center">{todayCount}</span>
       <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Remover">
         <Trash2 className="h-4 w-4 text-rose-500" />
       </Button>
@@ -288,8 +292,14 @@ function ChannelRotationCard({
             </div>
           ) : (
             <div className="rounded-lg border overflow-hidden">
-              <div className="grid grid-cols-[28px_28px_1fr_120px_140px_40px] gap-2 px-2 py-2 bg-muted/40 text-[11px] font-medium text-muted-foreground uppercase tracking-wide border-b">
-                <span /><span>#</span><span>Vendedor</span><span>Status</span><span>Offline</span><span />
+              <div className={cn(SLOT_GRID, "px-2 py-2 bg-muted/40 text-[11px] font-medium text-muted-foreground uppercase tracking-wide border-b")}>
+                <span />
+                <span className="text-center">#</span>
+                <span>Ativo</span>
+                <span>Vendedor</span>
+                <span>Pular offline</span>
+                <span className="text-center">Hoje</span>
+                <span />
               </div>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={slots.map((s) => s.id)} strategy={verticalListSortingStrategy}>
@@ -302,6 +312,7 @@ function ChannelRotationCard({
                       presence={presence[s.user_id]?.status}
                       activeCount={activeCount}
                       rotationActive={rotation?.is_active ?? false}
+                      todayCount={countsByUser[s.user_id] ?? 0}
                       onToggleActive={async () => {
                         try { await updateSlot(s.id, { is_active: !s.is_active }); }
                         catch (e) { toast.error((e as Error).message); }
