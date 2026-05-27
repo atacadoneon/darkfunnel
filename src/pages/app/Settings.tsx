@@ -8,6 +8,7 @@ import { UsersSection } from "@/features/workspace/UsersSection";
 import { useIsManagerOrAdmin, useMyRole } from "@/features/workspace/permissions";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import RodizioSection from "@/pages/SettingsRodizio";
+import { TrackingSection } from "@/features/tracking/TrackingSection";
 import { Settings2, Radio, LineChart, Plug, Users, Tags, Shield, ArrowUpRight, Shuffle } from "lucide-react";
 
 const BASE_TABS = [
@@ -82,7 +83,7 @@ export default function Settings() {
           <LossReasonsAdminSection />
         </TabsContent>
         <TabsContent value="tracking" className="mt-6">
-          <Empty title="Trackeamento" desc="Pixel, UTMs, eventos de conversão e webhooks de tracking — em breve." />
+          <TrackingSection />
         </TabsContent>
         <TabsContent value="integrations" className="mt-6">
           <Empty title="Integrações" desc="Conecte ferramentas externas (CRM, e-commerce, automações) — em breve." />
