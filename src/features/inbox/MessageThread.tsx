@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   FileText, Download, MapPin, Image as ImageIcon, Music, Video as VideoIcon,
   RefreshCw, Forward, Play, Pause, X, AlertCircle, Clock, CornerDownRight,
-  User as UserIcon, Phone, Smile as SmileIcon,
+  User as UserIcon, Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
+import { ReactionPicker, ReactionChips } from "./ReactionPicker";
 import type { MessageRow } from "./hooks";
 
 /* ============================== Helpers ============================== */
@@ -580,9 +581,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
               >
                 {out && (
                   <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <button type="button" className="wa-quick-btn" title="Reagir">
-                      <SmileIcon className="h-4 w-4" />
-                    </button>
+                    <ReactionPicker message={m} />
                     <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
                       <Forward className="h-4 w-4" />
                     </button>
@@ -596,44 +595,50 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                       <span>{format(new Date(m.created_at), "HH:mm")}</span>
                       {out && <StatusChecks status={m.status} />}
                     </div>
+                    <div className={cn("flex", out ? "justify-end" : "justify-start")}>
+                      <ReactionChips message={m} />
+                    </div>
                   </div>
                 ) : (
-                  <div
-                    className={cn(
-                      "wa-bubble",
-                      out ? "wa-bubble-out" : "wa-bubble-in",
-                      isMedia ? "p-[3px]" : "px-2 py-[6px]",
-                      isActive && "ring-2 ring-yellow-400 ring-offset-1",
-                      (p as { _optimistic?: boolean })._optimistic && "opacity-70"
-                    )}
-                  >
-                    {isLastInGroup && !grouped && <BubbleTail side={out ? "right" : "left"} />}
-                    {(forwarded || quoted) && (
-                      <div className={cn(isMedia ? "px-1.5 pt-1" : "")}>
-                        {forwarded && <ForwardedHeader />}
-                        {quoted && <QuotedPreview quoted={quoted} />}
-                      </div>
-                    )}
-                    <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
+                  <div className="flex flex-col">
                     <div
                       className={cn(
-                        "float-right ml-2 mt-1 flex items-center gap-1 -mb-0.5",
-                        isMedia && "absolute right-2 bottom-1.5 bg-black/35 text-white rounded-md px-1.5 py-[1px]"
+                        "wa-bubble",
+                        out ? "wa-bubble-out" : "wa-bubble-in",
+                        isMedia ? "p-[3px]" : "px-2 py-[6px]",
+                        isActive && "ring-2 ring-yellow-400 ring-offset-1",
+                        (p as { _optimistic?: boolean })._optimistic && "opacity-70"
                       )}
                     >
-                      <span className={cn("wa-time", isMedia && "!text-white !opacity-100")} style={isMedia ? { color: "#fff" } : undefined}>
-                        {format(new Date(m.created_at), "HH:mm")}
-                      </span>
-                      {out && <StatusChecks status={m.status} />}
+                      {isLastInGroup && !grouped && <BubbleTail side={out ? "right" : "left"} />}
+                      {(forwarded || quoted) && (
+                        <div className={cn(isMedia ? "px-1.5 pt-1" : "")}>
+                          {forwarded && <ForwardedHeader />}
+                          {quoted && <QuotedPreview quoted={quoted} />}
+                        </div>
+                      )}
+                      <div className={cn(!isMedia && "pr-14")}>{renderBody(m, searchQuery)}</div>
+                      <div
+                        className={cn(
+                          "float-right ml-2 mt-1 flex items-center gap-1 -mb-0.5",
+                          isMedia && "absolute right-2 bottom-1.5 bg-black/35 text-white rounded-md px-1.5 py-[1px]"
+                        )}
+                      >
+                        <span className={cn("wa-time", isMedia && "!text-white !opacity-100")} style={isMedia ? { color: "#fff" } : undefined}>
+                          {format(new Date(m.created_at), "HH:mm")}
+                        </span>
+                        {out && <StatusChecks status={m.status} />}
+                      </div>
+                    </div>
+                    <div className={cn("flex", out ? "justify-end" : "justify-start")}>
+                      <ReactionChips message={m} />
                     </div>
                   </div>
                 )}
 
                 {!out && (
                   <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <button type="button" className="wa-quick-btn" title="Reagir">
-                      <SmileIcon className="h-4 w-4" />
-                    </button>
+                    <ReactionPicker message={m} />
                     <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
                       <Forward className="h-4 w-4" />
                     </button>
