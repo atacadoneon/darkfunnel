@@ -318,8 +318,10 @@ export function Composer({ conversation }: Props) {
     <div className="border-t bg-card px-2 py-1.5">
 
       {windowExpired && (
-        <div className="mb-2 text-xs text-amber-600 dark:text-amber-400">
-          Janela 24h da Cloud API expirou — apenas templates HSM são permitidos.
+        <div className="mb-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          {isInstagram
+            ? "Janela de 24h do Instagram expirou. O usuário precisa enviar uma nova mensagem para você poder responder."
+            : "Janela 24h da Cloud API expirou — apenas templates HSM são permitidos."}
         </div>
       )}
       {pendings.length > 0 && (
