@@ -251,7 +251,6 @@ export default function DialerRun() {
               className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md gap-2 h-11 px-5 font-semibold"
             >
               <Phone className="h-4 w-4" /> LIGAR
-              <kbd className="ml-1 text-[10px] opacity-80 bg-white/15 px-1 rounded">L</kbd>
             </Button>
           )}
 
@@ -271,7 +270,6 @@ export default function DialerRun() {
               <CallTimer startedAt={callStartedAt} className="text-sm font-mono font-semibold tabular-nums" />
               <Button size="sm" variant="destructive" onClick={endCall} className="gap-1 h-8">
                 <PhoneOff className="h-3.5 w-3.5" /> Encerrar
-                <kbd className="ml-1 text-[10px] opacity-80 bg-white/15 px-1 rounded">X</kbd>
               </Button>
             </div>
           )}
@@ -281,13 +279,15 @@ export default function DialerRun() {
             onClick={loadNext}
             className="bg-primary text-primary-foreground shadow gap-2 h-11 px-4 font-semibold"
           >
-            Próximo <ChevronRight className="h-4 w-4" />
-            <kbd className="text-[10px] opacity-80 bg-white/15 px-1 rounded">N</kbd>
+            Próximo lead <ChevronRight className="h-4 w-4" />
           </Button>
 
           <Button size="lg" variant="outline" onClick={pauseCampaign} className="gap-2 h-11">
             <Pause className="h-4 w-4" /> Pausar
-            <kbd className="text-[10px] opacity-70 border rounded px-1">P</kbd>
+          </Button>
+
+          <Button size="lg" variant="outline" onClick={endCampaign} className="gap-2 h-11 text-destructive hover:text-destructive">
+            <Square className="h-4 w-4" /> Encerrar
           </Button>
         </div>
       </header>
