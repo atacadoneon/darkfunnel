@@ -137,7 +137,7 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
       const { error } = await supabase.functions.invoke("uazapi-send", {
         body: {
           conversation_id: conversationId ?? null,
-          contact_id: effectiveContact!.id ?? null,
+          contact_id: effectiveContact?.id ?? null,
           phone: effectiveContact!.phone,
           type: "text",
           text,
@@ -161,15 +161,15 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
           <DialogDescription>Gere e envie um link para o cliente pagar.</DialogDescription>
         </DialogHeader>
 
-        {contact && (
+        {effectiveContact && (
           <Card className="p-3 flex items-center gap-3 bg-muted/30">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold">
-              {(contact.name?.[0] ?? "?").toUpperCase()}
+              {(effectiveContact.name?.[0] ?? "?").toUpperCase()}
             </div>
             <div className="min-w-0 flex-1 text-sm">
-              <div className="font-medium truncate">{contact.name ?? "—"}</div>
+              <div className="font-medium truncate">{effectiveContact.name ?? "—"}</div>
               <div className="text-xs text-muted-foreground truncate">
-                {[effectiveContact!.phone, contact.email, contact.document].filter(Boolean).join(" · ") || "Sem dados de contato"}
+                {[effectiveContact.phone, effectiveContact.email, effectiveContact.document].filter(Boolean).join(" · ") || "Sem dados de contato"}
               </div>
             </div>
           </Card>
