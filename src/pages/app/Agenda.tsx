@@ -107,19 +107,26 @@ export default function Agenda() {
         <div className="grid grid-cols-7 gap-1 text-xs">
           {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(d => <div key={d} className="text-center font-semibold py-1 text-muted-foreground">{d}</div>)}
           {days.map(d => {
-            const dayEvents = (events as any[]).filter(e => isSameDay(new Date(e.starts_at), d));
+            const dayItems = allItems.filter(it => it.at && isSameDay(new Date(it.at), d));
             const dim = !isSameMonth(d, cursor);
             const today = isSameDay(d, new Date());
             return (
               <div key={d.toISOString()} className={`border rounded p-1 min-h-[80px] ${dim ? "opacity-40" : ""} ${today ? "ring-1 ring-primary" : ""}`}>
                 <div className="text-[10px] font-bold mb-1">{format(d, "d")}</div>
-                {dayEvents.slice(0, 3).map(e => (
-                  <div key={e.id} className="text-[10px] truncate px-1 py-0.5 rounded bg-primary/10 text-primary mb-0.5 flex items-center gap-1">
-                    {e.conference_url && <Video className="h-2.5 w-2.5 shrink-0" />}
-                    <span className="truncate">{e.title}</span>
-                  </div>
-                ))}
-                {dayEvents.length > 3 && <div className="text-[10px] text-muted-foreground">+{dayEvents.length - 3}</div>}
+                {dayItems.slice(0, 3).map(it => {
+                  const cls =
+                    it.kind === "meeting" ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                    : it.kind === "task" ? `bg-amber-500/10 text-amber-700 dark:text-amber-300 ${(it as any).done ? "line-through opacity-60" : ""}`
+                    : "bg-primary/10 text-primary";
+                  const Icon = it.kind === "meeting" ? Users : it.kind === "task" ? CheckSquare : Video;
+                  return (
+                    <div key={it.id} className={`text-[10px] truncate px-1 py-0.5 rounded mb-0.5 flex items-center gap-1 ${cls}`}>
+                      {(it.kind !== "event" || it.url) && <Icon className="h-2.5 w-2.5 shrink-0" />}
+                      <span className="truncate">{it.title}</span>
+                    </div>
+                  );
+                })}
+                {dayItems.length > 3 && <div className="text-[10px] text-muted-foreground">+{dayItems.length - 3}</div>}
               </div>
             );
           })}
