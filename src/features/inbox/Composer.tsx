@@ -132,8 +132,8 @@ export function Composer({ conversation }: Props) {
   };
 
   const startRecording = async () => {
-    if (!isUazapi) {
-      toast.error("Mídia disponível só em UAZAPI por enquanto");
+    if (!isUazapi && !isInstagram) {
+      toast.error("Áudio disponível só em WhatsApp/Instagram");
       return;
     }
     try {
