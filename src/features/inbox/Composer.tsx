@@ -167,6 +167,8 @@ export function Composer({ conversation }: Props) {
       return;
     }
     setSending(true);
+    // Optimistic: zera unread imediatamente (backend reforça via trigger/webhook)
+    void supabase.from("conversations").update({ unread_count: 0 }).eq("id", conversation.id);
     const rawBody = text.trim();
     const quoted = replyTo ? `> ${replyTo.body.split("\n").join("\n> ")}\n\n` : "";
     const body = quoted + rawBody;
