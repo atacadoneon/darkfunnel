@@ -227,7 +227,7 @@ function ChannelRotationCard({
         onClick={handleToggleOpen}
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
       >
-        {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+        {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
         <div className="h-9 w-9 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
           <Phone className="h-4 w-4 text-emerald-600" fill="currentColor" />
         </div>
