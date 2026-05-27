@@ -365,6 +365,7 @@ function ChannelRotationCard({
                       activeCount={activeCount}
                       rotationActive={rotation?.is_active ?? false}
                       todayCount={countsByUser[s.user_id] ?? 0}
+                      isNext={rotation?.next_slot_id === s.id}
                       onToggleActive={async () => {
                         try { await updateSlot(s.id, { is_active: !s.is_active }); }
                         catch (e) { toast.error((e as Error).message); }
