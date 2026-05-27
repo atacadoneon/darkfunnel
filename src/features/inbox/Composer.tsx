@@ -429,7 +429,7 @@ export function Composer({ conversation }: Props) {
             </Command>
           </PopoverContent>
         </Popover>
-        {isUazapi && (
+        {(isUazapi || isInstagram) && (
           <Button
             variant="ghost"
             size="icon"
@@ -471,7 +471,7 @@ export function Composer({ conversation }: Props) {
             />
           </PopoverContent>
         </Popover>
-        {isUazapi && (
+        {(isUazapi || isInstagram) && (
           <Button
             variant={recording ? "destructive" : "ghost"}
             size="icon"
