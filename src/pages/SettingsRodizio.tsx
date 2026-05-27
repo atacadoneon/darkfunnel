@@ -292,8 +292,14 @@ function ChannelRotationCard({
             </div>
           ) : (
             <div className="rounded-lg border overflow-hidden">
-              <div className="grid grid-cols-[28px_28px_1fr_120px_140px_40px] gap-2 px-2 py-2 bg-muted/40 text-[11px] font-medium text-muted-foreground uppercase tracking-wide border-b">
-                <span /><span>#</span><span>Vendedor</span><span>Status</span><span>Offline</span><span />
+              <div className={cn(SLOT_GRID, "px-2 py-2 bg-muted/40 text-[11px] font-medium text-muted-foreground uppercase tracking-wide border-b")}>
+                <span />
+                <span className="text-center">#</span>
+                <span>Ativo</span>
+                <span>Vendedor</span>
+                <span>Pular offline</span>
+                <span className="text-center">Hoje</span>
+                <span />
               </div>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={slots.map((s) => s.id)} strategy={verticalListSortingStrategy}>
@@ -306,6 +312,7 @@ function ChannelRotationCard({
                       presence={presence[s.user_id]?.status}
                       activeCount={activeCount}
                       rotationActive={rotation?.is_active ?? false}
+                      todayCount={countsByUser[s.user_id] ?? 0}
                       onToggleActive={async () => {
                         try { await updateSlot(s.id, { is_active: !s.is_active }); }
                         catch (e) { toast.error((e as Error).message); }
