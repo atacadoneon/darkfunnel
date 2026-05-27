@@ -368,28 +368,36 @@ function DocumentMessage({ m }: { m: MessageRow }) {
       <FileText className="h-4 w-4" /> 📎 documento (indisponível)
     </span>
   );
+  const isPdf = mime.includes("pdf") || ext === "PDF";
   return (
     <MediaWithRefresh
       messageId={m.id} conversationId={m.conversation_id} url={mediaUrl}
       render={(u) => (
         <a
           href={u} target="_blank" rel="noreferrer"
-          className="flex items-center gap-3 rounded-md p-2 min-w-[260px] max-w-[320px] hover:opacity-90 transition-opacity"
+          className="group/doc flex items-center gap-2 rounded-[6px] p-2 min-w-[260px] max-w-[320px] hover:opacity-95 transition-opacity"
           style={{ background: "var(--wa-doc-bg)" }}
         >
-          <div className="h-11 w-9 rounded-sm bg-white/80 dark:bg-white/10 flex flex-col items-center justify-center shrink-0 border border-black/10 dark:border-white/10">
-            <FileText className="h-4 w-4 opacity-70" />
-            <span className="text-[8px] font-bold opacity-70 mt-0.5">{ext}</span>
-          </div>
+          {isPdf ? (
+            <div className="h-[55px] w-[40px] rounded-sm flex flex-col items-center justify-center shrink-0" style={{ background: "#f15c4e" }}>
+              <FileText className="h-5 w-5 text-white" />
+              <span className="text-[9px] font-bold text-white mt-0.5 leading-none">PDF</span>
+            </div>
+          ) : (
+            <div className="h-[55px] w-[40px] rounded-sm bg-white/80 dark:bg-white/10 flex flex-col items-center justify-center shrink-0 border border-black/10 dark:border-white/10">
+              <FileText className="h-4 w-4 opacity-70" />
+              <span className="text-[8px] font-bold opacity-70 mt-0.5">{ext}</span>
+            </div>
+          )}
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{filename}</div>
-            <div className="truncate text-[11px] opacity-60">
+            <div className="truncate text-[14.2px] font-medium">{filename}</div>
+            <div className="truncate text-[12px] opacity-60">
               {pages ? `${pages} ${pages === 1 ? "página" : "páginas"}` : null}
               {pages && (ext || sizeFmt) ? " · " : ""}
               {ext}{sizeFmt ? ` · ${sizeFmt}` : ""}
             </div>
           </div>
-          <Download className="h-4 w-4 opacity-70 shrink-0" />
+          <Download className="h-4 w-4 opacity-0 group-hover/doc:opacity-70 transition-opacity shrink-0" />
         </a>
       )}
     />
