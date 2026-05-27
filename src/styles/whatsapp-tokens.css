@@ -60,11 +60,14 @@
 
 .wa-bubble {
   position: relative;
-  max-width: var(--wa-bubble-max-width);
   border-radius: var(--wa-bubble-radius);
   box-shadow: var(--wa-bubble-shadow);
   font-size: var(--wa-text-size);
   line-height: 19px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
 }
 
 .wa-bubble-out { background: var(--wa-bubble-out-bg); }
