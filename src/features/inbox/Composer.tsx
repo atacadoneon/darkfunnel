@@ -394,7 +394,7 @@ export function Composer({ conversation }: Props) {
             disabled={windowExpired || recording || !!attachment}
             title="Anexar arquivo"
           >
-            <Paperclip className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
           </Button>
         )}
         <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
