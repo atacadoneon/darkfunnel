@@ -244,6 +244,19 @@ export default function Contacts() {
           )}
         </CardContent>
       </Card>
+      <LoadMoreSentinel
+        hasMore={!!hasNextPage}
+        isFetching={isFetchingNextPage}
+        onIntersect={() => fetchNextPage()}
+      />
+      </div>
+      <ListFooter
+        loaded={contacts.length}
+        total={total}
+        hasMore={!!hasNextPage}
+        singular="contato exibido"
+        plural="contatos exibidos"
+      />
 
       <ContactDialog
         open={dialogOpen}
