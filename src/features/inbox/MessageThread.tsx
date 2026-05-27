@@ -574,10 +574,17 @@ type Props = {
   activeMatchId?: string | null;
 };
 
-export function MessageThread({ messages, searchQuery = "", activeMatchId = null }: Props) {
+export function MessageThread({ messages: rawMessages, searchQuery = "", activeMatchId = null }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [forwardMsg, setForwardMsg] = useState<MessageRow | null>(null);
+  const { user } = useAuth();
+
+  // Hide "delete for me" messages from current user
+  const messages = useMemo(
+    () => rawMessages.filter((m) => !isDeletedForMe(m, user?.id)),
+    [rawMessages, user?.id],
+  );
 
   useEffect(() => {
     const el = ref.current; if (!el) return;
@@ -595,10 +602,19 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
     const body = (p.body as string | undefined) || (p.caption as string | undefined) || `[${m.type}]`;
     window.dispatchEvent(new CustomEvent("inbox:reply", { detail: { id: m.id, body, direction: m.direction } }));
   };
-  void handleReply;
+
+  const jumpTo = (id: string) => {
+    const node = itemRefs.current[id];
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      node.classList.add("ring-2", "ring-yellow-400");
+      setTimeout(() => node.classList.remove("ring-2", "ring-yellow-400"), 1500);
+    }
+  };
 
   return (
     <>
+      <PinnedMessagesBar messages={messages} onJump={jumpTo} />
       <div ref={ref} className="wa-thread flex-1 overflow-y-auto overscroll-contain scrollbar-hide px-[5%] py-4 space-y-0.5">
         {messages.map((m, idx) => {
           const out = m.direction === "out";
@@ -615,6 +631,8 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
           const isReaction = m.type === "reaction";
           const isSystem = m.type === "system";
           const isMedia = MEDIA_TYPES.has(m.type);
+          const deletedAll = isDeletedForAll(m);
+          const pinnedHere = isPinned(m);
 
           if (isSystem) {
             return (
@@ -623,6 +641,45 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
               </div>
             );
           }
+
+          // Deleted for all — render placeholder bubble, no actions
+          if (deletedAll) {
+            return (
+              <div key={m.id}>
+                {showDay && (
+                  <div className="flex justify-center my-3">
+                    <span className="wa-date-pill">{dayLabel(new Date(m.created_at))}</span>
+                  </div>
+                )}
+                <div
+                  ref={(el) => { itemRefs.current[m.id] = el; }}
+                  className={cn("flex mt-2", out ? "justify-end" : "justify-start")}
+                >
+                  <div
+                    className={cn(
+                      "wa-bubble relative px-3 py-2 italic text-[13.5px] flex items-center gap-1.5",
+                      out ? "wa-bubble-out" : "wa-bubble-in",
+                    )}
+                    style={{ color: "var(--wa-text-secondary)" }}
+                  >
+                    🚫 Esta mensagem foi apagada
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          const actions = (
+            <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+              <ReactionPicker message={m} />
+              <MessageActions
+                message={m}
+                side={out ? "out" : "in"}
+                onReply={handleReply}
+                onForward={(mm) => setForwardMsg(mm)}
+              />
+            </div>
+          );
 
           return (
             <div key={m.id}>
@@ -635,14 +692,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                 ref={(el) => { itemRefs.current[m.id] = el; }}
                 className={cn("group/msg flex items-center gap-1", out ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}
               >
-                {out && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <ReactionPicker message={m} />
-                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
+                {out && actions}
 
                 {isSticker || isReaction ? (
                   <div className={cn("relative max-w-[75%]", isActive && "ring-2 ring-yellow-400 rounded-md")}>
@@ -668,8 +718,13 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                       style={{ width: "fit-content", maxWidth: "100%", minWidth: "80px" }}
                     >
                       {isLastInGroup && !grouped && <BubbleTail side={out ? "right" : "left"} />}
-                      {(forwarded || quoted) && (
+                      {(forwarded || quoted || pinnedHere) && (
                         <div className={cn(isMedia ? "px-1.5 pt-1" : "")}>
+                          {pinnedHere && (
+                            <div className="flex items-center gap-1 text-[11px] mb-0.5" style={{ color: "var(--wa-text-secondary)" }}>
+                              📌 fixada
+                            </div>
+                          )}
                           {forwarded && <ForwardedHeader />}
                           {quoted && <QuotedPreview quoted={quoted} />}
                         </div>
@@ -691,14 +746,7 @@ export function MessageThread({ messages, searchQuery = "", activeMatchId = null
                   </div>
                 )}
 
-                {!out && (
-                  <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-                    <ReactionPicker message={m} />
-                    <button type="button" className="wa-quick-btn" title="Encaminhar" onClick={() => setForwardMsg(m)}>
-                      <Forward className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
+                {!out && actions}
               </div>
             </div>
           );
