@@ -263,9 +263,9 @@ export default function SettingsRodizio() {
   return (
     <div className="space-y-6 p-6 max-w-6xl mx-auto">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Rodízio de leads</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Rodízio de Leads</h1>
         <p className="text-sm text-muted-foreground">
-          Distribua novos leads entre vendedores. Adicionar o mesmo vendedor várias vezes aumenta o peso dele.
+          Distribua novos leads automaticamente entre vendedores por canal WhatsApp.
         </p>
       </header>
 
