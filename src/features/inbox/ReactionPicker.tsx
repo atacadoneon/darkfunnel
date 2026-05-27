@@ -1,51 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import EmojiPicker, { EmojiStyle, Theme } from "emoji-picker-react";
 import { SmilePlus, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
-import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/AuthProvider";
 import type { MessageRow } from "./hooks";
 
 const QUICK = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 type Props = { message: MessageRow };
 
+type ReactionRow = { id: string; message_id: string; user_id: string; emoji: string };
+
 export function ReactionPicker({ message }: Props) {
   const [open, setOpen] = useState(false);
   const [full, setFull] = useState(false);
-  const qc = useQueryClient();
-  const { current } = useWorkspace();
 
   const apply = async (emoji: string) => {
     setOpen(false);
     setFull(false);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const userId = u?.user?.id;
-      const payload = (message.payload ?? {}) as Record<string, unknown>;
-      const existing = Array.isArray(payload.reactions)
-        ? (payload.reactions as Array<{ emoji: string; user_id?: string; at?: string }>)
-        : [];
-      // toggle: if mesma reação do mesmo user → remove; senão substitui a reação atual do user
-      const mine = existing.find((r) => r.user_id === userId);
-      let next: typeof existing;
-      if (mine && mine.emoji === emoji) {
-        next = existing.filter((r) => r.user_id !== userId);
-      } else {
-        next = [
-          ...existing.filter((r) => r.user_id !== userId),
-          { emoji, user_id: userId, at: new Date().toISOString() },
-        ];
-      }
-      const { error } = await supabase
-        .from("messages")
-        .update({ payload: { ...payload, reactions: next } })
-        .eq("id", message.id);
+      const { error } = await supabase.rpc("react_to_message", {
+        _message_id: message.id,
+        _emoji: emoji,
+      });
       if (error) throw error;
-      qc.invalidateQueries({ queryKey: ["messages", message.conversation_id] });
-      qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
     } catch (e) {
       toast.error("Não foi possível reagir", { description: (e as Error).message });
     }
@@ -104,26 +85,59 @@ export function ReactionPicker({ message }: Props) {
   );
 }
 
-/* Chip de reação exibido abaixo do balão */
+/* ============ Aggregated reaction chips ============
+ * Reads from message_reactions table with realtime subscription per message.
+ */
 export function ReactionChips({ message }: { message: MessageRow }) {
   const qc = useQueryClient();
-  const { current } = useWorkspace();
-  const payload = (message.payload ?? {}) as Record<string, unknown>;
-  const reactions = Array.isArray(payload.reactions)
-    ? (payload.reactions as Array<{ emoji: string; user_id?: string }>)
-    : [];
-  if (reactions.length === 0) return null;
+  const { user } = useAuth();
+
+  const { data: reactions = [] } = useQuery({
+    queryKey: ["msg-reactions", message.id],
+    queryFn: async (): Promise<ReactionRow[]> => {
+      const { data, error } = await supabase
+        .from("message_reactions")
+        .select("id,message_id,user_id,emoji")
+        .eq("message_id", message.id);
+      if (error) throw error;
+      return (data ?? []) as ReactionRow[];
+    },
+    staleTime: 10_000,
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`reactions:${message.id}:${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "message_reactions", filter: `message_id=eq.${message.id}` },
+        () => qc.invalidateQueries({ queryKey: ["msg-reactions", message.id] }),
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [message.id, qc]);
+
+  // Fallback: legacy reactions stored on payload
+  const legacy = ((message.payload as { reactions?: Array<{ emoji: string; user_id?: string }> })?.reactions) || [];
+  const all: Array<{ emoji: string; user_id: string | null }> = reactions.length
+    ? reactions.map((r) => ({ emoji: r.emoji, user_id: r.user_id }))
+    : legacy.map((r) => ({ emoji: r.emoji, user_id: r.user_id ?? null }));
+
+  if (all.length === 0) return null;
 
   const counts = new Map<string, number>();
-  for (const r of reactions) counts.set(r.emoji, (counts.get(r.emoji) ?? 0) + 1);
+  for (const r of all) counts.set(r.emoji, (counts.get(r.emoji) ?? 0) + 1);
+
+  const mineEmoji = all.find((r) => r.user_id && r.user_id === user?.id)?.emoji ?? null;
 
   const removeMine = async () => {
+    if (!mineEmoji) return;
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const next = reactions.filter((r) => r.user_id !== u?.user?.id);
-      await supabase.from("messages").update({ payload: { ...payload, reactions: next } }).eq("id", message.id);
-      qc.invalidateQueries({ queryKey: ["messages", message.conversation_id] });
-      qc.invalidateQueries({ queryKey: ["conversations", current?.id] });
+      const { error } = await supabase.rpc("react_to_message", {
+        _message_id: message.id,
+        _emoji: mineEmoji,
+      });
+      if (error) throw error;
     } catch {}
   };
 
@@ -132,7 +146,7 @@ export function ReactionChips({ message }: { message: MessageRow }) {
       type="button"
       onClick={removeMine}
       className="inline-flex items-center gap-0.5 px-1.5 h-5 rounded-full bg-popover border shadow-sm text-[11px] -mt-1 hover:bg-muted"
-      title="Clique para remover sua reação"
+      title={mineEmoji ? "Clique para remover sua reação" : "Reações"}
     >
       {[...counts.entries()].map(([emoji, n]) => (
         <span key={emoji} className="flex items-center gap-0.5">
