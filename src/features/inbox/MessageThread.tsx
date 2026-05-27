@@ -804,7 +804,8 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
         </button>
       )}
       <ForwardMessageDialog open={!!forwardMsg} onOpenChange={(v) => { if (!v) setForwardMsg(null); }} message={forwardMsg} />
-    </>
+    </div>
+
   );
 }
 
