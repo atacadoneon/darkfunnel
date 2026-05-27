@@ -188,7 +188,9 @@ export default function DialerRun() {
   }, [runState, startCall, endCall, loadNext, pauseCampaign]);
 
   const stage = stages.find((s) => s.id === currentItem?.deal?.stage_id);
-  const stageObjective = (stage as any)?.default_objective as string | undefined;
+  const stageName = stage?.name ?? (currentItem as any)?.stage_name ?? null;
+  const stageColor = stage?.color ?? "hsl(var(--primary))";
+  const stageObjective = (stage as any)?.default_objective ?? (currentItem as any)?.default_objective;
 
   const target = campaign?.target_count ?? 0;
   const done = campaign?.completed_count ?? 0;
