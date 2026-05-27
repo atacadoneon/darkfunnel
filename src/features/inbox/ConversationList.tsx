@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { formatDistanceToNowStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Inbox, User as UserIcon, MessageCircle, Phone } from "lucide-react";
+import { Inbox, User as UserIcon, MessageCircle, Phone, Instagram } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,12 +34,10 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
-const channelPalette: Record<string, string> = {
-  whatsapp_cloud: "text-emerald-600",
-  uazapi: "text-emerald-600",
-};
-
 function ChannelIcon({ kind, className }: { kind?: string; className?: string }) {
+  if (kind === "instagram") {
+    return <Instagram className={cn("text-pink-500", className)} />;
+  }
   if (kind === "whatsapp_cloud" || kind === "uazapi") {
     return <MessageCircle className={cn("text-emerald-600", className)} />;
   }
