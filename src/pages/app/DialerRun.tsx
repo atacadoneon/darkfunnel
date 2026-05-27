@@ -128,8 +128,10 @@ export default function DialerRun() {
   /* --------- Actions --------- */
   const startCall = useCallback(async () => {
     if (!ws || !currentItem) return;
-    const to = currentItem.phone_e164 ?? currentItem.contact?.phone_e164;
-    if (!to) { toast.error("Sem telefone para este lead"); return; }
+    const rawTo = currentItem.phone_e164 ?? currentItem.contact?.phone_e164;
+    if (!rawTo) { toast.error("Sem telefone para este lead"); return; }
+    const to = (await import("@/lib/phone")).toZenviaBR(rawTo);
+    if (!/^\d{10,11}$/.test(to)) { toast.error("Telefone inválido (use DDD + número)"); return; }
     try {
       const { data, error } = await supabase.functions.invoke("voice-outbound", {
         body: {
