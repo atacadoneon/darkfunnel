@@ -115,15 +115,20 @@ export function Composer({ conversation }: Props) {
 
   const handleFile = (f: File | undefined | null) => {
     if (!f) return;
-    if (!isUazapi) {
-      toast.error("Mídia disponível só em UAZAPI por enquanto");
+    if (!isUazapi && !isInstagram) {
+      toast.error("Mídia disponível só em WhatsApp/Instagram");
       return;
     }
     if (f.size > MAX_BYTES) {
       toast.error("Arquivo excede 50MB");
       return;
     }
-    setAttachment({ file: f, type: detectType(f.type || "") });
+    const t = detectType(f.type || "");
+    if (isInstagram && t === "document") {
+      toast.error("Instagram não aceita documentos");
+      return;
+    }
+    setAttachment({ file: f, type: t });
   };
 
   const startRecording = async () => {
