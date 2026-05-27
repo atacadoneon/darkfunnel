@@ -73,6 +73,9 @@ export default function Settings() {
         <TabsContent value="channels" className="mt-6">
           <ChannelsSection />
         </TabsContent>
+        <TabsContent value="rodizio" className="mt-6">
+          <RodizioSection />
+        </TabsContent>
         <TabsContent value="catalogs" className="mt-6 space-y-6">
           <TagsAdminSection />
           <LossReasonsAdminSection />
