@@ -120,23 +120,19 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
 
   return (
     <aside className="w-[374px] shrink-0 border-l flex-col overflow-y-auto overscroll-contain bg-card hidden min-h-0 lg:flex">
-      <div className="px-2 py-2 border-b flex items-center justify-around gap-0.5 shrink-0">
-        {tabs.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => setActiveTab(s.key)}
-            title={s.label}
-            className={cn(
-              "h-8 w-8 inline-flex items-center justify-center rounded transition-colors",
-              activeTab === s.key
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            {s.icon}
-          </button>
-        ))}
+      <div className="px-3 py-2 border-b flex items-center justify-around gap-1 shrink-0">
+        <CallButton
+          iconOnly variant="ghost"
+          phone={c?.phone_e164 ?? null}
+          contactId={conversation.contact_id}
+          contactName={c?.display_name ?? null}
+          contactAvatar={c?.profile_pic_preview_url ?? null}
+          conversationId={conversation.id}
+        />
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Tarefa"><ListChecks className="h-3.5 w-3.5" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Email"><Mail className="h-3.5 w-3.5" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Lembrete"><Bell className="h-3.5 w-3.5" /></Button>
+        <Button size="icon" variant="ghost" className="h-7 w-7" title="Nota"><StickyNote className="h-3.5 w-3.5" /></Button>
       </div>
 
       <div className="p-3 flex flex-col items-center text-center border-b">
@@ -166,24 +162,29 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
         </Badge>
       </div>
 
-      <div className="px-3 py-2 border-b flex items-center justify-around gap-1 shrink-0">
-        <CallButton
-          iconOnly variant="ghost"
-          phone={c?.phone_e164 ?? null}
-          contactId={conversation.contact_id}
-          contactName={c?.display_name ?? null}
-          contactAvatar={c?.profile_pic_preview_url ?? null}
-          conversationId={conversation.id}
-        />
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Tarefa"><ListChecks className="h-3.5 w-3.5" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Email"><Mail className="h-3.5 w-3.5" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Lembrete"><Bell className="h-3.5 w-3.5" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Nota"><StickyNote className="h-3.5 w-3.5" /></Button>
+      <div className="px-2 py-2 border-b flex items-center justify-around gap-0.5 shrink-0">
+        {tabs.map((s) => (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => setActiveTab(s.key)}
+            title={s.label}
+            className={cn(
+              "h-8 w-8 inline-flex items-center justify-center rounded transition-colors",
+              activeTab === s.key
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            {s.icon}
+          </button>
+        ))}
       </div>
 
-      <div className="px-3 py-3">
+      <div className="px-3 py-2 lead-compact">
         {renderTab()}
       </div>
+
 
       {openDeal && !deal && (
         <DealDialog open={openDeal} onOpenChange={setOpenDeal} stages={stages} deal={null} defaultStageId={stages[0]?.id} />
