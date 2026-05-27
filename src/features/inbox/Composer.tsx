@@ -203,7 +203,8 @@ export function Composer({ conversation }: Props) {
 
     try {
       if (att) {
-        if (!isUazapi) throw new Error("Mídia disponível só em UAZAPI por enquanto");
+        if (!isUazapi && !isInstagram) throw new Error("Mídia disponível só em WhatsApp/Instagram");
+        if (isInstagram && att.type === "document") throw new Error("Instagram não aceita documentos");
         const path = `${current.id}/${conversation.id}/${Date.now()}_${sanitizeFilename(att.file.name)}`;
         const up = await supabase.storage
           .from("darkfunnel-media")
@@ -213,14 +214,38 @@ export function Composer({ conversation }: Props) {
           .from("darkfunnel-media")
           .createSignedUrl(path, 7 * 24 * 3600);
         if (signed.error || !signed.data?.signedUrl) throw new Error(signed.error?.message || "signed url failed");
-        const { data, error } = await supabase.functions.invoke("uazapi-send", {
+        const fn = isInstagram ? "instagram-send" : "uazapi-send";
+        const reqBody = isInstagram
+          ? {
+              channel_id: conversation.channel_id,
+              contact_id: conversation.contact_id,
+              conversation_id: conversation.id,
+              type: att.type,
+              media_url: signed.data.signedUrl,
+              text: body || undefined,
+            }
+          : {
+              conversation_id: conversation.id,
+              type: att.type,
+              media_url: signed.data.signedUrl,
+              text: body || undefined,
+              filename: att.type === "document" ? att.file.name : undefined,
+              ptt: att.type === "audio" ? true : undefined,
+            };
+        const { data, error } = await supabase.functions.invoke(fn, { body: reqBody });
+        if (error) throw new Error(error.message);
+        optimisticStore.update(conversation.id, optimistic.id, {
+          status: "sent",
+          _externalId: (data as { external_id?: string } | null)?.external_id ?? null,
+        });
+      } else if (isInstagram) {
+        const { data, error } = await supabase.functions.invoke("instagram-send", {
           body: {
+            channel_id: conversation.channel_id,
+            contact_id: conversation.contact_id,
             conversation_id: conversation.id,
-            type: att.type,
-            media_url: signed.data.signedUrl,
-            text: body || undefined,
-            filename: att.type === "document" ? att.file.name : undefined,
-            ptt: att.type === "audio" ? true : undefined,
+            type: "text",
+            text: body,
           },
         });
         if (error) throw new Error(error.message);
