@@ -172,10 +172,11 @@ function ChannelRotationCard({
     }
   };
 
-  const handleToggleOpen = async () => {
-    const next = !open;
-    setOpen(next);
-    if (next && !rotation) await ensure().catch((e) => toast.error((e as Error).message));
+  const handleToggleOpen = () => setOpen((v) => !v);
+
+  const handleCreateRotation = async () => {
+    try { await ensure(); }
+    catch (e) { toast.error((e as Error).message); }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
