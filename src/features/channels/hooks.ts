@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 
-export type ChannelKind = "uazapi" | "whatsapp_cloud";
+export type ChannelKind = "uazapi" | "whatsapp_cloud" | "instagram";
 export type ChannelStatus =
   | "pending"
   | "qr_pending"
@@ -30,6 +30,12 @@ export type ChannelRow = {
   sector_id: string | null;
   visibility: ChannelVisibility;
   rotation_enabled: boolean;
+  // Instagram-specific
+  ig_username?: string | null;
+  ig_business_account_id?: string | null;
+  fb_page_id?: string | null;
+  profile_name?: string | null;
+  profile_picture_url?: string | null;
 };
 
 export function useChannels() {

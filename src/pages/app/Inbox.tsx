@@ -96,6 +96,11 @@ export default function Inbox() {
         if (!n.includes(q) && !p.includes(q)) return false;
       }
       if (filters.channelId && c.channel_id !== filters.channelId) return false;
+      if (filters.channelKind && filters.channelKind !== "all") {
+        const k = c.channels?.kind;
+        if (filters.channelKind === "whatsapp" && k !== "uazapi" && k !== "whatsapp_cloud") return false;
+        if (filters.channelKind === "instagram" && k !== "instagram") return false;
+      }
       if (filters.assignee) {
         if (filters.assignee === "unassigned") {
           if (c.assigned_user_id) return false;

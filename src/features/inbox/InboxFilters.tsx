@@ -41,6 +41,7 @@ export type InboxFilters = {
   text: string;
   message: string;
   channelId: string | null;
+  channelKind: "all" | "whatsapp" | "instagram";
   assignee: string | null;
   tagId: string | null;
   status: string | null;
@@ -51,6 +52,7 @@ export const DEFAULT_FILTERS: InboxFilters = {
   text: "",
   message: "",
   channelId: null,
+  channelKind: "all",
   assignee: null,
   tagId: null,
   status: null,
@@ -104,6 +106,23 @@ export function InboxFilters({ filters, onChange, resultCount }: Props) {
           onChange={(e) => update("message", e.target.value)}
           className="pl-8 h-9"
         />
+      </div>
+
+      <div className="flex items-center gap-1">
+        {(["all","whatsapp","instagram"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => update("channelKind", k)}
+            className={`h-6 px-2 rounded-full text-[10px] border transition-colors ${
+              filters.channelKind === k
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-input hover:bg-muted"
+            }`}
+          >
+            {k === "all" ? "Todos" : k === "whatsapp" ? "WhatsApp" : "Instagram"}
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-2">

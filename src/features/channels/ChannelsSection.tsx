@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog, History } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Phone, AlertCircle, Smartphone, BadgeCheck, RefreshCw, Loader2, UserRoundCog, History, Facebook, Send as TelegramIcon, Mail, Code } from "lucide-react";
 import { ImportHistoryDialog } from "@/features/channels/ImportHistoryDialog";
 import { isFeatureEnabled } from "@/lib/workspace-features";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useChannels, type ChannelRow, type ChannelStatus } from "@/features/channels/hooks";
 import { ChannelDialog } from "@/features/channels/ChannelDialog";
+import { InstagramConnectCard, ComingSoonChannel } from "@/features/channels/InstagramConnectCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
@@ -36,7 +37,9 @@ const statusVariant: Record<ChannelStatus, { label: string; className: string }>
 export function ChannelsSection() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
-  const { data: channels = [], isLoading } = useChannels();
+  const { data: allChannels = [], isLoading } = useChannels();
+  const instagramChannels = useMemo(() => allChannels.filter((c) => c.kind === "instagram"), [allChannels]);
+  const channels = useMemo(() => allChannels.filter((c) => c.kind === "uazapi" || c.kind === "whatsapp_cloud"), [allChannels]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ChannelRow | null>(null);
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
@@ -149,120 +152,118 @@ export function ChannelsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Canais</h2>
-          <p className="text-sm text-muted-foreground">
-            Crie quantos canais precisar — WhatsApp Business (QR) ou WhatsApp API (WABA).
-          </p>
-        </div>
-        <Button onClick={onNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Criar canal
-        </Button>
+      <div>
+        <h2 className="text-lg font-semibold">Canais de Conversa</h2>
+        <p className="text-sm text-muted-foreground">
+          Conecte WhatsApp, Instagram e outros canais para centralizar atendimento.
+        </p>
       </div>
 
-      {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando...</div>
-      ) : channels.length === 0 ? (
-        <Card className="p-10 text-center border-dashed">
-          <Phone className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <h3 className="font-semibold">Nenhum canal cadastrado</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Crie seu primeiro canal para começar a receber e enviar mensagens.
-          </p>
-          <Button onClick={onNew} className="mt-4">
-            <Plus className="h-4 w-4 mr-2" />
-            Criar canal
+      {/* ===== WhatsApp ===== */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+              <Smartphone className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold">WhatsApp</h3>
+              <p className="text-xs text-muted-foreground">Business (QR) ou Cloud API (WABA)</p>
+            </div>
+          </div>
+          <Button size="sm" onClick={onNew}>
+            <Plus className="h-4 w-4 mr-1" /> Adicionar número
           </Button>
-        </Card>
-      ) : (
-        <div className="grid gap-3">
-          {channels.map((c) => {
-            const s = statusVariant[c.status];
-            const Icon = c.kind === "uazapi" ? Smartphone : BadgeCheck;
-            return (
-              <Card key={c.id} className="p-4 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold truncate">{c.display_name}</h3>
-                    <Badge variant="outline" className="text-xs">
-                      {c.kind === "uazapi" ? "WhatsApp Business" : "WhatsApp API (WABA)"}
-                    </Badge>
-                    <Badge variant="outline" className={`text-xs ${s.className}`}>{s.label}</Badge>
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-0.5">
-                    {c.phone_e164 ?? "Sem telefone"} · {c.policy}
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => onEdit(c)}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                {c.kind === "uazapi" && c.status === "connected" && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onSync(c)}
-                      disabled={syncingId === c.id}
-                      title="Importar histórico de mensagens do WhatsApp"
-                    >
-                      {syncingId === c.id ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                      )}
-                      Sincronizar histórico
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onRefreshContacts(c)}
-                      disabled={refreshingId === c.id}
-                      title="Atualizar nome, foto e status dos contatos com conversa neste canal"
-                    >
-                      {refreshingId === c.id ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <UserRoundCog className="h-4 w-4 mr-2" />
-                      )}
-                      Atualizar contatos
-                    </Button>
-                    {importHistoryEnabled && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setImporting(c)}
-                        title="Importar histórico de mensagens com opções avançadas"
-                      >
-                        <History className="h-4 w-4 mr-2" />
-                        Importar Histórico
-                      </Button>
-                    )}
-                  </>
-                )}
-                <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </Card>
-            );
-          })}
         </div>
-      )}
+
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Carregando...</div>
+        ) : channels.length === 0 ? (
+          <Card className="p-6 text-center border-dashed">
+            <Phone className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <h3 className="font-medium text-sm">Nenhum número WhatsApp</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Adicione seu primeiro número para começar a atender.
+            </p>
+          </Card>
+        ) : (
+          <div className="grid gap-3">
+            {channels.map((c) => {
+              const s = statusVariant[c.status];
+              const Icon = c.kind === "uazapi" ? Smartphone : BadgeCheck;
+              return (
+                <Card key={c.id} className="p-4 flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold truncate">{c.display_name}</h3>
+                      <Badge variant="outline" className="text-xs">
+                        {c.kind === "uazapi" ? "WhatsApp Business" : "WhatsApp API (WABA)"}
+                      </Badge>
+                      <Badge variant="outline" className={`text-xs ${s.className}`}>{s.label}</Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-0.5">
+                      {c.phone_e164 ?? "Sem telefone"} · {c.policy}
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(c)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  {c.kind === "uazapi" && c.status === "connected" && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => onSync(c)} disabled={syncingId === c.id} title="Importar histórico de mensagens do WhatsApp">
+                        {syncingId === c.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                        Sincronizar histórico
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => onRefreshContacts(c)} disabled={refreshingId === c.id} title="Atualizar nome, foto e status">
+                        {refreshingId === c.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserRoundCog className="h-4 w-4 mr-2" />}
+                        Atualizar contatos
+                      </Button>
+                      {importHistoryEnabled && (
+                        <Button variant="outline" size="sm" onClick={() => setImporting(c)} title="Importar histórico com opções avançadas">
+                          <History className="h-4 w-4 mr-2" /> Importar Histórico
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={() => setDeleting(c)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ===== Instagram ===== */}
+      <section className="space-y-3">
+        <InstagramConnectCard channels={instagramChannels} />
+      </section>
+
+      {/* ===== Em breve ===== */}
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground">Em breve</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <ComingSoonChannel name="Facebook Messenger" color="#1877f2" icon={Facebook} />
+          <ComingSoonChannel name="Telegram" color="#229ED9" icon={TelegramIcon} />
+          <ComingSoonChannel name="Email" color="#64748b" icon={Mail} />
+          <ComingSoonChannel name="Webchat" color="#0ea5e9" icon={Code} />
+        </div>
+      </section>
 
       <Card className="p-4 bg-amber-500/5 border-amber-500/20">
         <div className="flex gap-3">
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <strong>Credenciais</strong> (token UAZAPI / access_token Cloud) são armazenadas
-            cifradas (AES-256-GCM) pela Edge Function — disponível no próximo sprint.
-            Por enquanto, o canal fica em status <em>pending</em> até o backend se conectar.
+            <strong>Credenciais</strong> (token UAZAPI / access_token Cloud / Meta App) são armazenadas
+            cifradas pela Edge Function. Canais ficam em <em>pending</em> até o backend se conectar.
           </div>
         </div>
       </Card>
+
 
       <ChannelDialog open={dialogOpen} onOpenChange={setDialogOpen} channel={editing} />
 

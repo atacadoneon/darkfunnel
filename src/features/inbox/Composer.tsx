@@ -80,12 +80,20 @@ export function Composer({ conversation }: Props) {
   const { data: pendings = [] } = useScheduledMessages(conversation.id);
   const { data: quickReplies = [] } = useQuickReplies();
 
-  const isCloud = conversation.channels?.kind === "whatsapp_cloud";
-  const isUazapi = conversation.channels?.kind === "uazapi";
+  const channelKind = conversation.channels?.kind;
+  const isCloud = channelKind === "whatsapp_cloud";
+  const isUazapi = channelKind === "uazapi";
+  const isInstagram = channelKind === "instagram";
+  const igWindowExpired = (() => {
+    if (!isInstagram) return false;
+    const last = conversation.last_inbound_at ? new Date(conversation.last_inbound_at).getTime() : 0;
+    if (!last) return true;
+    return Date.now() - last > 24 * 3600 * 1000;
+  })();
   const windowExpired =
-    isCloud && conversation.window_expires_at
+    (isCloud && conversation.window_expires_at
       ? new Date(conversation.window_expires_at) < new Date()
-      : false;
+      : false) || igWindowExpired;
 
   useEffect(() => {
     return () => {
@@ -107,20 +115,25 @@ export function Composer({ conversation }: Props) {
 
   const handleFile = (f: File | undefined | null) => {
     if (!f) return;
-    if (!isUazapi) {
-      toast.error("Mídia disponível só em UAZAPI por enquanto");
+    if (!isUazapi && !isInstagram) {
+      toast.error("Mídia disponível só em WhatsApp/Instagram");
       return;
     }
     if (f.size > MAX_BYTES) {
       toast.error("Arquivo excede 50MB");
       return;
     }
-    setAttachment({ file: f, type: detectType(f.type || "") });
+    const t = detectType(f.type || "");
+    if (isInstagram && t === "document") {
+      toast.error("Instagram não aceita documentos");
+      return;
+    }
+    setAttachment({ file: f, type: t });
   };
 
   const startRecording = async () => {
-    if (!isUazapi) {
-      toast.error("Mídia disponível só em UAZAPI por enquanto");
+    if (!isUazapi && !isInstagram) {
+      toast.error("Áudio disponível só em WhatsApp/Instagram");
       return;
     }
     try {
@@ -163,7 +176,11 @@ export function Composer({ conversation }: Props) {
     if (!current) return;
     if (!attachment && !text.trim()) return;
     if (windowExpired) {
-      toast.error("Janela 24h expirou. Envie um template HSM (em breve via UI).");
+      toast.error(
+        isInstagram
+          ? "Janela 24h do Instagram expirou. O usuário precisa enviar uma nova mensagem."
+          : "Janela 24h expirou. Envie um template HSM."
+      );
       return;
     }
     setSending(true);
@@ -191,7 +208,8 @@ export function Composer({ conversation }: Props) {
 
     try {
       if (att) {
-        if (!isUazapi) throw new Error("Mídia disponível só em UAZAPI por enquanto");
+        if (!isUazapi && !isInstagram) throw new Error("Mídia disponível só em WhatsApp/Instagram");
+        if (isInstagram && att.type === "document") throw new Error("Instagram não aceita documentos");
         const path = `${current.id}/${conversation.id}/${Date.now()}_${sanitizeFilename(att.file.name)}`;
         const up = await supabase.storage
           .from("darkfunnel-media")
@@ -201,14 +219,38 @@ export function Composer({ conversation }: Props) {
           .from("darkfunnel-media")
           .createSignedUrl(path, 7 * 24 * 3600);
         if (signed.error || !signed.data?.signedUrl) throw new Error(signed.error?.message || "signed url failed");
-        const { data, error } = await supabase.functions.invoke("uazapi-send", {
+        const fn = isInstagram ? "instagram-send" : "uazapi-send";
+        const reqBody = isInstagram
+          ? {
+              channel_id: conversation.channel_id,
+              contact_id: conversation.contact_id,
+              conversation_id: conversation.id,
+              type: att.type,
+              media_url: signed.data.signedUrl,
+              text: body || undefined,
+            }
+          : {
+              conversation_id: conversation.id,
+              type: att.type,
+              media_url: signed.data.signedUrl,
+              text: body || undefined,
+              filename: att.type === "document" ? att.file.name : undefined,
+              ptt: att.type === "audio" ? true : undefined,
+            };
+        const { data, error } = await supabase.functions.invoke(fn, { body: reqBody });
+        if (error) throw new Error(error.message);
+        optimisticStore.update(conversation.id, optimistic.id, {
+          status: "sent",
+          _externalId: (data as { external_id?: string } | null)?.external_id ?? null,
+        });
+      } else if (isInstagram) {
+        const { data, error } = await supabase.functions.invoke("instagram-send", {
           body: {
+            channel_id: conversation.channel_id,
+            contact_id: conversation.contact_id,
             conversation_id: conversation.id,
-            type: att.type,
-            media_url: signed.data.signedUrl,
-            text: body || undefined,
-            filename: att.type === "document" ? att.file.name : undefined,
-            ptt: att.type === "audio" ? true : undefined,
+            type: "text",
+            text: body,
           },
         });
         if (error) throw new Error(error.message);
@@ -276,8 +318,10 @@ export function Composer({ conversation }: Props) {
     <div className="border-t bg-card px-2 py-1.5">
 
       {windowExpired && (
-        <div className="mb-2 text-xs text-amber-600 dark:text-amber-400">
-          Janela 24h da Cloud API expirou — apenas templates HSM são permitidos.
+        <div className="mb-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          {isInstagram
+            ? "Janela de 24h do Instagram expirou. O usuário precisa enviar uma nova mensagem para você poder responder."
+            : "Janela 24h da Cloud API expirou — apenas templates HSM são permitidos."}
         </div>
       )}
       {pendings.length > 0 && (
@@ -385,7 +429,7 @@ export function Composer({ conversation }: Props) {
             </Command>
           </PopoverContent>
         </Popover>
-        {isUazapi && (
+        {(isUazapi || isInstagram) && (
           <Button
             variant="ghost"
             size="icon"
@@ -427,7 +471,7 @@ export function Composer({ conversation }: Props) {
             />
           </PopoverContent>
         </Popover>
-        {isUazapi && (
+        {(isUazapi || isInstagram) && (
           <Button
             variant={recording ? "destructive" : "ghost"}
             size="icon"
