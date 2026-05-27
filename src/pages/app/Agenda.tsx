@@ -144,24 +144,62 @@ function NewMeetingDialog({ open, onOpenChange, onCreated }: { open: boolean; on
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [withMeet, setWithMeet] = useState(true);
+  const [dealId, setDealId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+
+  const { data: deals = [] } = useQuery({
+    queryKey: ["agenda-deals", current?.id],
+    enabled: !!current?.id && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("id,title,contact:contacts(display_name,phone_e164)")
+        .eq("workspace_id", current!.id)
+        .is("deleted_at", null)
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const submit = async () => {
     if (!current?.id || !title || !start) return toast.error("Preencha título e horário");
+    if (!dealId) return toast.error("Selecione um lead");
     setLoading(true);
     try {
-      const { error } = await supabase.from("calendar_events").insert({
+      const selected = (deals as any[]).find(d => d.id === dealId);
+      const contactId = selected?.contact?.id ?? null;
+      const startISO = new Date(start).toISOString();
+      const endISO = end ? new Date(end).toISOString() : new Date(new Date(start).getTime() + 60 * 60 * 1000).toISOString();
+      const meetUrl = withMeet ? `https://meet.google.com/new-${Date.now()}` : null;
+
+      const { error: evErr } = await supabase.from("calendar_events").insert({
         workspace_id: current.id,
         title,
-        starts_at: new Date(start).toISOString(),
-        ends_at: end ? new Date(end).toISOString() : null,
-        conference_url: withMeet ? `https://meet.google.com/new-${Date.now()}` : null,
+        starts_at: startISO,
+        ends_at: endISO,
+        conference_url: meetUrl,
       });
-      if (error) throw error;
+      if (evErr) throw evErr;
+
+      const { error: mtErr } = await supabase.from("meetings").insert({
+        workspace_id: current.id,
+        title,
+        starts_at: startISO,
+        ends_at: endISO,
+        meeting_url: meetUrl,
+        deal_id: dealId,
+        contact_id: contactId,
+        status: "scheduled",
+      });
+      if (mtErr) throw mtErr;
+
       toast.success("Reunião criada");
       onCreated();
       onOpenChange(false);
-      setTitle(""); setStart(""); setEnd("");
+      setTitle(""); setStart(""); setEnd(""); setDealId("");
     } catch (e: any) { toast.error(e?.message ?? "Erro"); }
     finally { setLoading(false); }
   };
@@ -171,7 +209,22 @@ function NewMeetingDialog({ open, onOpenChange, onCreated }: { open: boolean; on
       <DialogContent>
         <DialogHeader><DialogTitle>Nova reunião</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label>Título</Label><Input value={title} onChange={e => setTitle(e.target.value)} /></div>
+          <div><Label>Título</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Apresentação proposta" /></div>
+          <div>
+            <Label>Lead <span className="text-destructive">*</span></Label>
+            <select
+              value={dealId}
+              onChange={e => setDealId(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-background px-2 text-sm"
+            >
+              <option value="">Selecione um lead…</option>
+              {(deals as any[]).map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.title} {d.contact?.display_name ? `— ${d.contact.display_name}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <div><Label>Início</Label><Input type="datetime-local" value={start} onChange={e => setStart(e.target.value)} /></div>
             <div><Label>Fim</Label><Input type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} /></div>
