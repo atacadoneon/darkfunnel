@@ -101,12 +101,12 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
         gateway_id: gatewayId,
         amount_cents: cents,
         description: description.trim() || "Pagamento",
-        contact_id: contact?.id ?? null,
+        contact_id: effectiveContact?.id ?? null,
         deal_id: dealId ?? null,
-        customer_name: contact?.name,
-        customer_email: contact?.email,
-        customer_phone: contact?.phone,
-        customer_document: contact?.document,
+        customer_name: effectiveContact?.name,
+        customer_email: effectiveContact?.email,
+        customer_phone: effectiveContact?.phone,
+        customer_document: effectiveContact?.document,
         max_installments: installments,
         payment_methods: selectedMethods,
         expires_in_hours: expiresInHours,
@@ -125,20 +125,20 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
   };
 
   const sendWhatsapp = async () => {
-    if (!result?.url || !contact?.phone) {
+    if (!result?.url || !effectiveContact?.phone) {
       toast.error("Telefone do contato indisponível");
       return;
     }
     const cents = brlToCents(amount);
     const expFmt = result.expires_at ? format(new Date(result.expires_at), "dd/MM/yyyy") : "—";
-    const text = `Olá ${contact?.name ?? ""}! Segue o link de pagamento de ${formatBRL(cents)}: ${result.url}\nVencimento: ${expFmt}`;
+    const text = `Olá ${effectiveContact?.name ?? ""}! Segue o link de pagamento de ${formatBRL(cents)}: ${result.url}\nVencimento: ${expFmt}`;
     setSending(true);
     try {
       const { error } = await supabase.functions.invoke("uazapi-send", {
         body: {
           conversation_id: conversationId ?? null,
-          contact_id: contact.id ?? null,
-          phone: contact.phone,
+          contact_id: effectiveContact!.id ?? null,
+          phone: effectiveContact!.phone,
           type: "text",
           text,
         },
@@ -169,7 +169,7 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
             <div className="min-w-0 flex-1 text-sm">
               <div className="font-medium truncate">{contact.name ?? "—"}</div>
               <div className="text-xs text-muted-foreground truncate">
-                {[contact.phone, contact.email, contact.document].filter(Boolean).join(" · ") || "Sem dados de contato"}
+                {[effectiveContact!.phone, contact.email, contact.document].filter(Boolean).join(" · ") || "Sem dados de contato"}
               </div>
             </div>
           </Card>
@@ -250,7 +250,7 @@ export function PaymentLinkDialog({ open, onOpenChange, contact, dealId, default
                 <Button variant="outline" size="sm" onClick={copy} className="gap-1.5">
                   <Copy className="h-3.5 w-3.5" /> Copiar
                 </Button>
-                <Button size="sm" onClick={sendWhatsapp} disabled={sending || !contact?.phone} className="gap-1.5">
+                <Button size="sm" onClick={sendWhatsapp} disabled={sending || !effectiveContact?.phone} className="gap-1.5">
                   {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                   Enviar no WhatsApp
                 </Button>
