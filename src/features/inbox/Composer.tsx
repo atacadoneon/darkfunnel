@@ -171,7 +171,11 @@ export function Composer({ conversation }: Props) {
     if (!current) return;
     if (!attachment && !text.trim()) return;
     if (windowExpired) {
-      toast.error("Janela 24h expirou. Envie um template HSM (em breve via UI).");
+      toast.error(
+        isInstagram
+          ? "Janela 24h do Instagram expirou. O usuário precisa enviar uma nova mensagem."
+          : "Janela 24h expirou. Envie um template HSM."
+      );
       return;
     }
     setSending(true);
