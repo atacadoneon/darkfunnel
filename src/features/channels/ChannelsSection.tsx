@@ -37,7 +37,9 @@ const statusVariant: Record<ChannelStatus, { label: string; className: string }>
 export function ChannelsSection() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
-  const { data: channels = [], isLoading } = useChannels();
+  const { data: allChannels = [], isLoading } = useChannels();
+  const instagramChannels = useMemo(() => allChannels.filter((c) => c.kind === "instagram"), [allChannels]);
+  const channels = useMemo(() => allChannels.filter((c) => c.kind === "uazapi" || c.kind === "whatsapp_cloud"), [allChannels]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ChannelRow | null>(null);
   const [deleting, setDeleting] = useState<ChannelRow | null>(null);
