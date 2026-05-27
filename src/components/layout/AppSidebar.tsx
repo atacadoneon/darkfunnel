@@ -51,7 +51,6 @@ const sections: { label: string; items: Item[] }[] = [
   {
     label: "",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
       { title: "CRM & Leads", url: "/funildevendas", icon: Filter },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Ligações", url: "/calls", icon: Phone },
@@ -61,16 +60,17 @@ const sections: { label: string; items: Item[] }[] = [
   {
     label: "Gestão",
     items: [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
       { title: "Metas", url: "/metas", icon: Target },
       { title: "Tarefas", url: "/tarefas", icon: ListChecks },
       { title: "Reuniões", url: "/reunioes", icon: Calendar },
       { title: "Agenda", url: "/agenda", icon: CalendarDays },
+      { title: "Prospecção", url: "/prospeccao", icon: Search },
     ],
   },
   {
     label: "Automação",
     items: [
-      { title: "Discador", url: "/discador", icon: PhoneOutgoing },
       { title: "Fluxo de Cadência", url: "/cadencia", icon: MessageSquare },
       { title: "Automações", url: "/automacoes", icon: Workflow },
     ],
@@ -78,7 +78,6 @@ const sections: { label: string; items: Item[] }[] = [
   {
     label: "Ferramentas",
     items: [
-      { title: "Prospecção", url: "/prospeccao", icon: Search },
       { title: "Configurações", url: "/settings", icon: Settings },
     ],
   },
