@@ -265,7 +265,7 @@ function ChannelRotationCard({
   // Stats
   const countsByUser = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const a of assignments) m[a.user_id] = (m[a.user_id] ?? 0) + 1;
+    for (const a of assignments) m[a.assigned_user_id] = (m[a.assigned_user_id] ?? 0) + 1;
     return m;
   }, [assignments]);
   const totalToday = assignments.length;
