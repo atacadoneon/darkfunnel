@@ -76,6 +76,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <WorkspaceProvider>
+              <PresenceMount />
               <VoiceProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
