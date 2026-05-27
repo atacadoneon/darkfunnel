@@ -270,9 +270,10 @@ function GeralTab({ year, month, setYear, setMonth }: {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-[11px]">Meta Mensal (R$)</Label>
-            <Input type="number" value={target} disabled={!canEdit} className="h-8 text-xs"
-              onChange={(e) => setTarget(Number(e.target.value) || 0)} />
+            <Label className="text-[11px]">Meta Mensal</Label>
+            <CurrencyInput value={target} disabled={!canEdit} className="h-8 text-xs"
+              onChange={(n) => setTarget(n)} />
+
           </div>
         </div>
 
