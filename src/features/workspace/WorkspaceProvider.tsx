@@ -41,10 +41,31 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("workspaces")
       .select("id,name,slug,features")
       .order("created_at", { ascending: true });
+
+    // Auto-provisiona workspace na primeira entrada (cobre signup com confirmação de email)
+    if (!error && (!data || data.length === 0)) {
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+      const pendingName =
+        (meta.pending_workspace_name as string) ||
+        (meta.full_name as string) ||
+        (user.email ? user.email.split("@")[0] : "Minha Empresa");
+      const { error: rpcErr } = await supabase.rpc("create_workspace_for_current_user", {
+        p_name: pendingName,
+      });
+      if (!rpcErr) {
+        const res = await supabase
+          .from("workspaces")
+          .select("id,name,slug,features")
+          .order("created_at", { ascending: true });
+        data = res.data ?? [];
+        error = res.error;
+      }
+    }
+
     if (!error && data) {
       setWorkspaces(data as Workspace[]);
       if (!currentId || !data.find((w) => w.id === currentId)) {
@@ -55,6 +76,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
     setLoading(false);
   }, [user, currentId]);
+
 
   useEffect(() => {
     void refresh();
