@@ -1,7 +1,9 @@
 import { useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+
+const CONTACTS_PAGE_SIZE = 100;
 
 export type IdentityKind = "whatsapp" | "instagram" | "email";
 
