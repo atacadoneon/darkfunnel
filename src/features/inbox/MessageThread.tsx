@@ -649,8 +649,9 @@ export function MessageThread({ messages: rawMessages, searchQuery = "", activeM
   };
 
   return (
-    <>
+    <div className="relative flex flex-1 min-h-0 flex-col">
       <PinnedMessagesBar messages={messages} onJump={jumpTo} />
+
       <div ref={ref} className="wa-thread flex-1 overflow-y-auto overscroll-contain scrollbar-hide px-[5%] py-4 space-y-0.5">
         {messages.map((m, idx) => {
           const out = m.direction === "out";
