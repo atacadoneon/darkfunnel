@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { type ComponentProps, useEffect, useState } from "react";
 import {
+  type LucideIcon,
   LayoutGrid,
   Users,
   Filter,
@@ -51,7 +52,7 @@ import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
-type Item = { title: string; url: string; icon: any };
+type Item = { title: string; url: string; icon: LucideIcon };
 
 const sections: { label: string; items: Item[] }[] = [
   {
