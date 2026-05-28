@@ -56,27 +56,25 @@ export function useFlowNodes(flowId: string | undefined) {
 
   useEffect(() => {
     if (!flowId) return;
-    const chN = supabase
-      .channel(`flow_nodes:${flowId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "flow_nodes", filter: `flow_id=eq.${flowId}` },
-        () => qc.invalidateQueries({ queryKey: ["flow_nodes", flowId] }),
-      )
-      .subscribe();
-    const chE = supabase
-      .channel(`flow_edges:${flowId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "flow_edges", filter: `flow_id=eq.${flowId}` },
-        () => qc.invalidateQueries({ queryKey: ["flow_edges", flowId] }),
-      )
-      .subscribe();
+    const suf = Math.random().toString(36).slice(2, 8);
+    const chN = supabase.channel(`flow_nodes:${flowId}:${suf}`);
+    chN.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "flow_nodes", filter: `flow_id=eq.${flowId}` },
+      () => qc.invalidateQueries({ queryKey: ["flow_nodes", flowId] }),
+    ).subscribe();
+    const chE = supabase.channel(`flow_edges:${flowId}:${suf}`);
+    chE.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "flow_edges", filter: `flow_id=eq.${flowId}` },
+      () => qc.invalidateQueries({ queryKey: ["flow_edges", flowId] }),
+    ).subscribe();
     return () => {
       void supabase.removeChannel(chN);
       void supabase.removeChannel(chE);
     };
   }, [flowId, qc]);
+
 
   return { nodes: nodesQ.data ?? [], edges: edgesQ.data ?? [], isLoading: nodesQ.isLoading || edgesQ.isLoading };
 }
