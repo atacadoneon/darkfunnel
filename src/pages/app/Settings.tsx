@@ -10,17 +10,20 @@ import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import RodizioSection from "@/pages/SettingsRodizio";
 import { TrackingSection } from "@/features/tracking/TrackingSection";
 import { GatewaysSection } from "@/features/payments/GatewaysSection";
-import { Settings2, Radio, LineChart, Plug, Users, Tags, Shield, ArrowUpRight, Shuffle } from "lucide-react";
+import { Settings2, Radio, LineChart, Plug, Users, Tags, Shield, ArrowUpRight, Shuffle, Server, ListChecks } from "lucide-react";
 
 const BASE_TABS = [
   { value: "preferences",  label: "Preferências", icon: Settings2 },
   { value: "channels",     label: "Canais",       icon: Radio },
   { value: "rodizio",      label: "Rodízio",      icon: Shuffle },
   { value: "catalogs",     label: "Cadastros",    icon: Tags },
+  { value: "custom-fields", label: "Campos Adicionais", icon: ListChecks },
+  { value: "mcp",          label: "Servidor MCP", icon: Server },
   { value: "tracking",     label: "Trackeamento", icon: LineChart },
   { value: "integrations", label: "Integrações",  icon: Plug },
   { value: "users",        label: "Usuários",     icon: Users },
 ] as const;
+
 
 function Empty({ title, desc }: { title: string; desc: string }) {
   return (
@@ -83,6 +86,29 @@ export default function Settings() {
           <TagsAdminSection />
           <LossReasonsAdminSection />
         </TabsContent>
+        <TabsContent value="custom-fields" className="mt-6">
+          <Card className="p-6 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Campos Adicionais</h3>
+              <p className="text-sm text-muted-foreground mt-1">Defina campos customizados por entidade.</p>
+            </div>
+            <NavLink to="/config/custom-fields" className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90">
+              Abrir <ArrowUpRight className="h-3.5 w-3.5" />
+            </NavLink>
+          </Card>
+        </TabsContent>
+        <TabsContent value="mcp" className="mt-6">
+          <Card className="p-6 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Servidor MCP</h3>
+              <p className="text-sm text-muted-foreground mt-1">Conecte seu agente de IA via Model Context Protocol.</p>
+            </div>
+            <NavLink to="/config/mcp-server" className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90">
+              Abrir <ArrowUpRight className="h-3.5 w-3.5" />
+            </NavLink>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="tracking" className="mt-6">
           <TrackingSection />
         </TabsContent>

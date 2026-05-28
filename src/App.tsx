@@ -24,7 +24,6 @@ import Settings from "@/pages/app/Settings";
 import Pipeline from "@/pages/app/Pipeline";
 import Dashboard from "@/pages/app/Dashboard";
 import Tasks from "@/pages/app/Tasks";
-import Meetings from "@/pages/app/Meetings";
 import AutomacoesPage from "@/pages/AutomacoesPage";
 import AutomacaoEditorPage from "@/pages/AutomacaoEditorPage";
 import Cadence from "@/pages/app/Cadence";
@@ -41,11 +40,14 @@ import EquipeOnline from "@/pages/app/EquipeOnline";
 import Payments from "@/pages/app/Payments";
 import Produtos from "@/pages/app/Produtos";
 import Propostas from "@/pages/app/Propostas";
+import MCPServerSettingsPage from "@/pages/MCPServerSettingsPage";
+import CustomFieldsSettingsPage from "@/pages/CustomFieldsSettingsPage";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
 import SettingsRodizio from "@/pages/SettingsRodizio";
 import NotFound from "@/pages/NotFound";
 import { useUserPresence } from "@/hooks/useUserPresence";
+
 
 function PresenceMount() {
   useUserPresence();
@@ -113,7 +115,7 @@ const App = () => (
                     <Route path="metas" element={<Goals />} />
                     <Route path="tarefas" element={<Tasks />} />
                     <Route path="tasks" element={<Tasks />} />
-                    <Route path="reunioes" element={<Meetings />} />
+                    <Route path="reunioes" element={<Navigate to="/agenda" replace />} />
                     <Route path="agenda" element={<Agenda />} />
                     <Route path="calls" element={<Calls />} />
                     <Route path="discador" element={<Dialer />} />
@@ -132,6 +134,8 @@ const App = () => (
                     <Route path="propostas/:id" element={<Propostas />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
+                    <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
+                    <Route path="config/custom-fields" element={<CustomFieldsSettingsPage />} />
                     <Route path="admin" element={<Admin />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
@@ -142,7 +146,8 @@ const App = () => (
                     <Route path="contacts" element={<Navigate to="/funildevendas?tab=banco" replace />} />
                     <Route path="email" element={<Navigate to="/emailmarketing" replace />} />
                     <Route path="goals" element={<Navigate to="/metas" replace />} />
-                    <Route path="meetings" element={<Navigate to="/reunioes" replace />} />
+                    <Route path="meetings" element={<Navigate to="/agenda" replace />} />
+
                     <Route path="cadence" element={<Navigate to="/cadencia" replace />} />
                     <Route path="channels" element={<Navigate to="/settings?tab=channels" replace />} />
                   </Route>
