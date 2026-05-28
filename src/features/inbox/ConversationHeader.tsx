@@ -103,11 +103,12 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
           className="h-7 w-7"
         />
 
-        {c?.email && (
-          <IconBtn label="Enviar email" onClick={() => { window.location.href = `mailto:${c.email}`; }}>
-            <Mail className="h-3.5 w-3.5" />
-          </IconBtn>
-        )}
+        <IconBtn label="Enviar email" onClick={() => {
+          const email = (c as { email?: string | null } | null)?.email;
+          if (email) window.location.href = `mailto:${email}`;
+        }}>
+          <Mail className="h-3.5 w-3.5" />
+        </IconBtn>
 
         <AssigneePopover
           conversationId={conversation.id}
