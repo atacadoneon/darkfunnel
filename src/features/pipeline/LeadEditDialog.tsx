@@ -254,7 +254,6 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
         entry_date: entryDate || null,
         assigned_to: primaryAssignee,
         value_cents: Math.round(parseFloat(valueProposal || "0") * 100),
-        value_sold_cents: Math.round(parseFloat(valueSold || "0") * 100),
         notes: notes.trim() || null,
       }).eq("id", dealId);
 
