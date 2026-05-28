@@ -15,14 +15,15 @@ export const StartNode = memo(({ data }: NodeProps) => {
         </div>
         <span className="text-sm font-semibold flex-1">Início</span>
       </div>
-      <div className="p-3 space-y-2">
+      <div className="p-3 space-y-2 nodrag nopan">
         {triggerLabel ? (
           <div className="flex items-center gap-2 text-sm">
             <span className="flex-1 truncate font-medium">{triggerLabel}</span>
             <Button
               size="icon"
               variant="ghost"
-              className="h-6 w-6"
+              className="h-6 w-6 nodrag"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 d.onPickTrigger?.();
@@ -39,7 +40,8 @@ export const StartNode = memo(({ data }: NodeProps) => {
             <Button
               size="sm"
               variant="outline"
-              className="w-full h-7 text-xs"
+              className="w-full h-7 text-xs nodrag"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 d.onPickTrigger?.();
