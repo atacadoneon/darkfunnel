@@ -100,6 +100,11 @@ const App = () => (
 
                   <Route path="/app/*" element={<Navigate to="/dashboard" replace />} />
 
+                  <Route path="/company-register" element={<RequireAuth><CompanyRegister /></RequireAuth>} />
+                  <Route path="/company-register/preparing" element={<RequireAuth><PreparingAccount /></RequireAuth>} />
+                  <Route path="/company-register/setup" element={<RequireAuth><SetupWizard /></RequireAuth>} />
+
+
                   <Route
                     path="/"
                     element={
