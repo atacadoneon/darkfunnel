@@ -153,8 +153,8 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
   const [phone2, setPhone2] = useState("");
   const [initialPhone, setInitialPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [niche, setNiche] = useState("");
   const [city, setCity] = useState("");
+  const [stateUf, setStateUf] = useState("");
 
   // deal
   const [pipelineId, setPipelineId] = useState<string>("");
@@ -165,8 +165,11 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
   const [primaryAssignee, setPrimaryAssignee] = useState<string | null>(null);
   const [productIds, setProductIds] = useState<string[]>([]);
   const [valueProposal, setValueProposal] = useState("");
-  const [valueSold, setValueSold] = useState("");
   const [notes, setNotes] = useState("");
+
+  // outras informações (somente leitura)
+  const [originDevice, setOriginDevice] = useState<string>("");
+  const [createdAt, setCreatedAt] = useState<string>("");
 
   const stages = useMemo(() => stagesAll.filter((s) => !pipelineId || (s as any).pipeline_id === pipelineId || !((s as any).pipeline_id)), [stagesAll, pipelineId]);
 
