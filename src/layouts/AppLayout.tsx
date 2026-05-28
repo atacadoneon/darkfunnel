@@ -104,6 +104,18 @@ export default function AppLayout() {
   if (workspaces.length === 0) return <CreateWorkspacePrompt />;
   if (!current) return <Navigate to="/dashboard" replace />;
 
+  // Onboarding gating (admins de plataforma escapam)
+  if (!isPlatformAdmin) {
+    const onCompanyRoute = location.pathname.startsWith("/company-register");
+    if (!current.onboarding_completed_at && !onCompanyRoute) {
+      return <Navigate to="/company-register" replace />;
+    }
+    if (current.onboarding_completed_at && !current.setup_completed_at && !onCompanyRoute) {
+      return <Navigate to="/company-register/setup" replace />;
+    }
+  }
+
+
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={pinned}>
       <div className={`flex h-svh w-full overflow-hidden ${pinned ? "" : "rail-mode"}`}>
