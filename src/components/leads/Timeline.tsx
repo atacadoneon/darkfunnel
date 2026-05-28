@@ -59,15 +59,15 @@ const COLOR_MAP: Record<string, string> = {
   gray: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-type FilterKey = "all" | "events" | "messages" | "calls" | "notes";
+type FilterKey = "all" | "events" | "calls" | "notes";
 
 const FILTER_SOURCES: Record<FilterKey, string[] | null> = {
   all: null,
   events: ["lead_event"],
-  messages: ["message"],
   calls: ["call"],
   notes: ["note"],
 };
+
 
 function useTimeline(contactId: string, filter: FilterKey) {
   return useInfiniteQuery({
