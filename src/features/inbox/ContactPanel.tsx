@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ContactAvatar } from "./ContactAvatar";
-import { CallButton } from "@/features/voice/CallButton";
+
 
 import type { ConversationRow } from "./hooks";
 
