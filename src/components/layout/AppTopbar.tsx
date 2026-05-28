@@ -1,7 +1,7 @@
 import { Moon, Sun, LogOut } from "lucide-react";
 import { UnreadBell } from "@/features/notifications/UnreadBell";
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import {
