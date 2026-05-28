@@ -171,6 +171,9 @@ const Sidebar = React.forwardRef<
     );
   }
 
+  // Extrai handlers de hover para aplicar no div raiz (peer), e não no painel interno
+  const { onMouseEnter, onMouseLeave, ...restProps } = props as React.HTMLAttributes<HTMLDivElement>;
+
   return (
     <div
       ref={ref}
@@ -179,6 +182,8 @@ const Sidebar = React.forwardRef<
       data-collapsible={collapsible === "icon" ? "icon" : state === "collapsed" ? collapsible : ""}
       data-variant={variant}
       data-side={side}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {/* This is what handles the sidebar gap on desktop */}
       <div
@@ -203,7 +208,7 @@ const Sidebar = React.forwardRef<
             : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className,
         )}
-        {...props}
+        {...restProps}
       >
         <div
           data-sidebar="sidebar"
