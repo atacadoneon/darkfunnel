@@ -56,6 +56,7 @@ export default function AppLayout() {
   usePresenceHeartbeat();
   const [open, setOpen] = useState(false);
   const openTimer = useRef<NodeJS.Timeout | null>(null);
+  const allowOpenRef = useRef(false);
 
   const clearOpenTimer = () => {
     if (openTimer.current) {
@@ -69,13 +70,22 @@ export default function AppLayout() {
     clearOpenTimer();
     openTimer.current = setTimeout(() => {
       openTimer.current = null;
+      allowOpenRef.current = true;
       setOpen(true);
+      allowOpenRef.current = false;
     }, HOVER_OPEN_DELAY_MS);
   };
 
   const onLeave = () => {
     clearOpenTimer();
     setOpen(false);
+  };
+
+  // Bloqueia qualquer abertura que não venha do nosso timer de hover
+  // (ex.: SidebarTrigger, atalho Ctrl+B do shadcn).
+  const handleOpenChange = (next: boolean) => {
+    if (next && !allowOpenRef.current) return;
+    setOpen(next);
   };
 
   useEffect(() => {
