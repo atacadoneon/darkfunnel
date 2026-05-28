@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { type ComponentProps, useEffect, useState } from "react";
 import {
+  type LucideIcon,
   LayoutGrid,
   Users,
   Filter,
@@ -51,7 +52,7 @@ import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
-type Item = { title: string; url: string; icon: any };
+type Item = { title: string; url: string; icon: LucideIcon };
 
 const sections: { label: string; items: Item[] }[] = [
   {
@@ -91,9 +92,9 @@ const sections: { label: string; items: Item[] }[] = [
 type AppSidebarProps = {
   pinned?: boolean;
   onTogglePin?: () => void;
-};
+} & Pick<ComponentProps<typeof Sidebar>, "onMouseEnter" | "onMouseLeave">;
 
-export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}) {
+export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseLeave }: AppSidebarProps = {}) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
@@ -146,7 +147,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
   const wsName = current?.name ?? "Conta";
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" side="left">
+    <Sidebar collapsible="icon" variant="sidebar" side="left" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
       <SidebarHeader className="p-3 border-b">
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
