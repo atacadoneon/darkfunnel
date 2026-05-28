@@ -102,13 +102,26 @@ export function Dialer() {
       });
       if (error) {
         const ctx: any = (error as any).context;
-        const code = ctx?.code || (data as any)?.code;
+        let payload: any = ctx;
+        try {
+          if (ctx instanceof Response) payload = await ctx.clone().json();
+          else if (typeof ctx?.text === "function") payload = JSON.parse(await ctx.text());
+          else if (typeof ctx?.body === "string") payload = JSON.parse(ctx.body);
+        } catch {}
+        const code = payload?.code || (data as any)?.code;
         if (code === "insufficient_balance" || (error as any).status === 402) {
-          showInsufficient(ctx?.required ?? (data as any)?.required);
+          showInsufficient(payload?.required ?? (data as any)?.required);
           setMode("idle");
           return;
         }
-        throw error;
+        if (code === "zenvia_error") {
+          toast.error("Zenvia rejeitou a chamada", {
+            description: payload?.zenvia_response?.mensagem ?? payload?.error,
+          });
+          setMode("idle");
+          return;
+        }
+        throw new Error(payload?.error || (error as any).message || "Erro na chamada");
       }
       if (channel === "whatsapp" && data?.deeplink) {
         window.open(data.deeplink, "_blank");
