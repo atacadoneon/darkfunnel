@@ -170,7 +170,7 @@ export default function Contacts() {
                         <div className="truncate text-sm font-medium">{name}</div>
                         <div className="flex flex-wrap gap-1 pt-0.5 md:hidden">
                           {(c.identities ?? []).slice(0, 3).map((i) => {
-                            const Icon = IDENTITY_ICON[i.kind];
+                            const Icon = IDENTITY_ICON[i.kind] ?? Users;
                             return (
                               <span
                                 key={i.id}
@@ -181,6 +181,7 @@ export default function Contacts() {
                               </span>
                             );
                           })}
+
                           {(c.identities ?? []).length === 0 && c.phone_e164 && (
                             <span className="text-[10px] text-muted-foreground">{c.phone_e164}</span>
                           )}
@@ -193,12 +194,12 @@ export default function Contacts() {
                         <Badge variant="outline" className="text-[10px]">sem canais</Badge>
                       ) : (
                         (c.identities ?? []).map((i) => {
-                          const Icon = IDENTITY_ICON[i.kind];
+                          const Icon = IDENTITY_ICON[i.kind] ?? Users;
                           return (
                             <span
                               key={i.id}
                               className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
-                              title={`${IDENTITY_LABELS[i.kind]}: ${i.value}`}
+                              title={`${IDENTITY_LABELS[i.kind] ?? i.kind}: ${i.value}`}
                             >
                               <Icon className="h-3 w-3 text-muted-foreground" />
                               <span className="max-w-[140px] truncate">{i.value}</span>
@@ -206,6 +207,7 @@ export default function Contacts() {
                             </span>
                           );
                         })
+
                       )}
                     </div>
 
