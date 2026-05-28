@@ -25,7 +25,8 @@ import Pipeline from "@/pages/app/Pipeline";
 import Dashboard from "@/pages/app/Dashboard";
 import Tasks from "@/pages/app/Tasks";
 import Meetings from "@/pages/app/Meetings";
-import Automations from "@/pages/app/Automations";
+import AutomacoesPage from "@/pages/AutomacoesPage";
+import AutomacaoEditorPage from "@/pages/AutomacaoEditorPage";
 import Cadence from "@/pages/app/Cadence";
 import Goals from "@/pages/app/Goals";
 import AdminFeatures from "@/pages/admin/Features";
@@ -119,8 +120,9 @@ const App = () => (
                     <Route path="discador/:id" element={<DialerRun />} />
                     <Route path="cadencia" element={<Cadence />} />
                     <Route path="outreach-flows" element={<Cadence />} />
-                    <Route path="automacoes" element={<Automations />} />
-                    <Route path="automations" element={<Automations />} />
+                    <Route path="automacoes" element={<AutomacoesPage />} />
+                    <Route path="automacoes/:id" element={<AutomacaoEditorPage />} />
+                    <Route path="automations" element={<AutomacoesPage />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
