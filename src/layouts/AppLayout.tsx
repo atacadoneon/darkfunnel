@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 
 function CreateWorkspacePrompt() {
   const { createWorkspace } = useWorkspace();
