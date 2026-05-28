@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import {
-  Gift, Clock, ClipboardList, StickyNote, Search,
+  Gift, Clock, ClipboardList, StickyNote, Search, Mail,
   Sparkles, Plus, Loader2, Send, FileText,
 } from "lucide-react";
+import { CallButton } from "@/features/voice/CallButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
