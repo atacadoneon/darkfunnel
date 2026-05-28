@@ -115,7 +115,7 @@ const App = () => (
                     <Route path="metas" element={<Goals />} />
                     <Route path="tarefas" element={<Tasks />} />
                     <Route path="tasks" element={<Tasks />} />
-                    <Route path="reunioes" element={<Meetings />} />
+                    <Route path="reunioes" element={<Navigate to="/agenda" replace />} />
                     <Route path="agenda" element={<Agenda />} />
                     <Route path="calls" element={<Calls />} />
                     <Route path="discador" element={<Dialer />} />
