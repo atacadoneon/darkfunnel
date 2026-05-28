@@ -106,21 +106,13 @@ export default function AppLayout() {
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={false}>
       <div className="flex h-svh w-full overflow-hidden rail-mode">
-        <AppSidebar />
+        <AppSidebar onMouseEnter={onEnter} onMouseLeave={onLeave} />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-y-auto">
             <Outlet />
           </main>
         </div>
-        {/* Sensor de hover do rail: cobre 56px colapsado, 260px aberto */}
-        <div
-          aria-hidden
-          onMouseEnter={onEnter}
-          onMouseLeave={onLeave}
-          className="fixed inset-y-0 left-0 z-[60] pointer-events-auto"
-          style={{ width: open ? 260 : 56, background: "transparent" }}
-        />
       </div>
     </SidebarProvider>
   );
