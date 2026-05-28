@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { type ComponentProps, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutGrid,
   Users,
@@ -91,9 +91,9 @@ const sections: { label: string; items: Item[] }[] = [
 type AppSidebarProps = {
   pinned?: boolean;
   onTogglePin?: () => void;
-} & Pick<ComponentProps<typeof Sidebar>, "onMouseEnter" | "onMouseLeave">;
+};
 
-export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseLeave }: AppSidebarProps = {}) {
+export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
@@ -146,7 +146,7 @@ export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseL
   const wsName = current?.name ?? "Conta";
 
   return (
-    <Sidebar collapsible="icon" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+    <Sidebar collapsible="icon" variant="sidebar" side="left">
       <SidebarHeader className="p-3 border-b">
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
