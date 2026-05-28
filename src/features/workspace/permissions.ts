@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "./WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 
-export type WorkspaceRole = "owner" | "admin" | "manager" | "member";
+export type WorkspaceRole = "colaborador" | "vendedor" | "gerente" | "proprietario" | "platform_admin";
+
+const ADMIN_ROLES: WorkspaceRole[] = ["gerente", "proprietario", "platform_admin"];
+const OWNER_ROLES: WorkspaceRole[] = ["proprietario", "platform_admin"];
 
 export type WorkspaceMember = {
   user_id: string;
@@ -28,25 +31,25 @@ export function useMyRole() {
         .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
-      return (data?.role as WorkspaceRole) ?? "member";
+      return (data?.role as WorkspaceRole) ?? "vendedor";
     },
   });
 }
 
 export function useIsAdmin() {
   const { data: role } = useMyRole();
-  return role === "owner" || role === "admin";
+  return !!role && OWNER_ROLES.includes(role);
 }
 
 export function useIsManagerOrAdmin() {
   const { data: role } = useMyRole();
-  return role === "owner" || role === "admin" || role === "manager";
+  return !!role && ADMIN_ROLES.includes(role);
 }
 
 /** true se o usuário só vê o que é dele (vendedor comum). */
 export function useIsSeller() {
   const { data: role } = useMyRole();
-  return role === "member";
+  return role === "vendedor" || role === "colaborador";
 }
 
 export function useWorkspaceMembers() {
