@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DndContext,
   PointerSensor,
@@ -33,7 +34,7 @@ function brl(cents: number | null | undefined) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function ProposalCard({ proposal }: { proposal: Proposal }) {
+function ProposalCard({ proposal, onOpen }: { proposal: Proposal; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: proposal.id,
   });
@@ -46,6 +47,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
       style={style}
       {...listeners}
       {...attributes}
+      onDoubleClick={onOpen}
       className={`p-3 cursor-grab active:cursor-grabbing space-y-2 hover:border-primary/50 transition-colors ${
         isDragging ? "opacity-50" : ""
       }`}
@@ -63,11 +65,12 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         <Badge variant="secondary" className="font-mono">
           {brl(proposal.total_cents)}
         </Badge>
-        {proposal.valid_until && (
-          <span className="text-[10px] text-muted-foreground">
-            Vál.: {new Date(proposal.valid_until).toLocaleDateString("pt-BR")}
-          </span>
-        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onOpen(); }}
+          className="text-[10px] text-primary hover:underline"
+        >
+          abrir
+        </button>
       </div>
     </Card>
   );

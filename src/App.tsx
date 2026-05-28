@@ -41,6 +41,7 @@ import Payments from "@/pages/app/Payments";
 import Produtos from "@/pages/app/Produtos";
 import ProdutoEditor from "@/pages/app/ProdutoEditor";
 import Propostas from "@/pages/app/Propostas";
+import PropostaEditor from "@/pages/app/PropostaEditor";
 import MCPServerSettingsPage from "@/pages/MCPServerSettingsPage";
 import CustomFieldsSettingsPage from "@/pages/CustomFieldsSettingsPage";
 import Admin from "@/pages/admin/Admin";
@@ -134,7 +135,8 @@ const App = () => (
                     <Route path="produtos/novo" element={<ProdutoEditor />} />
                     <Route path="produtos/:id" element={<ProdutoEditor />} />
                     <Route path="propostas" element={<Propostas />} />
-                    <Route path="propostas/:id" element={<Propostas />} />
+                    <Route path="propostas/novo" element={<PropostaEditor />} />
+                    <Route path="propostas/:id" element={<PropostaEditor />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
