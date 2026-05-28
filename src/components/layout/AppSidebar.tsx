@@ -219,6 +219,25 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
           </SidebarGroup>
         ))}
 
+        {bottomItems.length > 0 && (
+          <SidebarGroup className="py-1 mt-2 border-t">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {bottomItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
+                      <NavLink to={item.url} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {!collapsed && (
           <SidebarGroup className="py-1">
             <SidebarGroupContent className="space-y-2 px-2">
