@@ -125,6 +125,9 @@ const App = () => (
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
                     <Route path="pagamentos" element={<Payments />} />
+                    <Route path="produtos" element={<Produtos />} />
+                    <Route path="propostas" element={<Propostas />} />
+                    <Route path="propostas/:id" element={<Propostas />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="admin" element={<Admin />} />
