@@ -48,6 +48,7 @@ function CreateWorkspacePrompt() {
 }
 
 const HOVER_OPEN_DELAY_MS = 2000;
+const RAIL_HOVER_ZONE_PX = 56;
 
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
@@ -57,6 +58,7 @@ export default function AppLayout() {
   const [open, setOpen] = useState(false);
   const openTimer = useRef<NodeJS.Timeout | null>(null);
   const allowOpenRef = useRef(false);
+  const isInRailRef = useRef(false);
 
   const clearOpenTimer = () => {
     if (openTimer.current) {
@@ -65,34 +67,48 @@ export default function AppLayout() {
     }
   };
 
-  const onEnter = () => {
-    if (open) return;
-    clearOpenTimer();
-    openTimer.current = setTimeout(() => {
-      openTimer.current = null;
-      allowOpenRef.current = true;
-      setOpen(true);
-      allowOpenRef.current = false;
-    }, HOVER_OPEN_DELAY_MS);
-  };
-
-  const onLeave = () => {
+  const closeNow = () => {
     clearOpenTimer();
     setOpen(false);
   };
 
   // Bloqueia qualquer abertura que não venha do nosso timer de hover
-  // (ex.: SidebarTrigger, atalho Ctrl+B do shadcn).
   const handleOpenChange = (next: boolean) => {
     if (next && !allowOpenRef.current) return;
     setOpen(next);
   };
 
+  // Detecta hover na faixa da rail (≤56px da borda esquerda) via mousemove global
   useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const inRail = e.clientX <= RAIL_HOVER_ZONE_PX || (open && e.clientX <= 260);
+      if (inRail && !isInRailRef.current) {
+        isInRailRef.current = true;
+        if (!open && !openTimer.current) {
+          openTimer.current = setTimeout(() => {
+            openTimer.current = null;
+            allowOpenRef.current = true;
+            setOpen(true);
+            allowOpenRef.current = false;
+          }, HOVER_OPEN_DELAY_MS);
+        }
+      } else if (!inRail && isInRailRef.current) {
+        isInRailRef.current = false;
+        closeNow();
+      }
+    };
+    const onLeaveWindow = () => {
+      isInRailRef.current = false;
+      closeNow();
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseleave", onLeaveWindow);
     return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseleave", onLeaveWindow);
       clearOpenTimer();
     };
-  }, []);
+  }, [open]);
 
   if (loading) {
     return (
@@ -123,7 +139,7 @@ export default function AppLayout() {
   return (
     <SidebarProvider open={open} onOpenChange={handleOpenChange} defaultOpen={false}>
       <div className="flex h-svh w-full overflow-hidden rail-mode">
-        <AppSidebar onMouseEnter={onEnter} onMouseLeave={onLeave} />
+        <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-y-auto">
@@ -134,4 +150,5 @@ export default function AppLayout() {
     </SidebarProvider>
   );
 }
+
 
