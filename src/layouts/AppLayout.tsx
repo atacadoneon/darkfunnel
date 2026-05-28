@@ -1,5 +1,5 @@
 import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopbar } from "@/components/layout/AppTopbar";
@@ -47,37 +47,11 @@ function CreateWorkspacePrompt() {
   );
 }
 
-const HOVER_OPEN_DELAY_MS = 2000;
-
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
   const { data: isPlatformAdmin } = usePlatformAdmin();
   const location = useLocation();
   usePresenceHeartbeat();
-
-  // INICIA EM FALSE = rail colapsado
-  const [open, setOpen] = useState(false);
-  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const onEnter = () => {
-    if (openTimer.current) clearTimeout(openTimer.current);
-    openTimer.current = setTimeout(() => setOpen(true), HOVER_OPEN_DELAY_MS);
-  };
-
-  const onLeave = () => {
-    if (openTimer.current) {
-      clearTimeout(openTimer.current);
-      openTimer.current = null;
-    }
-    setOpen(false);
-  };
-
-  useEffect(
-    () => () => {
-      if (openTimer.current) clearTimeout(openTimer.current);
-    },
-    [],
-  );
 
   if (loading) {
     return (
@@ -104,9 +78,9 @@ export default function AppLayout() {
   }
 
   return (
-    <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={false}>
-      <div className="flex h-svh w-full overflow-hidden rail-mode">
-        <AppSidebar onMouseEnter={onEnter} onMouseLeave={onLeave} />
+    <SidebarProvider defaultOpen={false}>
+      <div className="flex h-svh w-full overflow-hidden">
+        <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-y-auto">
