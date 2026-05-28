@@ -23,6 +23,9 @@ import {
   PinOff,
   PhoneOutgoing,
   CreditCard,
+  Package,
+  FileText,
+  Shield,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -43,6 +46,7 @@ import {
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
@@ -54,6 +58,7 @@ const sections: { label: string; items: Item[] }[] = [
     items: [
       { title: "CRM & Leads", url: "/funildevendas", icon: Filter },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
+      { title: "Discador", url: "/discador", icon: PhoneOutgoing },
       { title: "Ligações", url: "/calls", icon: Phone },
       { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
     ],
@@ -67,6 +72,8 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Reuniões", url: "/reunioes", icon: Calendar },
       { title: "Agenda", url: "/agenda", icon: CalendarDays },
       { title: "Prospecção", url: "/prospeccao", icon: Search },
+      { title: "Produtos", url: "/produtos", icon: Package },
+      { title: "Propostas", url: "/propostas", icon: FileText },
       { title: "Pagamentos", url: "/pagamentos", icon: CreditCard },
     ],
   },
@@ -75,12 +82,6 @@ const sections: { label: string; items: Item[] }[] = [
     items: [
       { title: "Fluxo de Cadência", url: "/cadencia", icon: MessageSquare },
       { title: "Automações", url: "/automacoes", icon: Workflow },
-    ],
-  },
-  {
-    label: "Ferramentas",
-    items: [
-      { title: "Configurações", url: "/settings", icon: Settings },
     ],
   },
 ];
@@ -114,12 +115,13 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
     navigate("/login", { replace: true });
   };
 
-  const visibleSections = sections
-    .map((s) => ({
-      ...s,
-      items: s.items.filter((i) => canSeeSettings || i.url !== "/settings"),
-    }))
-    .filter((s) => s.items.length > 0);
+  const isPlatformAdmin = usePlatformAdmin().data;
+
+  const visibleSections = sections;
+
+  const bottomItems: Item[] = [];
+  if (canSeeSettings) bottomItems.push({ title: "Configurações", url: "/settings", icon: Settings });
+  if (isPlatformAdmin) bottomItems.push({ title: "Admin", url: "/admin", icon: Shield });
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
@@ -216,6 +218,25 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+
+        {bottomItems.length > 0 && (
+          <SidebarGroup className="py-1 mt-2 border-t">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {bottomItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
+                      <NavLink to={item.url} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {!collapsed && (
           <SidebarGroup className="py-1">
