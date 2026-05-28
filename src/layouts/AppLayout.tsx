@@ -48,69 +48,35 @@ function CreateWorkspacePrompt() {
 }
 
 const PIN_KEY = "sidebar:pinned";
-const HOVER_DELAY_MS = 2000;
+const HOVER_OPEN_DELAY_MS = 2000;
 
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
   const { data: isPlatformAdmin } = usePlatformAdmin();
   const location = useLocation();
   usePresenceHeartbeat();
-  const [pinned, setPinned] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(PIN_KEY) === "1";
-  });
-  const [expanded, setExpanded] = useState<boolean>(pinned);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [open, setOpen] = useState(false);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clearHoverTimeout = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
+  const onEnter = () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(() => {
+      openTimer.current = null;
+      setOpen(true);
+    }, HOVER_OPEN_DELAY_MS);
   };
 
-  const startHoverOpenDelay = () => {
-    if (expanded || hoverTimeoutRef.current) return;
-    hoverTimeoutRef.current = setTimeout(() => {
-      hoverTimeoutRef.current = null;
-      setExpanded(true);
-    }, HOVER_DELAY_MS);
-  };
-
-  useEffect(() => {
-    window.localStorage.setItem(PIN_KEY, pinned ? "1" : "0");
-    if (pinned) setExpanded(true);
-  }, [pinned]);
-
-  const handleSidebarMouseEnter = () => {
-    if (pinned) {
-      setExpanded(true);
-      return;
+  const onLeave = () => {
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
     }
-    startHoverOpenDelay();
-  };
-
-  const handleSidebarMouseLeave = () => {
-    clearHoverTimeout();
-    if (!pinned) setExpanded(false);
-  };
-
-  const handleSidebarOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      clearHoverTimeout();
-      if (!pinned) setExpanded(false);
-      return;
-    }
-    if (pinned || expanded) {
-      setExpanded(true);
-      return;
-    }
-    startHoverOpenDelay();
+    setOpen(false);
   };
 
   useEffect(() => {
     return () => {
-      clearHoverTimeout();
+      if (openTimer.current) clearTimeout(openTimer.current);
     };
   }, []);
 
@@ -141,14 +107,9 @@ export default function AppLayout() {
 
 
   return (
-    <SidebarProvider open={expanded} onOpenChange={handleSidebarOpenChange} defaultOpen={pinned}>
-      <div className={`flex h-svh w-full overflow-hidden ${pinned ? "" : "rail-mode"}`}>
-        <AppSidebar
-          pinned={pinned}
-          onTogglePin={() => setPinned((p) => !p)}
-          onMouseEnter={handleSidebarMouseEnter}
-          onMouseLeave={handleSidebarMouseLeave}
-        />
+    <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={false}>
+      <div onMouseEnter={onEnter} onMouseLeave={onLeave} className="flex h-svh w-full overflow-hidden rail-mode">
+        <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-y-auto">
