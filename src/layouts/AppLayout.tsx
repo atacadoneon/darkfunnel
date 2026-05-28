@@ -1,5 +1,5 @@
 import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopbar } from "@/components/layout/AppTopbar";
@@ -48,8 +48,6 @@ function CreateWorkspacePrompt() {
 }
 
 const HOVER_OPEN_DELAY_MS = 2000;
-const RAIL_HOVER_ZONE_PX = 56;
-const EXPANDED_ZONE_PX = 260;
 
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
@@ -57,52 +55,29 @@ export default function AppLayout() {
   const location = useLocation();
   usePresenceHeartbeat();
 
-  // INICIA EM FALSE = rail colapsado. Só abre via hover delay controlado abaixo.
+  // INICIA EM FALSE = rail colapsado
   const [open, setOpen] = useState(false);
-  const openRef = useRef(false);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    openRef.current = open;
-  }, [open]);
+  const onEnter = () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(() => setOpen(true), HOVER_OPEN_DELAY_MS);
+  };
 
-  const clearTimer = useCallback(() => {
+  const onLeave = () => {
     if (openTimer.current) {
       clearTimeout(openTimer.current);
       openTimer.current = null;
     }
-  }, []);
+    setOpen(false);
+  };
 
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const x = e.clientX;
-      const zone = openRef.current ? EXPANDED_ZONE_PX : RAIL_HOVER_ZONE_PX;
-      const inside = x <= zone;
-
-      if (inside) {
-        if (!openRef.current && !openTimer.current) {
-          openTimer.current = setTimeout(() => {
-            openTimer.current = null;
-            setOpen(true);
-          }, HOVER_OPEN_DELAY_MS);
-        }
-      } else {
-        clearTimer();
-        if (openRef.current) setOpen(false);
-      }
-    };
-    const onLeave = () => {
-      clearTimer();
-      if (openRef.current) setOpen(false);
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseleave", onLeave);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseleave", onLeave);
-      clearTimer();
-    };
-  }, [clearTimer]);
+  useEffect(
+    () => () => {
+      if (openTimer.current) clearTimeout(openTimer.current);
+    },
+    [],
+  );
 
   if (loading) {
     return (
@@ -131,7 +106,9 @@ export default function AppLayout() {
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={false}>
       <div className="flex h-svh w-full overflow-hidden rail-mode">
-        <AppSidebar />
+        <div onMouseEnter={onEnter} onMouseLeave={onLeave} className="contents">
+          <AppSidebar />
+        </div>
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-y-auto">
