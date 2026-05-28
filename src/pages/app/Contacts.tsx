@@ -194,12 +194,12 @@ export default function Contacts() {
                         <Badge variant="outline" className="text-[10px]">sem canais</Badge>
                       ) : (
                         (c.identities ?? []).map((i) => {
-                          const Icon = IDENTITY_ICON[i.kind];
+                          const Icon = IDENTITY_ICON[i.kind] ?? Users;
                           return (
                             <span
                               key={i.id}
                               className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
-                              title={`${IDENTITY_LABELS[i.kind]}: ${i.value}`}
+                              title={`${IDENTITY_LABELS[i.kind] ?? i.kind}: ${i.value}`}
                             >
                               <Icon className="h-3 w-3 text-muted-foreground" />
                               <span className="max-w-[140px] truncate">{i.value}</span>
@@ -207,6 +207,7 @@ export default function Contacts() {
                             </span>
                           );
                         })
+
                       )}
                     </div>
 
