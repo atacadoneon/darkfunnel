@@ -35,7 +35,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function MCPServerSettingsPage() {
   const allowed = useIsManagerOrAdmin();
-  const { isLoading: roleLoading } = useMyRole();
+  const { isLoading: roleLoading, data: roleData, isFetched } = useMyRole();
   const settings = useMcpSettings();
   const { data: catalog = [] } = useMcpCatalog();
   const { data: overrides = [] } = useMcpOverrides();
@@ -58,7 +58,7 @@ export default function MCPServerSettingsPage() {
   const [activeCat, setActiveCat] = useState<string | undefined>(undefined);
   const tab = activeCat ?? categories[0];
 
-  if (roleLoading) return null;
+  if (roleLoading || !isFetched || !roleData) return null;
   if (!allowed) return <Navigate to="/dashboard" replace />;
 
   const isEnabled = (slug: string, def: boolean) =>
