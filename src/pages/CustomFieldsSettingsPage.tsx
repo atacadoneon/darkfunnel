@@ -23,14 +23,14 @@ const ENTITY_TABS: { value: EntityType; label: string }[] = [
 
 export default function CustomFieldsSettingsPage() {
   const allowed = useIsManagerOrAdmin();
-  const { isLoading } = useMyRole();
+  const { isLoading, isFetched, data: roleData } = useMyRole();
   const [entity, setEntity] = useState<EntityType>("lead");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CustomFieldDefinition | null>(null);
   const { data: defs = [] } = useCustomFieldDefs(entity);
   const del = useSoftDeleteCustomFieldDef();
 
-  if (isLoading) return null;
+  if (isLoading || !isFetched || !roleData) return null;
   if (!allowed) return <Navigate to="/dashboard" replace />;
 
   return (
