@@ -1,5 +1,5 @@
 import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopbar } from "@/components/layout/AppTopbar";
@@ -47,73 +47,11 @@ function CreateWorkspacePrompt() {
   );
 }
 
-const HOVER_OPEN_DELAY_MS = 2000;
-const RAIL_HOVER_ZONE_PX = 56;
-
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
   const { data: isPlatformAdmin } = usePlatformAdmin();
   const location = useLocation();
   usePresenceHeartbeat();
-  const [open, setOpen] = useState(false);
-  const openTimer = useRef<NodeJS.Timeout | null>(null);
-  const allowOpenRef = useRef(false);
-  const isInRailRef = useRef(false);
-  const hasLeftRailAfterMountRef = useRef(false);
-
-  const clearOpenTimer = useCallback(() => {
-    if (openTimer.current) {
-      clearTimeout(openTimer.current);
-      openTimer.current = null;
-    }
-  }, []);
-
-  const closeNow = useCallback(() => {
-    clearOpenTimer();
-    setOpen(false);
-  }, [clearOpenTimer]);
-
-  // Bloqueia qualquer abertura que não venha do nosso timer de hover
-  const handleOpenChange = (next: boolean) => {
-    if (next && !allowOpenRef.current) return;
-    setOpen(next);
-  };
-
-  // Detecta hover na faixa da rail (≤56px da borda esquerda) via mousemove global
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const inRail = e.clientX <= RAIL_HOVER_ZONE_PX || (open && e.clientX <= 260);
-      if (inRail && !isInRailRef.current) {
-        isInRailRef.current = true;
-        if (hasLeftRailAfterMountRef.current && !open && !openTimer.current) {
-          openTimer.current = setTimeout(() => {
-            openTimer.current = null;
-            allowOpenRef.current = true;
-            setOpen(true);
-            allowOpenRef.current = false;
-          }, HOVER_OPEN_DELAY_MS);
-        }
-      } else if (!inRail && isInRailRef.current) {
-        isInRailRef.current = false;
-        hasLeftRailAfterMountRef.current = true;
-        closeNow();
-      } else if (!inRail) {
-        hasLeftRailAfterMountRef.current = true;
-      }
-    };
-    const onLeaveWindow = () => {
-      isInRailRef.current = false;
-      hasLeftRailAfterMountRef.current = true;
-      closeNow();
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseleave", onLeaveWindow);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseleave", onLeaveWindow);
-      clearOpenTimer();
-    };
-  }, [closeNow, clearOpenTimer, open]);
 
   if (loading) {
     return (
@@ -129,7 +67,6 @@ export default function AppLayout() {
   if (workspaces.length === 0) return <CreateWorkspacePrompt />;
   if (!current) return <Navigate to="/dashboard" replace />;
 
-  // Onboarding gating (admins de plataforma escapam)
   if (!isPlatformAdmin) {
     const onCompanyRoute = location.pathname.startsWith("/company-register");
     if (!current.onboarding_completed_at && !onCompanyRoute) {
@@ -140,10 +77,10 @@ export default function AppLayout() {
     }
   }
 
-
+  // Sidebar sempre fechado no estado React; abertura é puramente CSS via :hover na faixa rail
   return (
-    <SidebarProvider open={open} onOpenChange={handleOpenChange} defaultOpen={false}>
-      <div className={`flex h-svh w-full overflow-hidden rail-mode ${open ? "rail-open" : "rail-closed"}`}>
+    <SidebarProvider open={false} onOpenChange={() => {}} defaultOpen={false}>
+      <div className="flex h-svh w-full overflow-hidden rail-mode">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
@@ -155,5 +92,3 @@ export default function AppLayout() {
     </SidebarProvider>
   );
 }
-
-
