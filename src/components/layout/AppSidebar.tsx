@@ -91,7 +91,7 @@ const sections: { label: string; items: Item[] }[] = [
 type AppSidebarProps = {
   pinned?: boolean;
   onTogglePin?: () => void;
-} & Pick<React.ComponentProps<typeof Sidebar>, "onMouseEnter" | "onMouseLeave">;
+} & Pick<ComponentProps<typeof Sidebar>, "onMouseEnter" | "onMouseLeave">;
 
 export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseLeave }: AppSidebarProps = {}) {
   const { state } = useSidebar();
