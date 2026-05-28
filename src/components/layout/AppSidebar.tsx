@@ -46,6 +46,7 @@ import {
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
