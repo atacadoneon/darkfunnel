@@ -17,6 +17,8 @@ const ENTITY_TABS: { value: EntityType; label: string }[] = [
   { value: "deal", label: "Negócio" },
   { value: "contact", label: "Contato" },
   { value: "conversation", label: "Conversa" },
+  { value: "workspace", label: "Empresa" },
+  { value: "product", label: "Produto" },
 ];
 
 export default function CustomFieldsSettingsPage() {
