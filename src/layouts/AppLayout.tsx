@@ -59,6 +59,7 @@ export default function AppLayout() {
   const openTimer = useRef<NodeJS.Timeout | null>(null);
   const allowOpenRef = useRef(false);
   const isInRailRef = useRef(false);
+  const hasLeftRailAfterMountRef = useRef(false);
 
   const clearOpenTimer = () => {
     if (openTimer.current) {
@@ -84,7 +85,7 @@ export default function AppLayout() {
       const inRail = e.clientX <= RAIL_HOVER_ZONE_PX || (open && e.clientX <= 260);
       if (inRail && !isInRailRef.current) {
         isInRailRef.current = true;
-        if (!open && !openTimer.current) {
+        if (hasLeftRailAfterMountRef.current && !open && !openTimer.current) {
           openTimer.current = setTimeout(() => {
             openTimer.current = null;
             allowOpenRef.current = true;
@@ -94,11 +95,15 @@ export default function AppLayout() {
         }
       } else if (!inRail && isInRailRef.current) {
         isInRailRef.current = false;
+        hasLeftRailAfterMountRef.current = true;
         closeNow();
+      } else if (!inRail) {
+        hasLeftRailAfterMountRef.current = true;
       }
     };
     const onLeaveWindow = () => {
       isInRailRef.current = false;
+      hasLeftRailAfterMountRef.current = true;
       closeNow();
     };
     window.addEventListener("mousemove", onMove);
@@ -138,7 +143,7 @@ export default function AppLayout() {
 
   return (
     <SidebarProvider open={open} onOpenChange={handleOpenChange} defaultOpen={false}>
-      <div className="flex h-svh w-full overflow-hidden rail-mode">
+      <div className={`flex h-svh w-full overflow-hidden rail-mode ${open ? "rail-open" : "rail-closed"}`}>
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
