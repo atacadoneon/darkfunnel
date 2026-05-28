@@ -22,8 +22,7 @@ export function AppTopbar() {
 
   return (
     <header className="h-14 shrink-0 border-b flex items-center gap-3 px-3">
-      <SidebarTrigger />
-      <span className="font-semibold tracking-tight">DarkFunnel</span>
+      <span className="font-semibold tracking-tight pl-2">DarkFunnel</span>
       <div className="ml-auto flex items-center gap-2">
         <CallPill />
         <WalletWidget />
