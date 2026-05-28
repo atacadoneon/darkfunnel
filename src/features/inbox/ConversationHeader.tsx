@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import {
-  Gift, Clock, ClipboardList, StickyNote, Search,
+  Gift, Clock, ClipboardList, StickyNote, Search, Mail,
   Sparkles, Plus, Loader2, Send, FileText,
 } from "lucide-react";
+import { CallButton } from "@/features/voice/CallButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -91,6 +92,24 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
       </div>
 
       <div className="ml-auto flex items-center gap-0.5 shrink-0">
+        <CallButton
+          iconOnly
+          variant="ghost"
+          phone={c?.phone_e164 ?? null}
+          contactId={conversation.contact_id}
+          contactName={c?.display_name ?? null}
+          contactAvatar={c?.profile_pic_preview_url ?? null}
+          conversationId={conversation.id}
+          className="h-7 w-7"
+        />
+
+        <IconBtn label="Enviar email" onClick={() => {
+          const email = (c as { email?: string | null } | null)?.email;
+          if (email) window.location.href = `mailto:${email}`;
+        }}>
+          <Mail className="h-3.5 w-3.5" />
+        </IconBtn>
+
         <AssigneePopover
           conversationId={conversation.id}
           assignedUserId={conversation.assigned_user_id}
