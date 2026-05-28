@@ -38,6 +38,8 @@ import DialerRun from "@/pages/app/DialerRun";
 import Prospeccao from "@/pages/app/Prospeccao";
 import EquipeOnline from "@/pages/app/EquipeOnline";
 import Payments from "@/pages/app/Payments";
+import Produtos from "@/pages/app/Produtos";
+import Propostas from "@/pages/app/Propostas";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
 import SettingsRodizio from "@/pages/SettingsRodizio";
