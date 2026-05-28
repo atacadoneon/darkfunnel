@@ -1,5 +1,5 @@
 import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopbar } from "@/components/layout/AppTopbar";
@@ -47,11 +47,62 @@ function CreateWorkspacePrompt() {
   );
 }
 
+const HOVER_OPEN_DELAY_MS = 2000;
+const RAIL_HOVER_ZONE_PX = 56;
+const EXPANDED_ZONE_PX = 260;
+
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
   const { data: isPlatformAdmin } = usePlatformAdmin();
   const location = useLocation();
   usePresenceHeartbeat();
+
+  // INICIA EM FALSE = rail colapsado. Só abre via hover delay controlado abaixo.
+  const [open, setOpen] = useState(false);
+  const openRef = useRef(false);
+  const openTimer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  const clearTimer = useCallback(() => {
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const x = e.clientX;
+      const zone = openRef.current ? EXPANDED_ZONE_PX : RAIL_HOVER_ZONE_PX;
+      const inside = x <= zone;
+
+      if (inside) {
+        if (!openRef.current && !openTimer.current) {
+          openTimer.current = setTimeout(() => {
+            openTimer.current = null;
+            setOpen(true);
+          }, HOVER_OPEN_DELAY_MS);
+        }
+      } else {
+        clearTimer();
+        if (openRef.current) setOpen(false);
+      }
+    };
+    const onLeave = () => {
+      clearTimer();
+      if (openRef.current) setOpen(false);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseleave", onLeave);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseleave", onLeave);
+      clearTimer();
+    };
+  }, [clearTimer]);
 
   if (loading) {
     return (
@@ -77,9 +128,8 @@ export default function AppLayout() {
     }
   }
 
-  // Sidebar sempre fechado no estado React; abertura é puramente CSS via :hover na faixa rail
   return (
-    <SidebarProvider open={false} onOpenChange={() => {}} defaultOpen={false}>
+    <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={false}>
       <div className="flex h-svh w-full overflow-hidden rail-mode">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">

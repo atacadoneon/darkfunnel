@@ -114,22 +114,13 @@ All colors MUST be HSL.
   }
 }
 
-/* Rail mode: gap sempre clamped a 48px; painel fixo expande via :hover na zona rail */
+/* Rail mode: clamp do gap em 48px; painel fixo controlado pelo state do SidebarProvider */
 .rail-mode .peer > div:first-child {
   width: var(--sidebar-width-icon) !important;
 }
-.rail-mode .peer > div:nth-child(2) {
-  width: var(--sidebar-width-icon) !important;
-  transition: width 200ms ease 2000ms;
-}
-.rail-mode:hover .peer > div:nth-child(2) {
-  width: var(--sidebar-width) !important;
+.rail-mode .peer[data-state="expanded"] > div:nth-child(2) {
   box-shadow: 0 20px 40px -10px hsl(0 0% 0% / 0.25);
   z-index: 50;
-  transition-delay: 2000ms;
-}
-.rail-mode .peer > div:nth-child(2):not(:hover) {
-  transition-delay: 0ms;
 }
 
 /* Esconde barra de rolagem em todos os elementos visualmente, mantendo o scroll funcional */
