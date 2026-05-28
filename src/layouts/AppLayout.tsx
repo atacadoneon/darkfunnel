@@ -60,7 +60,7 @@ export default function AppLayout() {
   // INICIA EM FALSE = rail colapsado. Só abre via hover delay controlado abaixo.
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
-  const openTimer = useRef<NodeJS.Timeout | null>(null);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     openRef.current = open;
