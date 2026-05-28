@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  History, Pencil, Copy, Download, Upload, Trash2, ArrowLeft,
+  History, Pencil, Copy, Download, Upload, Trash2, ArrowLeft, FileText, Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -117,6 +117,9 @@ export default function AutomacaoEditorPage() {
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setHistoryOpen(true)} title="Histórico">
               <History className="h-4 w-4" />
             </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSaveName} title="Salvar">
+              <Save className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar detalhes">
               <Pencil className="h-4 w-4" />
             </Button>
@@ -128,6 +131,18 @@ export default function AutomacaoEditorPage() {
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" title="Importar JSON">
               <Upload className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Copiar link"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Link copiado");
+              }}
+            >
+              <FileText className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete} title="Excluir">
               <Trash2 className="h-4 w-4" />
