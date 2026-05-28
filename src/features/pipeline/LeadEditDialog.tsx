@@ -399,6 +399,14 @@ export function HistoryTab({ dealId }: { dealId: string }) {
   const { data: rows = [], isLoading } = useDealHistory(dealId);
   const { data: stages = [] } = useStages();
   const { data: members = [] } = useWorkspaceMembers();
+  const { data: dealRow } = useQuery({
+    queryKey: ["deal-contact", dealId],
+    queryFn: async () => {
+      const { data } = await supabase.from("deals").select("contact_id").eq("id", dealId).maybeSingle();
+      return data as { contact_id: string | null } | null;
+    },
+    enabled: !!dealId,
+  });
   const stageName = (id: string | null) => stages.find((s) => s.id === id)?.name ?? "—";
   const memberName = (id: string | null) => {
     const m = members.find((x) => x.user_id === id);
@@ -413,30 +421,39 @@ export function HistoryTab({ dealId }: { dealId: string }) {
   };
   const fieldLabel = (f: string) => ({ stage_id: "Etapa do Funil", title: "Título", value_cents: "Valor", status: "Status", assigned_to: "Responsável" } as any)[f] ?? f;
 
-  if (isLoading) return <Loader2 className="h-5 w-5 animate-spin mx-auto my-8" />;
   return (
-    <Card className="p-5">
-      <h3 className="font-semibold mb-4 flex items-center gap-2"><History className="h-4 w-4" /> Histórico de Alterações</h3>
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhuma alteração registrada ainda.</p>
-      ) : (
-        <ul className="space-y-3 border-l-2 pl-4">
-          {rows.map((r) => (
-            <li key={r.id} className="flex items-start justify-between text-sm">
-              <div>
-                <div className="font-medium">{fieldLabel(r.field)}</div>
-                <div className="text-muted-foreground inline-flex items-center gap-1.5 text-xs mt-0.5">
-                  {fmt(r.field, r.old_value)} <ArrowRight className="h-3 w-3" /> <span className="text-foreground">{fmt(r.field, r.new_value)}</span>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground">{format(new Date(r.created_at), "dd/MM/yyyy HH:mm")}</div>
-            </li>
-          ))}
-        </ul>
+    <div className="space-y-4">
+      {dealRow?.contact_id && (
+        <Card className="p-5">
+          <Timeline contactId={dealRow.contact_id} />
+        </Card>
       )}
-    </Card>
+      <Card className="p-5">
+        <h3 className="font-semibold mb-4 flex items-center gap-2"><History className="h-4 w-4" /> Alterações do card</h3>
+        {isLoading ? (
+          <Loader2 className="h-5 w-5 animate-spin mx-auto my-4" />
+        ) : rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma alteração registrada ainda.</p>
+        ) : (
+          <ul className="space-y-3 border-l-2 pl-4">
+            {rows.map((r) => (
+              <li key={r.id} className="flex items-start justify-between text-sm">
+                <div>
+                  <div className="font-medium">{fieldLabel(r.field)}</div>
+                  <div className="text-muted-foreground inline-flex items-center gap-1.5 text-xs mt-0.5">
+                    {fmt(r.field, r.old_value)} <ArrowRight className="h-3 w-3" /> <span className="text-foreground">{fmt(r.field, r.new_value)}</span>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">{format(new Date(r.created_at), "dd/MM/yyyy HH:mm")}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
   );
 }
+
 
 /* =============== PURCHASES TAB =============== */
 export function PurchasesTab({ dealId }: { dealId: string }) {
