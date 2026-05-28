@@ -39,6 +39,7 @@ import Prospeccao from "@/pages/app/Prospeccao";
 import EquipeOnline from "@/pages/app/EquipeOnline";
 import Payments from "@/pages/app/Payments";
 import Produtos from "@/pages/app/Produtos";
+import ProdutoEditor from "@/pages/app/ProdutoEditor";
 import Propostas from "@/pages/app/Propostas";
 import MCPServerSettingsPage from "@/pages/MCPServerSettingsPage";
 import CustomFieldsSettingsPage from "@/pages/CustomFieldsSettingsPage";
@@ -130,6 +131,8 @@ const App = () => (
                     <Route path="equipe-online" element={<EquipeOnline />} />
                     <Route path="pagamentos" element={<Payments />} />
                     <Route path="produtos" element={<Produtos />} />
+                    <Route path="produtos/novo" element={<ProdutoEditor />} />
+                    <Route path="produtos/:id" element={<ProdutoEditor />} />
                     <Route path="propostas" element={<Propostas />} />
                     <Route path="propostas/:id" element={<Propostas />} />
                     <Route path="settings/wallet" element={<Wallet />} />
