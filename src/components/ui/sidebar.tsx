@@ -208,7 +208,7 @@ const Sidebar = React.forwardRef<
             : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className,
         )}
-        {...props}
+        {...restProps}
       >
         <div
           data-sidebar="sidebar"
