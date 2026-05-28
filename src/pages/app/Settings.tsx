@@ -38,9 +38,9 @@ export default function Settings() {
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "preferences";
   const allowed = useIsManagerOrAdmin();
-  const { isLoading } = useMyRole();
+  const { isLoading, isFetched, data: roleData } = useMyRole();
   const { data: isPlatformAdmin } = usePlatformAdmin();
-  if (isLoading) return null;
+  if (isLoading || !isFetched || !roleData) return null;
   if (!allowed) return <Navigate to="/dashboard" replace />;
 
   const tabs = isPlatformAdmin
