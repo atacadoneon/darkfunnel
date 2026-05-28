@@ -226,9 +226,13 @@ export function Timeline({ contactId }: { contactId: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between sticky top-0 bg-background py-2 z-10 border-b">
-        <h3 className="font-semibold text-sm flex items-center gap-2">
+        <h3
+          className="font-semibold text-sm flex items-center gap-2"
+          title="Eventos importantes do lead. Mensagens estão na conversa ao lado."
+        >
           <Clock className="w-4 h-4" /> Histórico do Lead
         </h3>
+
         <Badge variant="secondary">{total} eventos</Badge>
       </div>
 
