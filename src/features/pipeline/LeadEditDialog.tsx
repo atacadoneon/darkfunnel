@@ -290,7 +290,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
 
   return (
     <div className="space-y-4">
-      <Section icon={<User className="h-4 w-4" />} title="Dados principais" subtitle="Identificação do contato e empresa">
+      <Section icon={<User className="h-4 w-4" />} title="Dados do lead" subtitle="Contato, empresa, localização e funil">
         <Grid2>
           <Field label="Nome" required>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
@@ -305,8 +305,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
             )}
             {normalizePhoneE164(phone) !== initialPhone && initialPhone && phone && (
               <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
-                ⚠ Alterar o telefone mantém o histórico de conversas, mensagens e o deal vinculado.
-                O número antigo fica salvo como referência.
+                ⚠ Alterar o telefone mantém o histórico. O número antigo fica como referência.
               </p>
             )}
           </Field>
@@ -317,19 +316,19 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@exemplo.com" />
           </Field>
         </Grid2>
-      </Section>
 
-      <Section icon={<TagIcon className="h-4 w-4" />} title="Qualificação" subtitle="Contexto do lead e classificação no funil">
+        <div className="grid grid-cols-3 gap-3 mt-3">
+          <div className="col-span-2">
+            <Field label="Cidade" icon={<MapPin className="h-3 w-3" />}>
+              <Input value={city} onChange={(e) => setCity(e.target.value)} />
+            </Field>
+          </div>
+          <Field label="UF">
+            <Input value={stateUf} maxLength={2} onChange={(e) => setStateUf(e.target.value.toUpperCase())} placeholder="SP" />
+          </Field>
+        </div>
+
         <Grid2>
-          <Field label="Nicho">
-            <Input value={niche} onChange={(e) => setNiche(e.target.value)} />
-          </Field>
-          <Field label="Cidade/Unidade" icon={<MapPin className="h-3 w-3" />}>
-            <Input value={city} onChange={(e) => setCity(e.target.value)} />
-          </Field>
-          <Field label="Data de Entrada">
-            <Input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
-          </Field>
           <Field label="Anúncio / ADS">
             <Select value={adSource} onValueChange={setAdSource}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -342,7 +341,17 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Etapa do Funil">
+          <Field label="Pipeline">
+            <Select value={pipelineId} onValueChange={setPipelineId}>
+              <SelectTrigger><SelectValue placeholder="Padrão" /></SelectTrigger>
+              <SelectContent>
+                {pipelines.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}{p.is_default ? " (Padrão)" : ""}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Etapa do Funil" colSpan={2}>
             <Select value={stageId} onValueChange={setStageId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -357,20 +366,10 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Pipeline">
-            <Select value={pipelineId} onValueChange={setPipelineId}>
-              <SelectTrigger><SelectValue placeholder="Padrão" /></SelectTrigger>
-              <SelectContent>
-                {pipelines.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}{p.is_default ? " (Padrão)" : ""}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
         </Grid2>
       </Section>
 
-      <Section icon={<Box className="h-4 w-4" />} title="Comercial" subtitle="Responsáveis, produtos e valores">
+      <Section icon={<Box className="h-4 w-4" />} title="Comercial" subtitle="Responsáveis, produtos e proposta">
         <Field label="Responsáveis">
           <MultiSelectChips
             options={members.map((m) => ({ value: m.user_id, label: m.display_name || m.email || m.user_id.slice(0, 6) }))}
@@ -380,7 +379,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
             onPrimary={setPrimaryAssignee}
           />
         </Field>
-        <Grid3>
+        <Grid2>
           <Field label="Serviços/Produtos">
             <MultiSelectSimple
               options={products.map((p) => ({ value: p.id, label: p.name }))}
@@ -392,16 +391,29 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
           <Field label="Valor da Proposta">
             <Input type="number" step="0.01" value={valueProposal} onChange={(e) => setValueProposal(e.target.value)} placeholder="R$ 0,00" />
           </Field>
-          <Field label="Valor da Venda">
-            <Input type="number" step="0.01" value={valueSold} onChange={(e) => setValueSold(e.target.value)} placeholder="R$ 0,00" />
-          </Field>
-        </Grid3>
+        </Grid2>
       </Section>
 
       <Section title="Observações" subtitle="Contexto comercial e anotações internas">
         <Textarea rows={4} maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: Lead pediu retorno amanhã às 14h..." />
         <div className="text-[10px] text-right text-muted-foreground mt-1">{notes.length}/1000</div>
       </Section>
+
+      <div className="border-t pt-2 mt-2 text-[10px] text-muted-foreground space-y-0.5">
+        <div className="font-semibold text-[10px] uppercase tracking-wide text-muted-foreground/80">Outras informações</div>
+        {originDevice && <div>📱 Aparelho Origem: {originDevice}</div>}
+        {createdAt && <div>🗓 Data de Cadastro: {format(new Date(createdAt), "dd/MM/yy HH:mm")}</div>}
+        <div className="flex items-center gap-1 pt-1">
+          <span>Data de entrada:</span>
+          <Input
+            type="date"
+            value={entryDate}
+            onChange={(e) => setEntryDate(e.target.value)}
+            className="h-6 text-[10px] px-1.5 w-auto"
+          />
+        </div>
+      </div>
+
 
       <DialogFooter className="px-0 pb-2">
         <Button variant="outline" onClick={onClose}>Cancelar</Button>
