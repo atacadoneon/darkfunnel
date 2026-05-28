@@ -189,15 +189,28 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
       setInitialPhone(c?.phone_e164 ?? "");
       setPhone2(c?.phone2_e164 ?? "");
       setEmail(c?.email ?? "");
-      setNiche(c?.niche ?? "");
       setCity(c?.city ?? "");
+      setStateUf(((c as any)?.state ?? "") as string);
       setPipelineId((deal as any).pipeline_id ?? "");
       setStageId(deal.stage_id);
       setAdSource((deal as any).ad_source ?? "");
       setEntryDate((deal as any).entry_date ?? format(new Date(deal.created_at), "yyyy-MM-dd"));
       setValueProposal(((deal.value_cents ?? 0) / 100).toFixed(2));
-      setValueSold((((deal as any).value_sold_cents ?? 0) / 100).toFixed(2));
       setNotes(deal.notes ?? "");
+      setCreatedAt(deal.created_at as string);
+
+      // origem: pega channel da primeira conversa do contato
+      if (c?.id) {
+        const { data: conv } = await supabase
+          .from("conversations")
+          .select("channels(display_name,phone_e164)")
+          .eq("contact_id", c.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        const ch = (conv as any)?.channels;
+        if (ch) setOriginDevice(ch.phone_e164 || ch.display_name || "");
+      }
 
       const { data: dAss } = await supabase.from("deal_assignees")
         .select("user_id,is_primary").eq("deal_id", dealId);
