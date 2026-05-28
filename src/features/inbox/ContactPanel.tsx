@@ -12,6 +12,8 @@ import {
   InfoTab, HistoryTab, PurchasesTab, AttachmentsTab,
   ActivitiesTab, CustomFieldsTab, AdsTab,
 } from "@/features/pipeline/LeadEditDialog";
+import { Timeline } from "@/components/leads/Timeline";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
