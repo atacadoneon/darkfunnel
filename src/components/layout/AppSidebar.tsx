@@ -72,7 +72,7 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Metas", url: "/metas", icon: Target },
       { title: "Tarefas", url: "/tarefas", icon: ListChecks },
       { title: "Agenda", url: "/agenda", icon: CalendarDays },
-      { title: "Agenda", url: "/agenda", icon: CalendarDays },
+
       { title: "Prospecção", url: "/prospeccao", icon: Search },
       { title: "Produtos", url: "/produtos", icon: Package },
     ],
