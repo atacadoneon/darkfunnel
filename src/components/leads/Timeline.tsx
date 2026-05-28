@@ -59,15 +59,15 @@ const COLOR_MAP: Record<string, string> = {
   gray: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-type FilterKey = "all" | "events" | "messages" | "calls" | "notes";
+type FilterKey = "all" | "events" | "calls" | "notes";
 
 const FILTER_SOURCES: Record<FilterKey, string[] | null> = {
   all: null,
   events: ["lead_event"],
-  messages: ["message"],
   calls: ["call"],
   notes: ["note"],
 };
+
 
 function useTimeline(contactId: string, filter: FilterKey) {
   return useInfiniteQuery({
@@ -183,7 +183,6 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Todos" },
   { key: "events", label: "Eventos" },
-  { key: "messages", label: "Mensagens" },
   { key: "calls", label: "Ligações" },
   { key: "notes", label: "Notas" },
 ];
@@ -205,7 +204,12 @@ export function Timeline({ contactId }: { contactId: string }) {
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `contact_id=eq.${contactId}` },
+        { event: "INSERT", schema: "public", table: "calls", filter: `contact_id=eq.${contactId}` },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "contact_notes", filter: `contact_id=eq.${contactId}` },
         invalidate,
       )
       .subscribe();
@@ -214,6 +218,7 @@ export function Timeline({ contactId }: { contactId: string }) {
     };
   }, [contactId, qc]);
 
+
   const items = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
   const grouped = useMemo(() => groupByDate(items), [items]);
@@ -221,9 +226,13 @@ export function Timeline({ contactId }: { contactId: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between sticky top-0 bg-background py-2 z-10 border-b">
-        <h3 className="font-semibold text-sm flex items-center gap-2">
+        <h3
+          className="font-semibold text-sm flex items-center gap-2"
+          title="Eventos importantes do lead. Mensagens estão na conversa ao lado."
+        >
           <Clock className="w-4 h-4" /> Histórico do Lead
         </h3>
+
         <Badge variant="secondary">{total} eventos</Badge>
       </div>
 
