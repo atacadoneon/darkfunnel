@@ -156,6 +156,13 @@ export default function PropostaEditor() {
   const save = useMutation({
     mutationFn: async () => {
       if (!current || !user) throw new Error("sem workspace");
+      if (!form.customer_name?.trim()) throw new Error("Informe o cliente");
+      const vendedor = form.vendedor_user_id?.trim?.() || form.vendedor_user_id;
+      if (!vendedor) throw new Error("Informe o vendedor");
+      const hasProduct = items.some(
+        (it) => (it.product_id || it.descricao?.trim() || it.sku?.trim()) && it.qtde > 0
+      );
+      if (!hasProduct) throw new Error("Adicione ao menos um produto");
       let nextNumber = form.number;
       if (isNew) {
         const { data: maxRow } = await supabase
