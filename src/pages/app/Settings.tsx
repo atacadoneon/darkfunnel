@@ -86,6 +86,29 @@ export default function Settings() {
           <TagsAdminSection />
           <LossReasonsAdminSection />
         </TabsContent>
+        <TabsContent value="custom-fields" className="mt-6">
+          <Card className="p-6 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Campos Adicionais</h3>
+              <p className="text-sm text-muted-foreground mt-1">Defina campos customizados por entidade.</p>
+            </div>
+            <NavLink to="/config/custom-fields" className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90">
+              Abrir <ArrowUpRight className="h-3.5 w-3.5" />
+            </NavLink>
+          </Card>
+        </TabsContent>
+        <TabsContent value="mcp" className="mt-6">
+          <Card className="p-6 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold">Servidor MCP</h3>
+              <p className="text-sm text-muted-foreground mt-1">Conecte seu agente de IA via Model Context Protocol.</p>
+            </div>
+            <NavLink to="/config/mcp-server" className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90">
+              Abrir <ArrowUpRight className="h-3.5 w-3.5" />
+            </NavLink>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="tracking" className="mt-6">
           <TrackingSection />
         </TabsContent>
