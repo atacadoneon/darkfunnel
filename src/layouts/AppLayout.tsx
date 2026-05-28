@@ -60,7 +60,22 @@ export default function AppLayout() {
     return window.localStorage.getItem(PIN_KEY) === "1";
   });
   const [expanded, setExpanded] = useState<boolean>(pinned);
-  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearHoverTimeout = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  };
+
+  const startHoverOpenDelay = () => {
+    if (expanded || hoverTimeoutRef.current) return;
+    hoverTimeoutRef.current = setTimeout(() => {
+      hoverTimeoutRef.current = null;
+      setExpanded(true);
+    }, HOVER_DELAY_MS);
+  };
 
   useEffect(() => {
     window.localStorage.setItem(PIN_KEY, pinned ? "1" : "0");
@@ -72,29 +87,30 @@ export default function AppLayout() {
       setExpanded(true);
       return;
     }
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-    }
-    hoverTimeoutRef.current = setTimeout(() => {
-      hoverTimeoutRef.current = null;
-      setExpanded(true);
-    }, HOVER_DELAY_MS);
+    startHoverOpenDelay();
   };
 
   const handleSidebarMouseLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
+    clearHoverTimeout();
     if (!pinned) setExpanded(false);
+  };
+
+  const handleSidebarOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      clearHoverTimeout();
+      if (!pinned) setExpanded(false);
+      return;
+    }
+    if (pinned || expanded) {
+      setExpanded(true);
+      return;
+    }
+    startHoverOpenDelay();
   };
 
   useEffect(() => {
     return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-        hoverTimeoutRef.current = null;
-      }
+      clearHoverTimeout();
     };
   }, []);
 
@@ -125,7 +141,7 @@ export default function AppLayout() {
 
 
   return (
-    <SidebarProvider open={expanded} onOpenChange={setExpanded} defaultOpen={pinned}>
+    <SidebarProvider open={expanded} onOpenChange={handleSidebarOpenChange} defaultOpen={pinned}>
       <div className={`flex h-svh w-full overflow-hidden ${pinned ? "" : "rail-mode"}`}>
         <AppSidebar
           pinned={pinned}
