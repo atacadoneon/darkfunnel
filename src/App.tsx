@@ -134,6 +134,8 @@ const App = () => (
                     <Route path="propostas/:id" element={<Propostas />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
+                    <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
+                    <Route path="config/custom-fields" element={<CustomFieldsSettingsPage />} />
                     <Route path="admin" element={<Admin />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
@@ -144,7 +146,8 @@ const App = () => (
                     <Route path="contacts" element={<Navigate to="/funildevendas?tab=banco" replace />} />
                     <Route path="email" element={<Navigate to="/emailmarketing" replace />} />
                     <Route path="goals" element={<Navigate to="/metas" replace />} />
-                    <Route path="meetings" element={<Navigate to="/reunioes" replace />} />
+                    <Route path="meetings" element={<Navigate to="/agenda" replace />} />
+
                     <Route path="cadence" element={<Navigate to="/cadencia" replace />} />
                     <Route path="channels" element={<Navigate to="/settings?tab=channels" replace />} />
                   </Route>
