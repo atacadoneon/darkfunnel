@@ -170,7 +170,7 @@ export default function Contacts() {
                         <div className="truncate text-sm font-medium">{name}</div>
                         <div className="flex flex-wrap gap-1 pt-0.5 md:hidden">
                           {(c.identities ?? []).slice(0, 3).map((i) => {
-                            const Icon = IDENTITY_ICON[i.kind];
+                            const Icon = IDENTITY_ICON[i.kind] ?? Users;
                             return (
                               <span
                                 key={i.id}
@@ -181,6 +181,7 @@ export default function Contacts() {
                               </span>
                             );
                           })}
+
                           {(c.identities ?? []).length === 0 && c.phone_e164 && (
                             <span className="text-[10px] text-muted-foreground">{c.phone_e164}</span>
                           )}
