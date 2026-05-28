@@ -83,6 +83,7 @@ const sections: { label: string; items: Item[] }[] = [
     items: [
       { title: "Fluxo de Cadência", url: "/cadencia", icon: MessageSquare },
       { title: "Automações", url: "/automacoes", icon: Workflow },
+      { title: "Trackeamento", url: "/trackeamento", icon: Target },
     ],
   },
 ];
@@ -125,6 +126,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
     bottomItems.push(
       { title: "Configurações", url: "/settings", icon: Settings },
       { title: "Campos Adicionais", url: "/config/custom-fields", icon: ListChecks },
+      { title: "Webhooks de entrada", url: "/config/inbound-webhooks", icon: Workflow },
       { title: "Servidor MCP", url: "/config/mcp-server", icon: Server },
     );
   }

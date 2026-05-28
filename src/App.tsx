@@ -44,6 +44,8 @@ import Propostas from "@/pages/app/Propostas";
 import PropostaEditor from "@/pages/app/PropostaEditor";
 import MCPServerSettingsPage from "@/pages/MCPServerSettingsPage";
 import CustomFieldsSettingsPage from "@/pages/CustomFieldsSettingsPage";
+import Trackeamento from "@/pages/Trackeamento";
+import InboundWebhooksPage from "@/pages/config/InboundWebhooksPage";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
 import SettingsRodizio from "@/pages/SettingsRodizio";
@@ -149,6 +151,8 @@ const App = () => (
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
                     <Route path="config/custom-fields" element={<CustomFieldsSettingsPage />} />
+                    <Route path="config/inbound-webhooks" element={<InboundWebhooksPage />} />
+                    <Route path="trackeamento" element={<Trackeamento />} />
                     <Route path="admin" element={<Admin />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
 
