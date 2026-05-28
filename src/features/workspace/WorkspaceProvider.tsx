@@ -45,7 +45,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     let { data, error } = await supabase
       .from("workspaces")
-      .select("id,name,slug,features")
+      .select("id,name,slug,features,onboarding_completed_at,setup_completed_at")
       .order("created_at", { ascending: true });
 
     // Auto-provisiona workspace na primeira entrada (cobre signup com confirmação de email)
@@ -61,7 +61,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!rpcErr) {
         const res = await supabase
           .from("workspaces")
-          .select("id,name,slug,features")
+          .select("id,name,slug,features,onboarding_completed_at,setup_completed_at")
           .order("created_at", { ascending: true });
         data = res.data ?? [];
         error = res.error;
