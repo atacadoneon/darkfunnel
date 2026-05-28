@@ -24,7 +24,6 @@ import Settings from "@/pages/app/Settings";
 import Pipeline from "@/pages/app/Pipeline";
 import Dashboard from "@/pages/app/Dashboard";
 import Tasks from "@/pages/app/Tasks";
-import Meetings from "@/pages/app/Meetings";
 import AutomacoesPage from "@/pages/AutomacoesPage";
 import AutomacaoEditorPage from "@/pages/AutomacaoEditorPage";
 import Cadence from "@/pages/app/Cadence";
@@ -41,11 +40,14 @@ import EquipeOnline from "@/pages/app/EquipeOnline";
 import Payments from "@/pages/app/Payments";
 import Produtos from "@/pages/app/Produtos";
 import Propostas from "@/pages/app/Propostas";
+import MCPServerSettingsPage from "@/pages/MCPServerSettingsPage";
+import CustomFieldsSettingsPage from "@/pages/CustomFieldsSettingsPage";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
 import SettingsRodizio from "@/pages/SettingsRodizio";
 import NotFound from "@/pages/NotFound";
 import { useUserPresence } from "@/hooks/useUserPresence";
+
 
 function PresenceMount() {
   useUserPresence();
