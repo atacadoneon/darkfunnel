@@ -183,7 +183,6 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Todos" },
   { key: "events", label: "Eventos" },
-  { key: "messages", label: "Mensagens" },
   { key: "calls", label: "Ligações" },
   { key: "notes", label: "Notas" },
 ];
@@ -205,7 +204,12 @@ export function Timeline({ contactId }: { contactId: string }) {
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `contact_id=eq.${contactId}` },
+        { event: "INSERT", schema: "public", table: "calls", filter: `contact_id=eq.${contactId}` },
+        invalidate,
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "contact_notes", filter: `contact_id=eq.${contactId}` },
         invalidate,
       )
       .subscribe();
@@ -213,6 +217,7 @@ export function Timeline({ contactId }: { contactId: string }) {
       void supabase.removeChannel(ch);
     };
   }, [contactId, qc]);
+
 
   const items = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
