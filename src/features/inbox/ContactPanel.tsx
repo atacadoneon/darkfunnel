@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Mail, RefreshCw, ListChecks, Bell, StickyNote, User, History, ShoppingCart, Paperclip, Calendar, Box, Megaphone } from "lucide-react";
+import { RefreshCw, User, History, ShoppingCart, Paperclip, Calendar, Box, Megaphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
