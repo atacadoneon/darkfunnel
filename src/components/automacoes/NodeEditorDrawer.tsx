@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { VariableTextarea } from "./VariableTextarea";
 import { nanoid } from "nanoid";
-import { cn } from "@/lib/utils";
+
 
 type Props = { open: boolean; onClose: () => void; node: FlowNode | null; flowId: string };
 
