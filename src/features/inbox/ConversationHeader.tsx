@@ -92,6 +92,23 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
       </div>
 
       <div className="ml-auto flex items-center gap-0.5 shrink-0">
+        <CallButton
+          iconOnly
+          variant="ghost"
+          phone={c?.phone_e164 ?? null}
+          contactId={conversation.contact_id}
+          contactName={c?.display_name ?? null}
+          contactAvatar={c?.profile_pic_preview_url ?? null}
+          conversationId={conversation.id}
+          className="h-7 w-7"
+        />
+
+        {c?.email && (
+          <IconBtn label="Enviar email" onClick={() => { window.location.href = `mailto:${c.email}`; }}>
+            <Mail className="h-3.5 w-3.5" />
+          </IconBtn>
+        )}
+
         <AssigneePopover
           conversationId={conversation.id}
           assignedUserId={conversation.assigned_user_id}
