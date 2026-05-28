@@ -88,7 +88,12 @@ const sections: { label: string; items: Item[] }[] = [
   },
 ];
 
-export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; onTogglePin?: () => void } = {}) {
+type AppSidebarProps = {
+  pinned?: boolean;
+  onTogglePin?: () => void;
+} & Pick<React.ComponentProps<typeof Sidebar>, "onMouseEnter" | "onMouseLeave">;
+
+export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseLeave }: AppSidebarProps = {}) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
@@ -141,7 +146,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
   const wsName = current?.name ?? "Conta";
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
       <SidebarHeader className="p-3 border-b">
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
