@@ -69,9 +69,9 @@ const sections: { label: string; items: Item[] }[] = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
       { title: "Metas", url: "/metas", icon: Target },
+      { title: "Agenda", url: "/agenda", icon: CalendarDays },
       { title: "Ligações", url: "/calls", icon: Phone },
       { title: "Tarefas", url: "/tarefas", icon: ListChecks },
-      { title: "Agenda", url: "/agenda", icon: CalendarDays },
 
       { title: "Prospecção", url: "/prospeccao", icon: Search },
       { title: "Produtos", url: "/produtos", icon: Package },
