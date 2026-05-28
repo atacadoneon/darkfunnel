@@ -26,6 +26,7 @@ import {
   Package,
   FileText,
   Shield,
+  Server,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -120,7 +121,13 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
   const visibleSections = sections;
 
   const bottomItems: Item[] = [];
-  if (canSeeSettings) bottomItems.push({ title: "Configurações", url: "/settings", icon: Settings });
+  if (canSeeSettings) {
+    bottomItems.push(
+      { title: "Configurações", url: "/settings", icon: Settings },
+      { title: "Campos Adicionais", url: "/config/custom-fields", icon: ListChecks },
+      { title: "Servidor MCP", url: "/config/mcp-server", icon: Server },
+    );
+  }
   if (isPlatformAdmin) bottomItems.push({ title: "Admin", url: "/admin", icon: Shield });
 
   const userName =

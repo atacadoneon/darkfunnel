@@ -246,12 +246,12 @@ function AddUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [password, setPassword] = useState("");
   const [clientVisibleName, setClientVisibleName] = useState("");
   const [hideClientName, setHideClientName] = useState(true);
-  const [role, setRole] = useState<WorkspaceRole>("member");
+  const [role, setRole] = useState<WorkspaceRole>("vendedor");
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
     setEmail(""); setDisplayName(""); setPassword("");
-    setClientVisibleName(""); setHideClientName(true); setRole("member");
+    setClientVisibleName(""); setHideClientName(true); setRole("vendedor");
   };
 
   const handleAdd = async () => {
@@ -342,9 +342,10 @@ function AddUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
             <Select value={role} onValueChange={(v) => setRole(v as WorkspaceRole)}>
               <SelectTrigger><SelectValue placeholder="- SELECIONE -" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="member">Vendedor</SelectItem>
-                <SelectItem value="manager">Gestor</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="colaborador">Colaborador</SelectItem>
+                <SelectItem value="vendedor">Vendedor</SelectItem>
+                <SelectItem value="gerente">Gerente</SelectItem>
+                <SelectItem value="proprietario">Proprietário</SelectItem>
               </SelectContent>
             </Select>
           </div>

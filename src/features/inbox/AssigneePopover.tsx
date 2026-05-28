@@ -8,10 +8,11 @@ import { useAssignConversation } from "./inboxFeatureHooks";
 import { cn } from "@/lib/utils";
 
 const roleLabel: Record<WorkspaceRole, string> = {
-  owner: "Dono",
-  admin: "Admin",
-  manager: "Gerente",
-  member: "Vendedor",
+  colaborador: "Colaborador",
+  vendedor: "Vendedor",
+  gerente: "Gerente",
+  proprietario: "Proprietário",
+  platform_admin: "Admin Plataforma",
 };
 
 const palette = ["bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500", "bg-violet-500", "bg-cyan-500", "bg-pink-500", "bg-orange-500"];
