@@ -12,6 +12,8 @@ export type Workspace = {
   name: string;
   slug: string;
   features?: WorkspaceFeatures | null;
+  onboarding_completed_at?: string | null;
+  setup_completed_at?: string | null;
 };
 
 type WorkspaceCtx = {
