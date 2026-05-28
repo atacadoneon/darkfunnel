@@ -12,6 +12,8 @@ import {
   InfoTab, HistoryTab, PurchasesTab, AttachmentsTab,
   ActivitiesTab, CustomFieldsTab, AdsTab,
 } from "@/features/pipeline/LeadEditDialog";
+import { Timeline } from "@/components/leads/Timeline";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -97,6 +99,9 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
   ];
 
   const renderTab = () => {
+    if (activeTab === "history") {
+      return <Timeline contactId={conversation.contact_id} />;
+    }
     if (!deal) {
       return (
         <div className="text-center py-8 space-y-3">
@@ -109,7 +114,6 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
     }
     switch (activeTab) {
       case "info": return <InfoTab dealId={deal.id} onClose={() => { /* inline mode */ }} />;
-      case "history": return <HistoryTab dealId={deal.id} />;
       case "purchases": return <PurchasesTab dealId={deal.id} />;
       case "attachments": return <AttachmentsTab dealId={deal.id} />;
       case "activities": return <ActivitiesTab dealId={deal.id} />;
@@ -117,6 +121,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
       case "ads": return <AdsTab dealId={deal.id} />;
     }
   };
+
 
   return (
     <aside className="w-[374px] shrink-0 border-l flex-col overflow-y-auto overscroll-contain bg-card hidden min-h-0 lg:flex">
