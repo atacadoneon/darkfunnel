@@ -125,21 +125,6 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
 
   return (
     <aside className="w-[374px] shrink-0 border-l flex-col overflow-y-auto overscroll-contain bg-card hidden min-h-0 lg:flex">
-      <div className="px-3 py-2 border-b flex items-center justify-around gap-1 shrink-0">
-        <CallButton
-          iconOnly variant="ghost"
-          phone={c?.phone_e164 ?? null}
-          contactId={conversation.contact_id}
-          contactName={c?.display_name ?? null}
-          contactAvatar={c?.profile_pic_preview_url ?? null}
-          conversationId={conversation.id}
-        />
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Tarefa"><ListChecks className="h-3.5 w-3.5" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Email"><Mail className="h-3.5 w-3.5" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Lembrete"><Bell className="h-3.5 w-3.5" /></Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" title="Nota"><StickyNote className="h-3.5 w-3.5" /></Button>
-      </div>
-
       <div className="p-3 flex flex-col items-center text-center border-b">
         <ContactAvatar contact={c} size={56} />
         <AutoInput
