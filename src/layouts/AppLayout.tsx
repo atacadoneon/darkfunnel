@@ -51,6 +51,8 @@ const PIN_KEY = "sidebar:pinned";
 
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
+  const { data: isPlatformAdmin } = usePlatformAdmin();
+  const location = useLocation();
   usePresenceHeartbeat();
   const [pinned, setPinned] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
