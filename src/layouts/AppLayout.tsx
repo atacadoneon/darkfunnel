@@ -79,7 +79,7 @@ export default function AppLayout() {
 
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="flex h-svh w-full overflow-hidden rail-mode">
+      <div className="flex h-svh w-full overflow-hidden">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
