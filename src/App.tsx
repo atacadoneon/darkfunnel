@@ -47,6 +47,9 @@ import CustomFieldsSettingsPage from "@/pages/CustomFieldsSettingsPage";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
 import SettingsRodizio from "@/pages/SettingsRodizio";
+import CompanyRegister from "@/pages/company/CompanyRegister";
+import PreparingAccount from "@/pages/company/PreparingAccount";
+import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
 import { useUserPresence } from "@/hooks/useUserPresence";
 
