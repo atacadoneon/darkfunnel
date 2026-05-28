@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DndContext,
   PointerSensor,
@@ -33,7 +34,7 @@ function brl(cents: number | null | undefined) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function ProposalCard({ proposal }: { proposal: Proposal }) {
+function ProposalCard({ proposal, onOpen }: { proposal: Proposal; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: proposal.id,
   });
@@ -46,6 +47,7 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
       style={style}
       {...listeners}
       {...attributes}
+      onDoubleClick={onOpen}
       className={`p-3 cursor-grab active:cursor-grabbing space-y-2 hover:border-primary/50 transition-colors ${
         isDragging ? "opacity-50" : ""
       }`}
@@ -63,11 +65,12 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
         <Badge variant="secondary" className="font-mono">
           {brl(proposal.total_cents)}
         </Badge>
-        {proposal.valid_until && (
-          <span className="text-[10px] text-muted-foreground">
-            Vál.: {new Date(proposal.valid_until).toLocaleDateString("pt-BR")}
-          </span>
-        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onOpen(); }}
+          className="text-[10px] text-primary hover:underline"
+        >
+          abrir
+        </button>
       </div>
     </Card>
   );
@@ -76,9 +79,11 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
 function Column({
   status,
   proposals,
+  onOpen,
 }: {
   status: (typeof COLUMNS)[number];
   proposals: Proposal[];
+  onOpen: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status.id });
   const Icon = status.icon;
@@ -108,7 +113,9 @@ function Column({
             Vazio
           </div>
         ) : (
-          proposals.map((p) => <ProposalCard key={p.id} proposal={p} />)
+          proposals.map((p) => (
+            <ProposalCard key={p.id} proposal={p} onOpen={() => onOpen(p.id)} />
+          ))
         )}
       </div>
     </div>
@@ -119,7 +126,7 @@ export default function Propostas() {
   const { data: proposals = [], isLoading } = useProposals();
   const { create, updateStatus } = useProposalMutations();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const [creating, setCreating] = useState(false);
+  const nav = useNavigate();
 
   const grouped = useMemo(() => {
     const map = new Map<string, Proposal[]>();
@@ -147,17 +154,7 @@ export default function Propostas() {
     );
   };
 
-  const handleCreate = async () => {
-    setCreating(true);
-    try {
-      const p = await create.mutateAsync({});
-      toast.success(`Proposta ${p.series ?? "P"}-${String(p.number).padStart(4, "0")} criada`);
-    } catch (err) {
-      toast.error("Falha ao criar proposta", { description: String(err) });
-    } finally {
-      setCreating(false);
-    }
-  };
+  const handleCreate = () => nav("/propostas/novo");
 
   const totals = useMemo(() => {
     const sum = (st: ProposalStatus) =>
@@ -178,7 +175,7 @@ export default function Propostas() {
             Kanban de propostas — arraste entre colunas para mudar o status.
           </p>
         </div>
-        <Button onClick={handleCreate} disabled={creating}>
+        <Button onClick={handleCreate}>
           <Plus className="w-4 h-4 mr-2" />
           Nova Proposta
         </Button>
@@ -212,7 +209,7 @@ export default function Propostas() {
           <p className="text-sm text-muted-foreground mt-1 mb-4">
             Clique em "Nova Proposta" para começar.
           </p>
-          <Button onClick={handleCreate} disabled={creating}>
+          <Button onClick={handleCreate}>
             <Plus className="w-4 h-4 mr-2" />
             Criar primeira proposta
           </Button>
@@ -222,7 +219,7 @@ export default function Propostas() {
           <div className="flex-1 overflow-x-auto">
             <div className="flex gap-4 h-full pb-4">
               {COLUMNS.map((col) => (
-                <Column key={col.id} status={col} proposals={grouped.get(col.id) ?? []} />
+                <Column key={col.id} status={col} proposals={grouped.get(col.id) ?? []} onOpen={(pid) => nav(`/propostas/${pid}`)} />
               ))}
             </div>
           </div>

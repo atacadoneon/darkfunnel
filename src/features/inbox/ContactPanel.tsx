@@ -60,7 +60,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
     setRefreshing(true);
     try {
       const { data, error } = await supabase.functions.invoke("uazapi-instance", {
-        body: { channel_id: conversation.channel_id, action: "refresh_contact", contact_id: conversation.contact_id },
+        body: { channel_id: conversation.channel_id, action: "refresh_profile", contact_id: conversation.contact_id },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
