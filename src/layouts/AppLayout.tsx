@@ -1,5 +1,5 @@
 import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopbar } from "@/components/layout/AppTopbar";
@@ -59,18 +59,19 @@ export default function AppLayout() {
   const openTimer = useRef<NodeJS.Timeout | null>(null);
   const allowOpenRef = useRef(false);
   const isInRailRef = useRef(false);
+  const hasLeftRailAfterMountRef = useRef(false);
 
-  const clearOpenTimer = () => {
+  const clearOpenTimer = useCallback(() => {
     if (openTimer.current) {
       clearTimeout(openTimer.current);
       openTimer.current = null;
     }
-  };
+  }, []);
 
-  const closeNow = () => {
+  const closeNow = useCallback(() => {
     clearOpenTimer();
     setOpen(false);
-  };
+  }, [clearOpenTimer]);
 
   // Bloqueia qualquer abertura que não venha do nosso timer de hover
   const handleOpenChange = (next: boolean) => {
@@ -84,7 +85,7 @@ export default function AppLayout() {
       const inRail = e.clientX <= RAIL_HOVER_ZONE_PX || (open && e.clientX <= 260);
       if (inRail && !isInRailRef.current) {
         isInRailRef.current = true;
-        if (!open && !openTimer.current) {
+        if (hasLeftRailAfterMountRef.current && !open && !openTimer.current) {
           openTimer.current = setTimeout(() => {
             openTimer.current = null;
             allowOpenRef.current = true;
@@ -94,11 +95,15 @@ export default function AppLayout() {
         }
       } else if (!inRail && isInRailRef.current) {
         isInRailRef.current = false;
+        hasLeftRailAfterMountRef.current = true;
         closeNow();
+      } else if (!inRail) {
+        hasLeftRailAfterMountRef.current = true;
       }
     };
     const onLeaveWindow = () => {
       isInRailRef.current = false;
+      hasLeftRailAfterMountRef.current = true;
       closeNow();
     };
     window.addEventListener("mousemove", onMove);
@@ -108,7 +113,7 @@ export default function AppLayout() {
       window.removeEventListener("mouseleave", onLeaveWindow);
       clearOpenTimer();
     };
-  }, [open]);
+  }, [closeNow, clearOpenTimer, open]);
 
   if (loading) {
     return (
@@ -138,7 +143,7 @@ export default function AppLayout() {
 
   return (
     <SidebarProvider open={open} onOpenChange={handleOpenChange} defaultOpen={false}>
-      <div className="flex h-svh w-full overflow-hidden rail-mode">
+      <div className={`flex h-svh w-full overflow-hidden rail-mode ${open ? "rail-open" : "rail-closed"}`}>
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <AppTopbar />
