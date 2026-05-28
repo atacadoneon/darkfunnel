@@ -47,7 +47,6 @@ function CreateWorkspacePrompt() {
   );
 }
 
-const PIN_KEY = "sidebar:pinned";
 const HOVER_OPEN_DELAY_MS = 2000;
 
 export default function AppLayout() {
