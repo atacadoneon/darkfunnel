@@ -114,12 +114,13 @@ export function AppSidebar({ pinned = false, onTogglePin }: { pinned?: boolean; 
     navigate("/login", { replace: true });
   };
 
-  const visibleSections = sections
-    .map((s) => ({
-      ...s,
-      items: s.items.filter((i) => canSeeSettings || i.url !== "/settings"),
-    }))
-    .filter((s) => s.items.length > 0);
+  const isPlatformAdmin = usePlatformAdmin().data;
+
+  const visibleSections = sections;
+
+  const bottomItems: Item[] = [];
+  if (canSeeSettings) bottomItems.push({ title: "Configurações", url: "/settings", icon: Settings });
+  if (isPlatformAdmin) bottomItems.push({ title: "Admin", url: "/admin", icon: Shield });
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
