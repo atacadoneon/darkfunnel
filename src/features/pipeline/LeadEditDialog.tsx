@@ -243,7 +243,7 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
       await supabase.from("contacts").update({
         display_name: name.trim(), company_name: companyName.trim() || null,
         phone_e164: phoneNorm, phone2_e164: phone2Norm || null,
-        email: email.trim() || null, niche: niche.trim() || null, city: city.trim() || null,
+        email: email.trim() || null, city: city.trim() || null, state: stateUf.trim().toUpperCase() || null,
       }).eq("id", contactId);
 
       // deal
