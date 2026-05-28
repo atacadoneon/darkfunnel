@@ -38,6 +38,7 @@ import {
   useCustomFields, useUpsertCustomField, useDeleteCustomField,
   useAdsAttribution,
 } from "./leadEditHooks";
+import { CustomFieldRenderer } from "@/components/customfields/CustomFieldRenderer";
 
 type Props = {
   open: boolean;
@@ -698,26 +699,31 @@ export function CustomFieldsTab({ dealId }: { dealId: string }) {
   const del = useDeleteCustomField(dealId);
   const [name, setName] = useState("");
   return (
-    <Card className="p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold inline-flex items-center gap-2"><Box className="h-4 w-4" /> Campos Personalizados</h3>
-        <div className="flex items-center gap-2">
-          <Input placeholder="Nome do novo campo" value={name} onChange={(e) => setName(e.target.value)} className="h-8 w-48" />
-          <Button size="sm" disabled={!name.trim()} onClick={async () => { await upsert.mutateAsync({ field_name: name.trim(), field_value: "" }); setName(""); }}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar Campo
-          </Button>
+    <div className="space-y-4">
+      {/* Novo sistema: campos definidos em /config/custom-fields */}
+      <CustomFieldRenderer entityType="lead" entityId={dealId} />
+
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold inline-flex items-center gap-2"><Box className="h-4 w-4" /> Campos Personalizados (legado)</h3>
+          <div className="flex items-center gap-2">
+            <Input placeholder="Nome do novo campo" value={name} onChange={(e) => setName(e.target.value)} className="h-8 w-48" />
+            <Button size="sm" disabled={!name.trim()} onClick={async () => { await upsert.mutateAsync({ field_name: name.trim(), field_value: "" }); setName(""); }}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar Campo
+            </Button>
+          </div>
         </div>
-      </div>
-      {list.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6">Nenhum campo personalizado.</p>
-      ) : (
-        <div className="space-y-2">
-          {list.map((cf) => (
-            <CustomFieldRow key={cf.id} cf={cf} onSave={(v) => upsert.mutate({ id: cf.id, field_name: cf.field_name, field_value: v })} onDelete={() => del.mutate(cf.id)} />
-          ))}
-        </div>
-      )}
-    </Card>
+        {list.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">Nenhum campo personalizado.</p>
+        ) : (
+          <div className="space-y-2">
+            {list.map((cf) => (
+              <CustomFieldRow key={cf.id} cf={cf} onSave={(v) => upsert.mutate({ id: cf.id, field_name: cf.field_name, field_value: v })} onDelete={() => del.mutate(cf.id)} />
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
 function CustomFieldRow({ cf, onSave, onDelete }: { cf: { id: string; field_name: string; field_value: string | null }; onSave: (v: string) => void; onDelete: () => void }) {

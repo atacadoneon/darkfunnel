@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
+import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 
 function CreateWorkspacePrompt() {
   const { createWorkspace } = useWorkspace();
@@ -50,6 +51,8 @@ const PIN_KEY = "sidebar:pinned";
 
 export default function AppLayout() {
   const { current, workspaces, loading } = useWorkspace();
+  const { data: isPlatformAdmin } = usePlatformAdmin();
+  const location = useLocation();
   usePresenceHeartbeat();
   const [pinned, setPinned] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -100,6 +103,18 @@ export default function AppLayout() {
   }
   if (workspaces.length === 0) return <CreateWorkspacePrompt />;
   if (!current) return <Navigate to="/dashboard" replace />;
+
+  // Onboarding gating (admins de plataforma escapam)
+  if (!isPlatformAdmin) {
+    const onCompanyRoute = location.pathname.startsWith("/company-register");
+    if (!current.onboarding_completed_at && !onCompanyRoute) {
+      return <Navigate to="/company-register" replace />;
+    }
+    if (current.onboarding_completed_at && !current.setup_completed_at && !onCompanyRoute) {
+      return <Navigate to="/company-register/setup" replace />;
+    }
+  }
+
 
   return (
     <SidebarProvider open={open} onOpenChange={setOpen} defaultOpen={pinned}>

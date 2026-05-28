@@ -47,6 +47,9 @@ import CustomFieldsSettingsPage from "@/pages/CustomFieldsSettingsPage";
 import Admin from "@/pages/admin/Admin";
 import GoogleCallback from "@/pages/auth/GoogleCallback";
 import SettingsRodizio from "@/pages/SettingsRodizio";
+import CompanyRegister from "@/pages/company/CompanyRegister";
+import PreparingAccount from "@/pages/company/PreparingAccount";
+import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
 import { useUserPresence } from "@/hooks/useUserPresence";
 
@@ -96,6 +99,11 @@ const App = () => (
                   <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
                   <Route path="/app/*" element={<Navigate to="/dashboard" replace />} />
+
+                  <Route path="/company-register" element={<RequireAuth><CompanyRegister /></RequireAuth>} />
+                  <Route path="/company-register/preparing" element={<RequireAuth><PreparingAccount /></RequireAuth>} />
+                  <Route path="/company-register/setup" element={<RequireAuth><SetupWizard /></RequireAuth>} />
+
 
                   <Route
                     path="/"

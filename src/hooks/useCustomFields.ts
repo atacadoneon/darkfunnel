@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { toast } from "sonner";
 
-export type EntityType = "lead" | "deal" | "contact" | "conversation";
+export type EntityType = "lead" | "deal" | "contact" | "conversation" | "workspace" | "product";
 
 export type FieldType =
   | "text" | "textarea" | "number" | "currency" | "date" | "datetime"
