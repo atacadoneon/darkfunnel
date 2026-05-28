@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { type ComponentProps, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type LucideIcon,
   LayoutGrid,
@@ -92,10 +92,13 @@ const sections: { label: string; items: Item[] }[] = [
 type AppSidebarProps = {
   pinned?: boolean;
   onTogglePin?: () => void;
-} & Pick<ComponentProps<typeof Sidebar>, "onMouseEnter" | "onMouseLeave">;
+};
 
-export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseLeave }: AppSidebarProps = {}) {
-  const { state } = useSidebar();
+const HOVER_OPEN_DELAY_MS = 2000;
+
+export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}) {
+  const { state, setOpen } = useSidebar();
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { current } = useWorkspace();
@@ -127,6 +130,26 @@ export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseL
 
   const visibleSections = sections;
 
+  const handleMouseEnter = () => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(() => setOpen(true), HOVER_OPEN_DELAY_MS);
+  };
+
+  const handleMouseLeave = () => {
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+    setOpen(false);
+  };
+
+  useEffect(
+    () => () => {
+      if (openTimer.current) clearTimeout(openTimer.current);
+    },
+    [],
+  );
+
   const bottomItems: Item[] = [];
   if (canSeeSettings) {
     bottomItems.push(
@@ -147,7 +170,7 @@ export function AppSidebar({ pinned = false, onTogglePin, onMouseEnter, onMouseL
   const wsName = current?.name ?? "Conta";
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" side="left" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+    <Sidebar collapsible="icon" variant="sidebar" side="left" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <SidebarHeader className="p-3 border-b">
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
