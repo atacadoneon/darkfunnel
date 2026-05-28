@@ -1,5 +1,5 @@
 import { Outlet, Navigate, useLocation } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppTopbar } from "@/components/layout/AppTopbar";
@@ -61,17 +61,17 @@ export default function AppLayout() {
   const isInRailRef = useRef(false);
   const hasLeftRailAfterMountRef = useRef(false);
 
-  const clearOpenTimer = () => {
+  const clearOpenTimer = useCallback(() => {
     if (openTimer.current) {
       clearTimeout(openTimer.current);
       openTimer.current = null;
     }
-  };
+  }, []);
 
-  const closeNow = () => {
+  const closeNow = useCallback(() => {
     clearOpenTimer();
     setOpen(false);
-  };
+  }, [clearOpenTimer]);
 
   // Bloqueia qualquer abertura que não venha do nosso timer de hover
   const handleOpenChange = (next: boolean) => {
@@ -113,7 +113,7 @@ export default function AppLayout() {
       window.removeEventListener("mouseleave", onLeaveWindow);
       clearOpenTimer();
     };
-  }, [open]);
+  }, [closeNow, clearOpenTimer, open]);
 
   if (loading) {
     return (
