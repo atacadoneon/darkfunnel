@@ -60,6 +60,8 @@ export default function AppLayout() {
   });
   const [open, setOpen] = useState<boolean>(pinned);
   const closeTimer = useRef<number | null>(null);
+  const openTimer = useRef<number | null>(null);
+  const HOVER_OPEN_DELAY = 2000;
 
   useEffect(() => {
     window.localStorage.setItem(PIN_KEY, pinned ? "1" : "0");
@@ -71,9 +73,21 @@ export default function AppLayout() {
       window.clearTimeout(closeTimer.current);
       closeTimer.current = null;
     }
-    setOpen(true);
+    if (pinned) {
+      setOpen(true);
+      return;
+    }
+    if (open || openTimer.current) return;
+    openTimer.current = window.setTimeout(() => {
+      openTimer.current = null;
+      setOpen(true);
+    }, HOVER_OPEN_DELAY);
   };
   const handleLeave = () => {
+    if (openTimer.current) {
+      window.clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
     if (pinned) return;
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
     closeTimer.current = window.setTimeout(() => setOpen(false), 200);
@@ -86,9 +100,19 @@ export default function AppLayout() {
       else if (e.clientX > 280) handleLeave();
     };
     document.addEventListener("mousemove", onMove);
-    return () => document.removeEventListener("mousemove", onMove);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      if (openTimer.current) {
+        window.clearTimeout(openTimer.current);
+        openTimer.current = null;
+      }
+      if (closeTimer.current) {
+        window.clearTimeout(closeTimer.current);
+        closeTimer.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pinned]);
+  }, [pinned, open]);
 
   if (loading) {
     return (
