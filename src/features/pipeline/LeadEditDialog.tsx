@@ -38,6 +38,7 @@ import {
   useCustomFields, useUpsertCustomField, useDeleteCustomField,
   useAdsAttribution,
 } from "./leadEditHooks";
+import { CustomFieldRenderer } from "@/components/customfields/CustomFieldRenderer";
 
 type Props = {
   open: boolean;
