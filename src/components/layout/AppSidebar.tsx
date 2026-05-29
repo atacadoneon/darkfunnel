@@ -245,81 +245,20 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
           </SidebarGroup>
         ))}
 
-        {settingsSubItems.length > 0 && (
-          <SidebarGroup className="py-1 mt-2 border-t">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {collapsed ? (
-                  <SidebarMenuItem>
-                    <Popover>
-                      <TooltipProvider delayDuration={300}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <PopoverTrigger asChild>
-                              <SidebarMenuButton isActive={isSettingsActive}>
-                                <Settings className="h-4 w-4" />
-                              </SidebarMenuButton>
-                            </PopoverTrigger>
-                          </TooltipTrigger>
-                          <TooltipContent side="right">Configurações</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <PopoverContent side="right" align="start" className="w-56 p-1">
-                        <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
-                          Configurações
-                        </div>
-                        {settingsSubItems.map((sub) => (
-                          <NavLink
-                            key={sub.title}
-                            to={sub.url}
-                            className={({ isActive }) =>
-                              cn(
-                                "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
-                                isActive && "bg-accent text-accent-foreground",
-                              )
-                            }
-                          >
-                            <sub.icon className="h-4 w-4" />
-                            <span className="truncate">{sub.title}</span>
-                          </NavLink>
-                        ))}
-                      </PopoverContent>
-                    </Popover>
-                  </SidebarMenuItem>
-                ) : (
-                  <Collapsible defaultOpen={isSettingsActive} className="group/collapsible">
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton isActive={isSettingsActive}>
-                          <Settings className="h-4 w-4" />
-                          <span>Configurações</span>
-                          <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {settingsSubItems.map((sub) => (
-                            <SidebarMenuSubItem key={sub.title}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={pathname === sub.url.split("?")[0]}
-                              >
-                                <NavLink to={sub.url} className="flex items-center gap-2">
-                                  <sub.icon className="h-3.5 w-3.5" />
-                                  <span>{sub.title}</span>
-                                </NavLink>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        <SidebarGroup className="py-1 mt-2 border-t">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isSettingsActive}>
+                  <NavLink to="/settings/perfil" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    {!collapsed && <span>Configurações</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {!collapsed && (
           <SidebarGroup className="py-1">
