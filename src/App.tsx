@@ -139,7 +139,7 @@ const App = () => (
                     <Route path="automacoes" element={<AutomacoesPage />} />
                     <Route path="automacoes/:id" element={<AutomacaoEditorPage />} />
                     <Route path="automations" element={<AutomacoesPage />} />
-                    <Route path="settings" element={<Settings />} />
+                    
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
                     <Route path="pagamentos" element={<Payments />} />
