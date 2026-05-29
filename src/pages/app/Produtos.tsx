@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Package, Plus, Search, MoreHorizontal, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useInfinitePaginated, flattenPages } from "@/components/lists/useInfinitePaginated";
+import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
+import { ListFooter } from "@/components/lists/ListFooter";
 
 type Product = {
   id: string;
