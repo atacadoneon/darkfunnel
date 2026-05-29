@@ -53,6 +53,16 @@ export default function AppLayout() {
   const location = useLocation();
   usePresenceHeartbeat();
 
+  // Lock /chats em light mode (preserva cores WhatsApp). Restaura no leave.
+  useEffect(() => {
+    const onChats = location.pathname.startsWith("/chats");
+    if (!onChats) return;
+    const root = document.documentElement;
+    const had = root.classList.contains("dark");
+    root.classList.remove("dark");
+    return () => { if (had) root.classList.add("dark"); };
+  }, [location.pathname]);
+
   if (loading) {
     return (
       <div className="flex h-svh w-full">
