@@ -62,6 +62,9 @@ export function UnifiedCalendar() {
     else setCursor((c) => addDays(c, delta));
   };
 
+  const goToday = () => setCursor(new Date());
+  const changeView = (nextView: ViewMode) => setView(nextView);
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between gap-2 px-4 py-3 border-b">
@@ -71,7 +74,7 @@ export function UnifiedCalendar() {
         </div>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="outline" onClick={() => step(-1)}><ChevronLeft className="h-4 w-4" /></Button>
-          <Button size="sm" variant="outline" onClick={() => setCursor(new Date())}>Hoje</Button>
+          <Button size="sm" variant="outline" onClick={goToday}>Hoje</Button>
           <Button size="icon" variant="outline" onClick={() => step(1)}><ChevronRight className="h-4 w-4" /></Button>
           <h2 className="text-sm font-medium capitalize ml-2">{title}</h2>
         </div>
@@ -80,7 +83,9 @@ export function UnifiedCalendar() {
             {(["month", "week", "day"] as ViewMode[]).map((v) => (
               <button
                 key={v}
-                onClick={() => setView(v)}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => changeView(v)}
                 className={cn(
                   "px-2.5 py-1 rounded-sm text-xs",
                   view === v ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
