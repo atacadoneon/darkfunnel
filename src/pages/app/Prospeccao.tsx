@@ -199,7 +199,17 @@ export default function Prospeccao() {
           </p>
         </div>
         <div className="flex gap-1">
-          <Button size="sm" variant="outline" disabled>Buscas salvas</Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline">Buscas salvas</Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0">
+              <div className="px-3 py-2 border-b text-xs font-medium">Buscas salvas</div>
+              <div className="p-4 text-xs text-muted-foreground text-center">
+                Nenhuma busca salva ainda.
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button size="sm" variant="outline" onClick={exportXlsx} disabled={!results?.length}>
             <Download className="h-3.5 w-3.5 mr-1" /> Exportar
           </Button>
