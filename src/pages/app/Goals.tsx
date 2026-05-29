@@ -307,7 +307,7 @@ function GeralTab({ year, month, setYear, setMonth }: {
               if (newHoliday && !holidays.includes(newHoliday)) {
                 setHolidays([...holidays, newHoliday].sort()); setNewHoliday("");
               }
-            }}>Adicionar</Button>
+            }}>Adicionar folga</Button>
           </div>
           <div className="flex flex-wrap gap-1 mt-1.5">
             {holidays.map((h) => (
