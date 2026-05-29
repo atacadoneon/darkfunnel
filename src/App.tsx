@@ -55,6 +55,11 @@ import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
 
 import SettingsPlaceholder from "@/pages/settings/SettingsPlaceholder";
+import SettingsShell from "@/components/layout/SettingsShell";
+import ListasPage from "@/pages/settings/ListasPage";
+import MotivosPerdaPage from "@/pages/settings/MotivosPerdaPage";
+import TiposAtividadePage from "@/pages/settings/TiposAtividadePage";
+import TagsPage from "@/pages/settings/TagsPage";
 // DEBUG-221: removido useUserPresence (gravava em workspace_user_presence).
 // Presence canônica vive em usePresenceHeartbeat (tabela user_presence), montado no AppLayout.
 
@@ -152,12 +157,14 @@ const App = () => (
                     <Route path="settings/planos" element={<SettingsPlaceholder title="Planos e uso" />} />
                     <Route path="settings/empresa" element={<SettingsPlaceholder title="Empresa" />} />
                     <Route path="settings/usuarios" element={<SettingsPlaceholder title="Usuários" />} />
-                    <Route path="settings/tags" element={<SettingsPlaceholder title="Tags" />} />
-                    <Route path="settings/motivos-perda" element={<SettingsPlaceholder title="Motivos de perda" />} />
-                    <Route path="settings/listas" element={<SettingsPlaceholder title="Listas" />} />
+                    <Route element={<SettingsShell />}>
+                      <Route path="settings/tags" element={<TagsPage />} />
+                      <Route path="settings/motivos-perda" element={<MotivosPerdaPage />} />
+                      <Route path="settings/listas" element={<ListasPage />} />
+                      <Route path="settings/tipos-atividade" element={<TiposAtividadePage />} />
+                    </Route>
                     <Route path="settings/departamentos" element={<SettingsPlaceholder title="Departamentos" />} />
                     <Route path="settings/horarios" element={<SettingsPlaceholder title="Horários de trabalho" />} />
-                    <Route path="settings/tipos-atividade" element={<SettingsPlaceholder title="Tipos de atividades" />} />
                     <Route path="settings/integracoes" element={<SettingsPlaceholder title="Integrações" />} />
                     <Route path="settings/canais" element={<Settings />} />
                     <Route path="settings/armazenamento" element={<SettingsPlaceholder title="Armazenamento" />} />
