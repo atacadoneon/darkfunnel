@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
   type LucideIcon,
@@ -10,7 +10,6 @@ import {
   Target,
   ListChecks,
   CalendarDays,
-  Phone,
   MessageSquare,
   Workflow,
   Settings,
@@ -25,9 +24,27 @@ import {
   CreditCard,
   Package,
   FileText,
+  Zap,
+  FolderPlus,
+  BookOpen,
+  Shuffle,
+  Tag,
+  List as ListIcon,
+  X as XIcon,
+  CalendarCheck,
+  User as UserIcon,
+  Building2,
+  BarChart3,
+  FolderTree,
+  Clock,
+  Plug,
+  Wifi,
+  Server,
+  Webhook,
+  Database,
+  Shield,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Sidebar,
@@ -42,12 +59,14 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { useMyRole, type WorkspaceRole } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
-type Item = { title: string; url: string; icon: LucideIcon };
+type Item = { title: string; url: string; icon: LucideIcon; roles?: WorkspaceRole[] };
 
 const sections: { label: string; items: Item[] }[] = [
   {
@@ -56,9 +75,15 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "CRM & Leads", url: "/funildevendas", icon: Filter },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Discador", url: "/discador", icon: PhoneOutgoing },
-      { title: "Email Marketing", url: "/emailmarketing", icon: Mail },
       { title: "Propostas", url: "/propostas", icon: FileText },
       { title: "Pagamentos", url: "/pagamentos", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Organização",
+    items: [
+      { title: "Agenda e Reuniões", url: "/agenda", icon: CalendarDays },
+      { title: "Tarefas", url: "/tarefas", icon: ListChecks },
     ],
   },
   {
@@ -66,20 +91,57 @@ const sections: { label: string; items: Item[] }[] = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutGrid },
       { title: "Metas", url: "/metas", icon: Target },
-      { title: "Agenda", url: "/agenda", icon: CalendarDays },
-      { title: "Ligações", url: "/calls", icon: Phone },
-      { title: "Tarefas", url: "/tarefas", icon: ListChecks },
       { title: "Prospecção", url: "/prospeccao", icon: Search },
-      { title: "Produtos", url: "/produtos", icon: Package },
     ],
   },
+];
 
+type SubItem = { label: string; to: string; icon: LucideIcon; roles?: WorkspaceRole[] };
+type FooterMenu = { key: string; label: string; icon: LucideIcon; items: SubItem[] };
+
+const footerMenus: FooterMenu[] = [
   {
-    label: "Automação",
+    key: "automacoes",
+    label: "Automações",
+    icon: Zap,
     items: [
-      { title: "Fluxo de Cadência", url: "/cadencia", icon: MessageSquare },
-      { title: "Automações", url: "/automacoes", icon: Workflow },
-      { title: "Trackeamento", url: "/trackeamento", icon: Target },
+      { label: "Automação", to: "/automacoes", icon: Workflow },
+      { label: "Email Marketing", to: "/emailmarketing", icon: Mail },
+      { label: "Fluxo de Cadência", to: "/cadencia", icon: MessageSquare },
+      { label: "Playbook", to: "/playbook", icon: BookOpen },
+      { label: "Trackeamento", to: "/trackeamento", icon: Target },
+      { label: "Rodízio de Leads", to: "/settings/rodizio", icon: Shuffle, roles: ["proprietario", "gerente"] },
+    ],
+  },
+  {
+    key: "cadastros",
+    label: "Cadastros",
+    icon: FolderPlus,
+    items: [
+      { label: "Produtos", to: "/produtos", icon: Package },
+      { label: "Listas", to: "/settings/listas", icon: ListIcon },
+      { label: "Motivos de Perda", to: "/settings/motivos-perda", icon: XIcon },
+      { label: "Tipo de Atividade", to: "/settings/tipos-atividade", icon: CalendarCheck },
+      { label: "Tags", to: "/settings/tags", icon: Tag },
+    ],
+  },
+  {
+    key: "configuracoes",
+    label: "Configurações",
+    icon: Settings,
+    items: [
+      { label: "Meu perfil", to: "/settings/perfil", icon: UserIcon },
+      { label: "Empresa", to: "/settings/empresa", icon: Building2 },
+      { label: "Planos e uso", to: "/settings/planos", icon: BarChart3 },
+      { label: "Usuários", to: "/settings/usuarios", icon: Users },
+      { label: "Departamentos", to: "/settings/departamentos", icon: FolderTree },
+      { label: "Horários de trabalho", to: "/settings/horarios", icon: Clock },
+      { label: "Integrações", to: "/settings/integracoes", icon: Plug },
+      { label: "Conexões", to: "/settings/canais", icon: Wifi },
+      { label: "Servidores MCP", to: "/config/mcp-server", icon: Server },
+      { label: "Webhook de Entrada", to: "/config/inbound-webhooks", icon: Webhook, roles: ["proprietario", "gerente"] },
+      { label: "Armazenamento", to: "/settings/armazenamento", icon: Database },
+      { label: "Administração", to: "/admin", icon: Shield, roles: ["proprietario", "platform_admin"] },
     ],
   },
 ];
@@ -98,6 +160,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
   const { pathname } = useLocation();
   const { current } = useWorkspace();
   const { user } = useAuth();
+  const { data: role } = useMyRole();
   const navigate = useNavigate();
 
   const [available, setAvailable] = useState<boolean>(() => {
@@ -120,8 +183,6 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     navigate("/login", { replace: true });
   };
 
-  const visibleSections = sections;
-
   const handleMouseEnter = () => {
     if (openTimer.current) clearTimeout(openTimer.current);
     openTimer.current = setTimeout(() => setOpen(true), HOVER_OPEN_DELAY_MS);
@@ -142,9 +203,6 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     [],
   );
 
-  const isSettingsActive =
-    pathname.startsWith("/settings") || pathname.startsWith("/config") || pathname.startsWith("/admin");
-
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.user_metadata?.name as string | undefined) ??
@@ -152,6 +210,9 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     "Usuário";
 
   const wsName = current?.name ?? "Conta";
+
+  const filterByRole = (items: SubItem[]) =>
+    items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" side="left" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
@@ -220,8 +281,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
-
-        {visibleSections.map((section) => (
+        {sections.map((section) => (
           <SidebarGroup key={section.label || "main"} className="py-1">
             {!collapsed && section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
             <SidebarGroupContent>
@@ -241,17 +301,51 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
           </SidebarGroup>
         ))}
 
+        {/* 3 menus do rodapé com submenus via Popover */}
         <SidebarGroup className="py-1 mt-2 border-t">
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isSettingsActive}>
-                  <NavLink to="/settings/perfil" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    {!collapsed && <span>Configurações</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {footerMenus.map((menu) => {
+                const visibleItems = filterByRole(menu.items);
+                if (visibleItems.length === 0) return null;
+                const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
+                return (
+                  <SidebarMenuItem key={menu.key}>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <SidebarMenuButton isActive={isActive} className="flex items-center gap-2">
+                          <menu.icon className="h-4 w-4" />
+                          {!collapsed && <span>{menu.label}</span>}
+                        </SidebarMenuButton>
+                      </PopoverTrigger>
+                      <PopoverContent side="right" align="start" sideOffset={8} className="w-60 p-1">
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          {menu.label}
+                        </div>
+                        <div className="space-y-0.5">
+                          {visibleItems.map((sub) => (
+                            <NavLink
+                              key={sub.to}
+                              to={sub.to}
+                              end={sub.to === "/admin"}
+                              className={({ isActive: act }) =>
+                                cn(
+                                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                                  "hover:bg-accent hover:text-accent-foreground",
+                                  act && "bg-accent text-accent-foreground",
+                                )
+                              }
+                            >
+                              <sub.icon className="h-4 w-4 shrink-0" />
+                              <span className="truncate">{sub.label}</span>
+                            </NavLink>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
