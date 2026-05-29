@@ -9,7 +9,6 @@ import {
   Mail,
   Target,
   ListChecks,
-  Calendar,
   CalendarDays,
   Phone,
   MessageSquare,
@@ -28,6 +27,8 @@ import {
   FileText,
   Shield,
   Server,
+  Shuffle,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
