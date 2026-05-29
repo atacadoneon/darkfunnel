@@ -124,8 +124,6 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     navigate("/login", { replace: true });
   };
 
-  const isPlatformAdmin = usePlatformAdmin().data;
-
   const visibleSections = sections;
 
   const handleMouseEnter = () => {
@@ -147,18 +145,6 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     },
     [],
   );
-
-  type SettingsSubItem = { title: string; url: string; icon: LucideIcon; show: boolean };
-  const settingsSubItems: SettingsSubItem[] = [
-    { title: "Configurações Gerais", url: "/settings", icon: Settings, show: true },
-    { title: "Canais & Conexões", url: "/settings?tab=channels", icon: MessageCircle, show: true },
-    { title: "Equipe & Permissões", url: "/settings?tab=users", icon: Users, show: canSeeSettings },
-    { title: "Rodízio de Leads", url: "/settings/rodizio", icon: Shuffle, show: canSeeSettings },
-    { title: "Campos Adicionais", url: "/config/custom-fields", icon: ListChecks, show: canSeeSettings },
-    { title: "Servidor MCP", url: "/config/mcp-server", icon: Server, show: canSeeSettings },
-    { title: "Webhooks de Entrada", url: "/config/inbound-webhooks", icon: Workflow, show: canSeeSettings },
-    { title: "Administração", url: "/admin", icon: Shield, show: isOwner || !!isPlatformAdmin },
-  ].filter((i) => i.show) as SettingsSubItem[];
 
   const isSettingsActive =
     pathname.startsWith("/settings") || pathname.startsWith("/config") || pathname.startsWith("/admin");
