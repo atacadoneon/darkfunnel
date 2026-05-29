@@ -149,16 +149,31 @@ const App = () => (
                     <Route path="propostas" element={<Propostas />} />
                     <Route path="propostas/novo" element={<PropostaEditor />} />
                     <Route path="propostas/:id" element={<PropostaEditor />} />
-                    <Route path="settings/wallet" element={<Wallet />} />
-                    <Route path="settings/rodizio" element={<SettingsRodizio />} />
-                    <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
-                    <Route path="config/custom-fields" element={<CustomFieldsSettingsPage />} />
-                    <Route path="config/inbound-webhooks" element={<InboundWebhooksPage />} />
                     <Route path="trackeamento" element={<Trackeamento />} />
-                    <Route path="admin" element={<Admin />} />
-                    <Route path="admin/features" element={<AdminFeatures />} />
 
-                    {/* Redirects legados */}
+                    {/* Settings Shell — segunda sidebar lateral */}
+                    <Route element={<SettingsShell />}>
+                      <Route path="settings" element={<Navigate to="/settings/perfil" replace />} />
+                      <Route path="settings/perfil" element={<SettingsPlaceholder title="Meu perfil" />} />
+                      <Route path="settings/planos" element={<SettingsPlaceholder title="Planos e uso" />} />
+                      <Route path="settings/empresa" element={<SettingsPlaceholder title="Empresa" />} />
+                      <Route path="settings/tags" element={<SettingsPlaceholder title="Tags" />} />
+                      <Route path="settings/motivos-perda" element={<SettingsPlaceholder title="Motivos de perda" />} />
+                      <Route path="settings/listas" element={<SettingsPlaceholder title="Listas" />} />
+                      <Route path="settings/departamentos" element={<SettingsPlaceholder title="Departamentos" />} />
+                      <Route path="settings/horarios" element={<SettingsPlaceholder title="Horários de trabalho" />} />
+                      <Route path="settings/tipos-atividade" element={<SettingsPlaceholder title="Tipos de atividades" />} />
+                      <Route path="settings/integracoes" element={<SettingsPlaceholder title="Integrações" />} />
+                      <Route path="settings/canais" element={<Settings />} />
+                      <Route path="settings/armazenamento" element={<SettingsPlaceholder title="Armazenamento" />} />
+                      <Route path="settings/wallet" element={<Wallet />} />
+                      <Route path="settings/rodizio" element={<SettingsRodizio />} />
+                      <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
+                      <Route path="config/custom-fields" element={<CustomFieldsSettingsPage />} />
+                      <Route path="config/inbound-webhooks" element={<InboundWebhooksPage />} />
+                      <Route path="admin" element={<Admin />} />
+                      <Route path="admin/features" element={<AdminFeatures />} />
+                    </Route>
                     <Route path="inbox" element={<Navigate to="/chats" replace />} />
                     <Route path="pipeline" element={<Navigate to="/funildevendas" replace />} />
                     <Route path="deals" element={<Navigate to="/funildevendas" replace />} />
