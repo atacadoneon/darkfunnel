@@ -68,6 +68,9 @@ import DepartamentosPage from "@/pages/settings/DepartamentosPage";
 import HorariosPage from "@/pages/settings/HorariosPage";
 import IntegracoesPage from "@/pages/settings/IntegracoesPage";
 import ArmazenamentoPage from "@/pages/settings/ArmazenamentoPage";
+import PlaybooksListPage from "@/pages/playbook/PlaybooksListPage";
+import PlaybookEditorPage from "@/pages/playbook/PlaybookEditorPage";
+import PlaybookRunsPage from "@/pages/playbook/PlaybookRunsPage";
 // DEBUG-221: removido useUserPresence (gravava em workspace_user_presence).
 // Presence canônica vive em usePresenceHeartbeat (tabela user_presence), montado no AppLayout.
 
@@ -184,7 +187,9 @@ const App = () => (
                     <Route path="config/inbound-webhooks" element={<InboundWebhooksPage />} />
                     <Route path="admin" element={<Admin />} />
                     <Route path="admin/features" element={<AdminFeatures />} />
-                    <Route path="playbook" element={<SettingsPlaceholder title="Playbook" />} />
+                    <Route path="playbook" element={<PlaybooksListPage />} />
+                    <Route path="playbook/runs" element={<PlaybookRunsPage />} />
+                    <Route path="playbook/:id" element={<PlaybookEditorPage />} />
                     <Route path="inbox" element={<Navigate to="/chats" replace />} />
                     <Route path="pipeline" element={<Navigate to="/funildevendas" replace />} />
                     <Route path="deals" element={<Navigate to="/funildevendas" replace />} />
