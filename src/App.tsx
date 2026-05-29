@@ -60,6 +60,14 @@ import ListasPage from "@/pages/settings/ListasPage";
 import MotivosPerdaPage from "@/pages/settings/MotivosPerdaPage";
 import TiposAtividadePage from "@/pages/settings/TiposAtividadePage";
 import TagsPage from "@/pages/settings/TagsPage";
+import PerfilPage from "@/pages/settings/PerfilPage";
+import EmpresaPage from "@/pages/settings/EmpresaPage";
+import PlanosPage from "@/pages/settings/PlanosPage";
+import UsuariosPage from "@/pages/settings/UsuariosPage";
+import DepartamentosPage from "@/pages/settings/DepartamentosPage";
+import HorariosPage from "@/pages/settings/HorariosPage";
+import IntegracoesPage from "@/pages/settings/IntegracoesPage";
+import ArmazenamentoPage from "@/pages/settings/ArmazenamentoPage";
 // DEBUG-221: removido useUserPresence (gravava em workspace_user_presence).
 // Presence canônica vive em usePresenceHeartbeat (tabela user_presence), montado no AppLayout.
 
