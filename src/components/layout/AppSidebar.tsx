@@ -365,13 +365,6 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
               </button>
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Painel do Parceiro
-              </button>
-              <button
-                type="button"
                 onClick={handleSignOut}
                 className="w-full flex items-center justify-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
               >
