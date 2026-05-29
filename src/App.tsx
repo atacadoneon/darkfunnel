@@ -159,23 +159,24 @@ const App = () => (
                     <Route path="propostas/:id" element={<PropostaEditor />} />
                     <Route path="trackeamento" element={<Trackeamento />} />
 
-                    {/* Configurações e cadastros — sem segunda sidebar (acessados via popover do menu) */}
+                    {/* Configurações — todas dentro do SettingsShell (segunda sidebar 280px) */}
                     <Route path="settings" element={<Navigate to="/settings/perfil" replace />} />
-                    <Route path="settings/perfil" element={<SettingsPlaceholder title="Meu perfil" />} />
-                    <Route path="settings/planos" element={<SettingsPlaceholder title="Planos e uso" />} />
-                    <Route path="settings/empresa" element={<SettingsPlaceholder title="Empresa" />} />
-                    <Route path="settings/usuarios" element={<SettingsPlaceholder title="Usuários" />} />
                     <Route element={<SettingsShell />}>
+                      <Route path="settings/perfil" element={<PerfilPage />} />
+                      <Route path="settings/planos" element={<PlanosPage />} />
+                      <Route path="settings/empresa" element={<EmpresaPage />} />
+                      <Route path="settings/usuarios" element={<UsuariosPage />} />
                       <Route path="settings/tags" element={<TagsPage />} />
                       <Route path="settings/motivos-perda" element={<MotivosPerdaPage />} />
                       <Route path="settings/listas" element={<ListasPage />} />
                       <Route path="settings/tipos-atividade" element={<TiposAtividadePage />} />
+                      <Route path="settings/departamentos" element={<DepartamentosPage />} />
+                      <Route path="settings/horarios" element={<HorariosPage />} />
+                      <Route path="settings/integracoes" element={<IntegracoesPage />} />
+                      <Route path="settings/armazenamento" element={<ArmazenamentoPage />} />
                     </Route>
-                    <Route path="settings/departamentos" element={<SettingsPlaceholder title="Departamentos" />} />
-                    <Route path="settings/horarios" element={<SettingsPlaceholder title="Horários de trabalho" />} />
-                    <Route path="settings/integracoes" element={<SettingsPlaceholder title="Integrações" />} />
                     <Route path="settings/canais" element={<Settings />} />
-                    <Route path="settings/armazenamento" element={<SettingsPlaceholder title="Armazenamento" />} />
+                    <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
