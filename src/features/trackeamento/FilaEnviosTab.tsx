@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { RotateCw } from "lucide-react";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { ListFooter } from "@/components/lists/ListFooter";
 
 const fmtBRL = (cents: number | null) =>
   cents == null ? "—" : (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -111,6 +112,7 @@ export function FilaEnviosTab({ periodStart }: { periodStart: Date }) {
           </Table>
         </TooltipProvider>
       </Card>
+      <ListFooter loaded={data.length} total={data.length} hasMore={false} singular="envio exibido" plural="envios exibidos" />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useAdsAttribution } from "@/hooks/useAdsAttribution";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
+import { ListFooter } from "@/components/lists/ListFooter";
 
 const fmtBRL = (cents: number) =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -51,33 +52,36 @@ export function CampanhasTab({ periodStart, periodEnd, channel }: { periodStart:
   }
 
   return (
-    <Card className="overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Canal</TableHead>
-            <TableHead>Campanha</TableHead>
-            <TableHead className="text-right">Leads</TableHead>
-            <TableHead className="text-right">Ganhos</TableHead>
-            <TableHead className="text-right">Receita</TableHead>
-            <TableHead>Última atribuição</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r, i) => (
-            <TableRow key={i}>
-              <TableCell>{channelBadge(r.source)}</TableCell>
-              <TableCell className="font-medium">{r.campaign ?? "—"}</TableCell>
-              <TableCell className="text-right">{r.leads.size}</TableCell>
-              <TableCell className="text-right">{r.wins}</TableCell>
-              <TableCell className="text-right">{fmtBRL(r.revenue)}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">
-                {new Date(r.lastAt).toLocaleDateString("pt-BR")}
-              </TableCell>
+    <div>
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Canal</TableHead>
+              <TableHead>Campanha</TableHead>
+              <TableHead className="text-right">Leads</TableHead>
+              <TableHead className="text-right">Ganhos</TableHead>
+              <TableHead className="text-right">Receita</TableHead>
+              <TableHead>Última atribuição</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r, i) => (
+              <TableRow key={i}>
+                <TableCell>{channelBadge(r.source)}</TableCell>
+                <TableCell className="font-medium">{r.campaign ?? "—"}</TableCell>
+                <TableCell className="text-right">{r.leads.size}</TableCell>
+                <TableCell className="text-right">{r.wins}</TableCell>
+                <TableCell className="text-right">{fmtBRL(r.revenue)}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {new Date(r.lastAt).toLocaleDateString("pt-BR")}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+      <ListFooter loaded={rows.length} total={rows.length} hasMore={false} singular="campanha exibida" plural="campanhas exibidas" />
+    </div>
   );
 }
