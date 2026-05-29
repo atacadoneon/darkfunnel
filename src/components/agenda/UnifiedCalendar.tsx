@@ -40,7 +40,11 @@ export function UnifiedCalendar() {
     if (view === "week") {
       return { from: startOfWeek(cursor, { weekStartsOn: 0 }), to: endOfWeek(cursor, { weekStartsOn: 0 }) };
     }
-    return { from: new Date(cursor.setHours(0, 0, 0, 0)), to: new Date(new Date(cursor).setHours(23, 59, 59, 999)) };
+    const dayStart = new Date(cursor);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(cursor);
+    dayEnd.setHours(23, 59, 59, 999);
+    return { from: dayStart, to: dayEnd };
   }, [cursor, view]);
 
   const { data: items = [] } = useUnifiedCalendar(range);
