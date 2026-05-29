@@ -176,7 +176,12 @@ export default function Prospeccao() {
     setUfs((p) => p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf]);
     setSelected(new Set());
   };
-  const toggleRow = (id: string) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleRow = (id: string) => setSelected((p) => {
+    const n = new Set(p);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
+  });
   const selectAll = () => setSelected(new Set((filteredResults ?? []).map((r) => r.id)));
   const clearSelection = () => setSelected(new Set());
   const importSelected = () => { if (selected.size === 0) return toast.error("Selecione pelo menos 1"); importMut.mutate([...selected]); };
