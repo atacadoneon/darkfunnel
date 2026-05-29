@@ -115,7 +115,15 @@ export function GenericNode({ data, type }: NodeProps) {
     c === "destructive" ? "!bg-destructive" : c === "muted" ? "!bg-muted-foreground" : "!bg-primary";
 
   return (
-    <div className="w-[280px] rounded-lg border bg-card shadow-md relative">
+    <div
+      className="w-[280px] rounded-lg border bg-card shadow-md relative cursor-pointer hover:border-primary/60 transition-colors"
+      onClick={(e) => {
+        // Não dispara se clicou em botão/handle interno
+        const target = e.target as HTMLElement;
+        if (target.closest("button") || target.closest(".react-flow__handle")) return;
+        d.onEdit?.();
+      }}
+    >
       <div className="flex items-center gap-2 px-3 py-2 border-b">
         <div className="h-7 w-7 rounded bg-muted text-foreground flex items-center justify-center">
           <Icon className="h-3.5 w-3.5" />
