@@ -43,6 +43,8 @@ import {
   Webhook,
   Database,
   Shield,
+  PlusCircle,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -138,9 +140,10 @@ const footerMenus: FooterMenu[] = [
       { label: "Horários de trabalho", to: "/settings/horarios", icon: Clock },
       { label: "Integrações", to: "/settings/integracoes", icon: Plug },
       { label: "Conexões", to: "/settings/canais", icon: Wifi },
-      { label: "Servidores MCP", to: "/config/mcp-server", icon: Server },
+      { label: "Servidor MCP", to: "/config/mcp-server", icon: Server, roles: ["proprietario", "gerente"] },
       { label: "Webhook de Entrada", to: "/config/inbound-webhooks", icon: Webhook, roles: ["proprietario", "gerente"] },
       { label: "Armazenamento", to: "/settings/armazenamento", icon: Database },
+      { label: "Campos adicionais", to: "/config/custom-fields", icon: PlusCircle, roles: ["proprietario", "gerente"] },
       { label: "Administração", to: "/admin", icon: Shield, roles: ["proprietario", "platform_admin"] },
     ],
   },
@@ -215,7 +218,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" side="left" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <Sidebar collapsible="icon" variant="sidebar" side="left" className="h-svh" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <SidebarHeader className="p-3 border-b">
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
@@ -280,7 +283,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
         )}
       </SidebarHeader>
 
-      <SidebarContent className="gap-0">
+      <SidebarContent className="gap-0 overflow-y-auto">
         {sections.map((section) => (
           <SidebarGroup key={section.label || "main"} className="py-1">
             {!collapsed && section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
@@ -300,55 +303,6 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
-
-        {/* 3 menus do rodapé com submenus via Popover */}
-        <SidebarGroup className="py-1 mt-2 border-t">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {footerMenus.map((menu) => {
-                const visibleItems = filterByRole(menu.items);
-                if (visibleItems.length === 0) return null;
-                const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
-                return (
-                  <SidebarMenuItem key={menu.key}>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <SidebarMenuButton isActive={isActive} className="flex items-center gap-2">
-                          <menu.icon className="h-4 w-4" />
-                          {!collapsed && <span>{menu.label}</span>}
-                        </SidebarMenuButton>
-                      </PopoverTrigger>
-                      <PopoverContent side="right" align="start" sideOffset={8} className="w-60 p-1">
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                          {menu.label}
-                        </div>
-                        <div className="space-y-0.5">
-                          {visibleItems.map((sub) => (
-                            <NavLink
-                              key={sub.to}
-                              to={sub.to}
-                              end={sub.to === "/admin"}
-                              className={({ isActive: act }) =>
-                                cn(
-                                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                                  "hover:bg-accent hover:text-accent-foreground",
-                                  act && "bg-accent text-accent-foreground",
-                                )
-                              }
-                            >
-                              <sub.icon className="h-4 w-4 shrink-0" />
-                              <span className="truncate">{sub.label}</span>
-                            </NavLink>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         {!collapsed && (
           <SidebarGroup className="py-1">
@@ -377,7 +331,59 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
       </SidebarContent>
 
 
-      <SidebarFooter className="border-t p-2">
+      <SidebarFooter className="border-t p-2 gap-2">
+        {/* 3 menus fixos no rodapé com submenus via Popover (click-outside / Esc fecham) */}
+        <SidebarMenu>
+          {footerMenus.map((menu) => {
+            const visibleItems = filterByRole(menu.items);
+            if (visibleItems.length === 0) return null;
+            const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
+            return (
+              <SidebarMenuItem key={menu.key}>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <SidebarMenuButton isActive={isActive} className="flex items-center gap-2">
+                      <menu.icon className="h-4 w-4" />
+                      {!collapsed && <span>{menu.label}</span>}
+                    </SidebarMenuButton>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="right"
+                    align="end"
+                    sideOffset={8}
+                    className="w-60 p-1"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      {menu.label}
+                    </div>
+                    <div className="space-y-0.5">
+                      {visibleItems.map((sub) => (
+                        <NavLink
+                          key={sub.to}
+                          to={sub.to}
+                          end={sub.to === "/admin"}
+                          className={({ isActive: act }) =>
+                            cn(
+                              "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                              "hover:bg-accent hover:text-accent-foreground",
+                              act && "bg-accent text-accent-foreground",
+                            )
+                          }
+                        >
+                          <sub.icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{sub.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+
+
         {!collapsed ? (
           <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs text-muted-foreground">
             <button

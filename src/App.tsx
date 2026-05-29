@@ -55,7 +55,7 @@ import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
 
 import SettingsPlaceholder from "@/pages/settings/SettingsPlaceholder";
-import SettingsShell from "@/components/layout/SettingsShell";
+
 import ListasPage from "@/pages/settings/ListasPage";
 import MotivosPerdaPage from "@/pages/settings/MotivosPerdaPage";
 import TiposAtividadePage from "@/pages/settings/TiposAtividadePage";
@@ -162,22 +162,20 @@ const App = () => (
                     <Route path="propostas/:id" element={<PropostaEditor />} />
                     <Route path="trackeamento" element={<Trackeamento />} />
 
-                    {/* Configurações — todas dentro do SettingsShell (segunda sidebar 280px) */}
+                    {/* Configurações — sem SettingsShell, usam só a sidebar principal */}
                     <Route path="settings" element={<Navigate to="/settings/perfil" replace />} />
-                    <Route element={<SettingsShell />}>
-                      <Route path="settings/perfil" element={<PerfilPage />} />
-                      <Route path="settings/planos" element={<PlanosPage />} />
-                      <Route path="settings/empresa" element={<EmpresaPage />} />
-                      <Route path="settings/usuarios" element={<UsuariosPage />} />
-                      <Route path="settings/tags" element={<TagsPage />} />
-                      <Route path="settings/motivos-perda" element={<MotivosPerdaPage />} />
-                      <Route path="settings/listas" element={<ListasPage />} />
-                      <Route path="settings/tipos-atividade" element={<TiposAtividadePage />} />
-                      <Route path="settings/departamentos" element={<DepartamentosPage />} />
-                      <Route path="settings/horarios" element={<HorariosPage />} />
-                      <Route path="settings/integracoes" element={<IntegracoesPage />} />
-                      <Route path="settings/armazenamento" element={<ArmazenamentoPage />} />
-                    </Route>
+                    <Route path="settings/perfil" element={<PerfilPage />} />
+                    <Route path="settings/planos" element={<PlanosPage />} />
+                    <Route path="settings/empresa" element={<EmpresaPage />} />
+                    <Route path="settings/usuarios" element={<UsuariosPage />} />
+                    <Route path="settings/tags" element={<TagsPage />} />
+                    <Route path="settings/motivos-perda" element={<MotivosPerdaPage />} />
+                    <Route path="settings/listas" element={<ListasPage />} />
+                    <Route path="settings/tipos-atividade" element={<TiposAtividadePage />} />
+                    <Route path="settings/departamentos" element={<DepartamentosPage />} />
+                    <Route path="settings/horarios" element={<HorariosPage />} />
+                    <Route path="settings/integracoes" element={<IntegracoesPage />} />
+                    <Route path="settings/armazenamento" element={<ArmazenamentoPage />} />
                     <Route path="settings/canais" element={<Settings />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/wallet" element={<Wallet />} />
