@@ -102,8 +102,6 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
   const { pathname } = useLocation();
   const { current } = useWorkspace();
   const { user } = useAuth();
-  const canSeeSettings = useIsManagerOrAdmin();
-  const isOwner = useIsAdmin();
   const navigate = useNavigate();
 
   const [available, setAvailable] = useState<boolean>(() => {
