@@ -67,7 +67,7 @@ export default function Produtos() {
     const ch = supabase
       .channel(`products:${current.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "products", filter: `workspace_id=eq.${current.id}` },
-        () => qc.invalidateQueries({ queryKey: ["products", current.id] }))
+        () => qc.invalidateQueries({ queryKey: ["products-infinite", current.id] }))
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
   }, [current, qc]);
