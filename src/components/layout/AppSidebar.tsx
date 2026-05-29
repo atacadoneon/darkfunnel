@@ -158,16 +158,20 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     [],
   );
 
-  const bottomItems: Item[] = [];
-  if (canSeeSettings) {
-    bottomItems.push(
-      { title: "Configurações", url: "/settings", icon: Settings },
-      { title: "Campos Adicionais", url: "/config/custom-fields", icon: ListChecks },
-      { title: "Webhooks de entrada", url: "/config/inbound-webhooks", icon: Workflow },
-      { title: "Servidor MCP", url: "/config/mcp-server", icon: Server },
-    );
-  }
-  if (isPlatformAdmin) bottomItems.push({ title: "Admin", url: "/admin", icon: Shield });
+  type SettingsSubItem = { title: string; url: string; icon: LucideIcon; show: boolean };
+  const settingsSubItems: SettingsSubItem[] = [
+    { title: "Configurações Gerais", url: "/settings", icon: Settings, show: true },
+    { title: "Canais & Conexões", url: "/settings?tab=channels", icon: MessageCircle, show: true },
+    { title: "Equipe & Permissões", url: "/settings?tab=users", icon: Users, show: canSeeSettings },
+    { title: "Rodízio de Leads", url: "/settings/rodizio", icon: Shuffle, show: canSeeSettings },
+    { title: "Campos Adicionais", url: "/config/custom-fields", icon: ListChecks, show: canSeeSettings },
+    { title: "Servidor MCP", url: "/config/mcp-server", icon: Server, show: canSeeSettings },
+    { title: "Webhooks de Entrada", url: "/config/inbound-webhooks", icon: Workflow, show: canSeeSettings },
+    { title: "Administração", url: "/admin", icon: Shield, show: isOwner || !!isPlatformAdmin },
+  ].filter((i) => i.show) as SettingsSubItem[];
+
+  const isSettingsActive =
+    pathname.startsWith("/settings") || pathname.startsWith("/config") || pathname.startsWith("/admin");
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
