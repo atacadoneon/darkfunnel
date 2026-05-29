@@ -132,7 +132,6 @@ const footerMenus: FooterMenu[] = [
     label: "Configurações",
     icon: Settings,
     items: [
-      { label: "Meu perfil", to: "/settings/perfil", icon: UserIcon },
       { label: "Empresa", to: "/settings/empresa", icon: Building2 },
       { label: "Planos e uso", to: "/settings/planos", icon: BarChart3 },
       { label: "Usuários", to: "/settings/usuarios", icon: Users },
