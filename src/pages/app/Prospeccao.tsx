@@ -218,7 +218,7 @@ export default function Prospeccao() {
               </div>
             </PopoverContent>
           </Popover>
-          <Button size="sm" variant="outline" onClick={exportXlsx} disabled={!results?.length}>
+          <Button size="sm" variant="outline" onClick={exportXlsx} disabled={!filteredResults?.length}>
             <Download className="h-3.5 w-3.5 mr-1" /> Exportar
           </Button>
         </div>
@@ -249,6 +249,7 @@ export default function Prospeccao() {
                 key={uf}
                 type="button"
                 onClick={() => toggleUF(uf)}
+                aria-pressed={ufs.includes(uf)}
                 className={cn(
                   "h-6 px-2 text-[11px] rounded border transition-colors",
                   ufs.includes(uf)
@@ -371,15 +372,15 @@ export default function Prospeccao() {
         </div>
       </Card>
 
-      {results && (
+      {filteredResults && (
         <Card>
           <div className="flex items-center justify-between p-3 border-b">
             <span className="text-sm font-medium">
-              {results.length} resultados {selected.size > 0 && <span className="text-muted-foreground">· {selected.size} selecionados</span>}
+              {filteredResults.length} resultados {selected.size > 0 && <span className="text-muted-foreground">· {selected.size} selecionados</span>}
             </span>
             <div className="flex gap-1">
-              <Button size="sm" variant="outline" onClick={selected.size === results.length ? clearSelection : selectAll}>
-                {selected.size === results.length ? "Limpar" : "Selecionar todos"}
+              <Button size="sm" variant="outline" onClick={selected.size === filteredResults.length ? clearSelection : selectAll}>
+                {selected.size === filteredResults.length ? "Limpar" : "Selecionar todos"}
               </Button>
               <Button size="sm" onClick={importSelected} disabled={selected.size === 0 || importMut.isPending}>
                 {importMut.isPending && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
@@ -402,7 +403,7 @@ export default function Prospeccao() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((r) => (
+                {filteredResults.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleRow(r.id)} /></TableCell>
                     <TableCell className="font-mono text-xs">{r.cnpj}</TableCell>
@@ -421,7 +422,7 @@ export default function Prospeccao() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {results.length === 0 && (
+                {filteredResults.length === 0 && (
                   <TableRow><TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-6">Nenhuma empresa encontrada</TableCell></TableRow>
                 )}
               </TableBody>
