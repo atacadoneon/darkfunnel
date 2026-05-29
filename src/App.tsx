@@ -55,7 +55,7 @@ import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
 
 import SettingsPlaceholder from "@/pages/settings/SettingsPlaceholder";
-import SettingsShell from "@/components/layout/SettingsShell";
+
 import ListasPage from "@/pages/settings/ListasPage";
 import MotivosPerdaPage from "@/pages/settings/MotivosPerdaPage";
 import TiposAtividadePage from "@/pages/settings/TiposAtividadePage";
