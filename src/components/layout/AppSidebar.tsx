@@ -42,20 +42,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { useIsAdmin, useIsManagerOrAdmin } from "@/features/workspace/permissions";
-import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
 
