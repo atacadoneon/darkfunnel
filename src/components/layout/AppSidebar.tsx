@@ -383,3 +383,84 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     </Sidebar>
   );
 }
+
+function FooterPopoverItem({
+  menu,
+  items,
+  isActive,
+  collapsed,
+}: {
+  menu: FooterMenu;
+  items: SubItem[];
+  isActive: boolean;
+  collapsed: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const leftOffset = collapsed
+    ? "var(--sidebar-width-icon, 3rem)"
+    : "var(--sidebar-width, 16rem)";
+
+  return (
+    <SidebarMenuItem>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <SidebarMenuButton isActive={isActive} className="flex items-center gap-2">
+            <menu.icon className="h-4 w-4" />
+            {!collapsed && <span>{menu.label}</span>}
+          </SidebarMenuButton>
+        </PopoverTrigger>
+        <PopoverContent
+          side="right"
+          align="start"
+          sideOffset={0}
+          avoidCollisions={false}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="w-72 p-0 rounded-none border-l-0 shadow-2xl bg-card"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: leftOffset,
+            height: "100svh",
+            maxHeight: "100svh",
+            transform: "none",
+          }}
+        >
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <h2 className="text-sm font-semibold">{menu.label}</h2>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-md p-1.5 text-foreground/60 hover:bg-accent hover:text-foreground"
+                aria-label="Fechar"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+              {items.map((it) => (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  end={it.to === "/admin"}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive: act }) =>
+                    cn(
+                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                      "text-foreground/80 hover:bg-accent hover:text-foreground",
+                      act && "bg-accent text-accent-foreground font-medium",
+                    )
+                  }
+                >
+                  <it.icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{it.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </SidebarMenuItem>
+  );
+}
+
