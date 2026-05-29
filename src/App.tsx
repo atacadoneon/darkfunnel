@@ -88,7 +88,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <WorkspaceProvider>
-              <PresenceMount />
+              {/* DEBUG-221: PresenceMount removido — usePresenceHeartbeat já roda no AppLayout */}
               <VoiceProvider>
                 <Routes>
                   <Route path="/login" element={<Login />} />
