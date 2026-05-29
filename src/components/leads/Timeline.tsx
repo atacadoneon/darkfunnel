@@ -81,6 +81,7 @@ function useTimeline(contactId: string, filter: FilterKey) {
         .from("lead_timeline" as any)
         .select("*", { count: "exact" })
         .eq("contact_id", contactId)
+        .not("source_type", "in", "(message,msg,conversation_message,whatsapp_message)")
         .order("happened_at", { ascending: false })
         .range(from, to);
       const sources = FILTER_SOURCES[filter];
