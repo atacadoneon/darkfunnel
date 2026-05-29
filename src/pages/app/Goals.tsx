@@ -307,7 +307,7 @@ function GeralTab({ year, month, setYear, setMonth }: {
               if (newHoliday && !holidays.includes(newHoliday)) {
                 setHolidays([...holidays, newHoliday].sort()); setNewHoliday("");
               }
-            }}>Adicionar</Button>
+            }}>Adicionar folga</Button>
           </div>
           <div className="flex flex-wrap gap-1 mt-1.5">
             {holidays.map((h) => (
@@ -752,13 +752,42 @@ function NewUserGoalDialog({ target, year, month, onClose, onSave }: {
   );
 }
 
+function NewWorkspaceGoalDialog({ open, year, month, onOpenChange, onSave }: {
+  open: boolean; year: number; month: number;
+  onOpenChange: (open: boolean) => void; onSave: (amount: number) => Promise<void>;
+}) {
+  const [amount, setAmount] = useState(0);
+  useEffect(() => { if (open) setAmount(0); }, [open]);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Adicionar meta — {MONTHS[month-1]} {year}</DialogTitle>
+        </DialogHeader>
+        <div>
+          <Label>Meta Mensal (R$)</Label>
+          <Input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value) || 0)} autoFocus />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button disabled={amount <= 0} onClick={() => onSave(amount)}>
+            Criar Meta
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ============= PAGE =============
 export default function Goals() {
   const { current } = useWorkspace();
+  const { upsertGoal } = useGoalMutations();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [tab, setTab] = useState<TabKey>("geral");
+  const [addOpen, setAddOpen] = useState(false);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -768,8 +797,11 @@ export default function Goals() {
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <TabBar tab={tab} onChange={setTab} />
-        {tab !== "geral" && (
           <div className="flex gap-2">
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Adicionar
+            </Button>
+            {tab !== "geral" && <>
             <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
               <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
               <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}</SelectContent>
@@ -778,13 +810,27 @@ export default function Goals() {
               <SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger>
               <SelectContent>{YEARS.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
             </Select>
+            </>}
           </div>
-        )}
       </div>
 
       {tab === "geral" && <GeralTab year={year} month={month} setYear={setYear} setMonth={setMonth} />}
       {tab === "setoriais" && <SetoresTab year={year} month={month} />}
       {tab === "vendedores" && <VendedoresTab year={year} month={month} />}
+      <NewWorkspaceGoalDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        year={year}
+        month={month}
+        onSave={async (amount) => {
+          await upsertGoal.mutateAsync({
+            year, month, scope: "workspace", scope_ref_id: null,
+            target_amount: amount, working_days_mask: 0b0111110, holidays: [],
+          });
+          toast.success("Meta criada");
+          setAddOpen(false);
+        }}
+      />
       </div>
     </div>
   );

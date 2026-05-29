@@ -128,9 +128,14 @@ export default function Prospeccao() {
   const canSearch = razao.replace(/\D/g, "").length === 14;
 
   // Filtros mantidos para UI; backend atual só suporta lookup por CNPJ.
-  void cnae; void ufs; void municipio; void porte; void situacao; void limit;
+  void cnae; void municipio; void porte; void situacao; void limit;
   void bairro; void ddd; void yearFrom; void yearTo; void onlyEmail; void onlyPhone;
   void onlyHQ; void mei; void simples; void capitalMin;
+
+  const filteredResults = useMemo(
+    () => results?.filter((row) => ufs.length === 0 || ufs.includes(row.uf)) ?? null,
+    [results, ufs],
+  );
 
   const searchMut = useMutation({
     mutationFn: async () => {
@@ -167,17 +172,25 @@ export default function Prospeccao() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao importar"),
   });
 
-  const toggleUF = (uf: string) => setUfs((p) => p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf]);
-  const toggleRow = (id: string) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const selectAll = () => setSelected(new Set((results ?? []).map((r) => r.id)));
+  const toggleUF = (uf: string) => {
+    setUfs((p) => p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf]);
+    setSelected(new Set());
+  };
+  const toggleRow = (id: string) => setSelected((p) => {
+    const n = new Set(p);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
+  });
+  const selectAll = () => setSelected(new Set((filteredResults ?? []).map((r) => r.id)));
   const clearSelection = () => setSelected(new Set());
   const importSelected = () => { if (selected.size === 0) return toast.error("Selecione pelo menos 1"); importMut.mutate([...selected]); };
   const importOne = (id: string) => importMut.mutate([id]);
 
   const exportXlsx = () => {
-    if (!results?.length) return;
+    if (!filteredResults?.length) return;
     const header = ["CNPJ","Razão Social","Fantasia","UF","Município","Telefone","Email"];
-    const rows = results.map((r) => [r.cnpj, r.razao_social, r.nome_fantasia ?? "", r.uf, r.municipio, r.telefone ?? "", r.email ?? ""]);
+    const rows = filteredResults.map((r) => [r.cnpj, r.razao_social, r.nome_fantasia ?? "", r.uf, r.municipio, r.telefone ?? "", r.email ?? ""]);
     const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -210,7 +223,7 @@ export default function Prospeccao() {
               </div>
             </PopoverContent>
           </Popover>
-          <Button size="sm" variant="outline" onClick={exportXlsx} disabled={!results?.length}>
+          <Button size="sm" variant="outline" onClick={exportXlsx} disabled={!filteredResults?.length}>
             <Download className="h-3.5 w-3.5 mr-1" /> Exportar
           </Button>
         </div>
@@ -241,6 +254,7 @@ export default function Prospeccao() {
                 key={uf}
                 type="button"
                 onClick={() => toggleUF(uf)}
+                aria-pressed={ufs.includes(uf)}
                 className={cn(
                   "h-6 px-2 text-[11px] rounded border transition-colors",
                   ufs.includes(uf)
@@ -363,15 +377,15 @@ export default function Prospeccao() {
         </div>
       </Card>
 
-      {results && (
+      {filteredResults && (
         <Card>
           <div className="flex items-center justify-between p-3 border-b">
             <span className="text-sm font-medium">
-              {results.length} resultados {selected.size > 0 && <span className="text-muted-foreground">· {selected.size} selecionados</span>}
+              {filteredResults.length} resultados {selected.size > 0 && <span className="text-muted-foreground">· {selected.size} selecionados</span>}
             </span>
             <div className="flex gap-1">
-              <Button size="sm" variant="outline" onClick={selected.size === results.length ? clearSelection : selectAll}>
-                {selected.size === results.length ? "Limpar" : "Selecionar todos"}
+              <Button size="sm" variant="outline" onClick={selected.size === filteredResults.length ? clearSelection : selectAll}>
+                {selected.size === filteredResults.length ? "Limpar" : "Selecionar todos"}
               </Button>
               <Button size="sm" onClick={importSelected} disabled={selected.size === 0 || importMut.isPending}>
                 {importMut.isPending && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
@@ -394,7 +408,7 @@ export default function Prospeccao() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((r) => (
+                {filteredResults.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleRow(r.id)} /></TableCell>
                     <TableCell className="font-mono text-xs">{r.cnpj}</TableCell>
@@ -413,7 +427,7 @@ export default function Prospeccao() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {results.length === 0 && (
+                {filteredResults.length === 0 && (
                   <TableRow><TableCell colSpan={8} className="text-center text-xs text-muted-foreground py-6">Nenhuma empresa encontrada</TableCell></TableRow>
                 )}
               </TableBody>
