@@ -218,7 +218,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" side="left" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <Sidebar collapsible="icon" variant="sidebar" side="left" className="h-svh" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <SidebarHeader className="p-3 border-b">
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
