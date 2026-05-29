@@ -53,7 +53,7 @@ import CompanyRegister from "@/pages/company/CompanyRegister";
 import PreparingAccount from "@/pages/company/PreparingAccount";
 import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
-import SettingsShell from "@/components/layout/SettingsShell";
+
 import SettingsPlaceholder from "@/pages/settings/SettingsPlaceholder";
 // DEBUG-221: removido useUserPresence (gravava em workspace_user_presence).
 // Presence canônica vive em usePresenceHeartbeat (tabela user_presence), montado no AppLayout.
