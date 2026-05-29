@@ -3,6 +3,7 @@ import { useAdsAttribution } from "@/hooks/useAdsAttribution";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ListFooter } from "@/components/lists/ListFooter";
 
 const fmtBRL = (cents: number) =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -108,6 +109,7 @@ export function AtribuicaoTab({
           </TableBody>
         </Table>
       </Card>
+      <ListFooter loaded={data.length} total={data.length} hasMore={false} singular="atribuição exibida" plural="atribuições exibidas" />
     </div>
   );
 }

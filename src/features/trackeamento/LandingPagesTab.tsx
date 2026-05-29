@@ -7,6 +7,7 @@ import { Plus, Copy } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { LandingPageDialog } from "./LandingPageDialog";
+import { ListFooter } from "@/components/lists/ListFooter";
 
 const fmtBRL = (cents: number) =>
   (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -69,6 +70,7 @@ export function LandingPagesTab() {
           </TableBody>
         </Table>
       </Card>
+      <ListFooter loaded={data.length} total={data.length} hasMore={false} singular="landing page exibida" plural="landing pages exibidas" />
 
       <LandingPageDialog open={openCreate} onClose={() => setOpenCreate(false)} />
     </div>
