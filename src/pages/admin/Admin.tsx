@@ -1,7 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,73 +13,52 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
+import { useInfinitePaginated, flattenPages } from "@/components/lists/useInfinitePaginated";
+import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
+import { ListFooter } from "@/components/lists/ListFooter";
 
-function useWorkspacesAll() {
-  return useQuery({
-    queryKey: ["admin-workspaces"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("workspaces" as never)
-        .select("id,name,plan,created_at")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return data as { id: string; name: string; plan: string | null; created_at: string }[];
-    },
-  });
-}
-
-function useUsage() {
-  return useQuery({
-    queryKey: ["admin-usage"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("workspace_usage_daily" as never)
-        .select("*")
-        .order("day", { ascending: false })
-        .limit(100);
-      if (error) return [];
-      return data as Record<string, unknown>[];
-    },
-  });
-}
-
-function useAuditLogs() {
-  return useQuery({
-    queryKey: ["admin-audit"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audit_logs" as never)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) return [];
-      return data as Record<string, unknown>[];
-    },
-  });
-}
-
-function useFlagOverrides() {
-  return useQuery({
-    queryKey: ["admin-flags"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("feature_flag_overrides" as never)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) return [];
-      return data as Record<string, unknown>[];
-    },
-  });
-}
+type WorkspaceRow = { id: string; name: string; plan: string | null; created_at: string };
 
 export default function Admin() {
   const { data: isAdmin, isLoading } = usePlatformAdmin();
-  const workspaces = useWorkspacesAll();
-  const usage = useUsage();
-  const audit = useAuditLogs();
-  const flags = useFlagOverrides();
+
+  const workspaces = useInfinitePaginated<WorkspaceRow>({
+    queryKey: ["admin-workspaces-infinite"],
+    table: "workspaces",
+    select: "id,name,plan,created_at",
+    order: { col: "created_at", asc: false },
+    pageSize: 100,
+    enabled: !!isAdmin,
+  });
+  const usage = useInfinitePaginated<Record<string, unknown>>({
+    queryKey: ["admin-usage-infinite"],
+    table: "workspace_usage_daily",
+    select: "*",
+    order: { col: "day", asc: false },
+    pageSize: 100,
+    enabled: !!isAdmin,
+  });
+  const audit = useInfinitePaginated<Record<string, unknown>>({
+    queryKey: ["admin-audit-infinite"],
+    table: "audit_logs",
+    select: "*",
+    order: { col: "created_at", asc: false },
+    pageSize: 100,
+    enabled: !!isAdmin,
+  });
+  const flags = useInfinitePaginated<Record<string, unknown>>({
+    queryKey: ["admin-flags-infinite"],
+    table: "feature_flag_overrides",
+    select: "*",
+    order: { col: "created_at", asc: false },
+    pageSize: 100,
+    enabled: !!isAdmin,
+  });
+
+  const ws = flattenPages<WorkspaceRow>(workspaces.data as any);
+  const us = flattenPages<Record<string, unknown>>(usage.data as any);
+  const ad = flattenPages<Record<string, unknown>>(audit.data as any);
+  const fl = flattenPages<Record<string, unknown>>(flags.data as any);
 
   if (isLoading)
     return (
@@ -117,7 +94,7 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(workspaces.data ?? []).map((w) => (
+                {ws.items.map((w) => (
                   <TableRow key={w.id}>
                     <TableCell className="font-medium">{w.name}</TableCell>
                     <TableCell>
@@ -131,7 +108,13 @@ export default function Admin() {
                 ))}
               </TableBody>
             </Table>
+            <LoadMoreSentinel
+              hasMore={!!workspaces.hasNextPage}
+              isFetching={workspaces.isFetchingNextPage}
+              onIntersect={() => workspaces.fetchNextPage()}
+            />
           </Card>
+          <ListFooter loaded={ws.loaded} total={ws.total} hasMore={!!workspaces.hasNextPage} singular="workspace exibido" plural="workspaces exibidos" />
         </TabsContent>
 
         <TabsContent value="usage">
@@ -147,7 +130,7 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(usage.data ?? []).map((r, i) => (
+                {us.items.map((r, i) => (
                   <TableRow key={i}>
                     <TableCell>{String(r.day ?? "")}</TableCell>
                     <TableCell className="text-xs font-mono opacity-60">
@@ -158,7 +141,7 @@ export default function Admin() {
                     <TableCell>{String(r.revenue_cents ?? r.revenue ?? 0)}</TableCell>
                   </TableRow>
                 ))}
-                {(usage.data ?? []).length === 0 && (
+                {us.items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-6">
                       Sem dados de uso.
@@ -167,7 +150,13 @@ export default function Admin() {
                 )}
               </TableBody>
             </Table>
+            <LoadMoreSentinel
+              hasMore={!!usage.hasNextPage}
+              isFetching={usage.isFetchingNextPage}
+              onIntersect={() => usage.fetchNextPage()}
+            />
           </Card>
+          <ListFooter loaded={us.loaded} total={us.total} hasMore={!!usage.hasNextPage} singular="registro exibido" plural="registros exibidos" />
         </TabsContent>
 
         <TabsContent value="audit">
@@ -182,7 +171,7 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(audit.data ?? []).map((r, i) => (
+                {ad.items.map((r, i) => (
                   <TableRow key={i}>
                     <TableCell className="text-xs">
                       {r.created_at
@@ -196,7 +185,7 @@ export default function Admin() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {(audit.data ?? []).length === 0 && (
+                {ad.items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-6">
                       Sem registros.
@@ -205,7 +194,13 @@ export default function Admin() {
                 )}
               </TableBody>
             </Table>
+            <LoadMoreSentinel
+              hasMore={!!audit.hasNextPage}
+              isFetching={audit.isFetchingNextPage}
+              onIntersect={() => audit.fetchNextPage()}
+            />
           </Card>
+          <ListFooter loaded={ad.loaded} total={ad.total} hasMore={!!audit.hasNextPage} singular="log exibido" plural="logs exibidos" />
         </TabsContent>
 
         <TabsContent value="flags">
@@ -219,7 +214,7 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(flags.data ?? []).map((r, i) => (
+                {fl.items.map((r, i) => (
                   <TableRow key={i}>
                     <TableCell className="text-xs font-mono opacity-60">
                       {String(r.workspace_id ?? "").slice(0, 8)}
@@ -232,7 +227,7 @@ export default function Admin() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {(flags.data ?? []).length === 0 && (
+                {fl.items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
                       Sem overrides.
@@ -241,7 +236,13 @@ export default function Admin() {
                 )}
               </TableBody>
             </Table>
+            <LoadMoreSentinel
+              hasMore={!!flags.hasNextPage}
+              isFetching={flags.isFetchingNextPage}
+              onIntersect={() => flags.fetchNextPage()}
+            />
           </Card>
+          <ListFooter loaded={fl.loaded} total={fl.total} hasMore={!!flags.hasNextPage} singular="override exibido" plural="overrides exibidos" />
         </TabsContent>
       </Tabs>
     </div>
