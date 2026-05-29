@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Package, Plus, Search, MoreHorizontal, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useInfinitePaginated, flattenPages } from "@/components/lists/useInfinitePaginated";
+import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
+import { ListFooter } from "@/components/lists/ListFooter";
 
 type Product = {
   id: string;
@@ -47,26 +50,24 @@ export default function Produtos() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("todos");
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", current?.id],
+  const query = useInfinitePaginated<Product>({
+    queryKey: ["products-infinite", current?.id],
+    table: "products",
+    select: "id,workspace_id,sku,name,description,price_cents,cost_cents,stock_qty,unidade,status,thumb_url,tipo_produto,gtin,created_at",
+    filters: { workspace_id: current?.id },
+    order: { col: "created_at", asc: false },
+    pageSize: 100,
     enabled: !!current,
-    queryFn: async (): Promise<Product[]> => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id,workspace_id,sku,name,description,price_cents,cost_cents,stock_qty,unidade,status,thumb_url,tipo_produto,gtin,created_at")
-        .eq("workspace_id", current!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Product[];
-    },
   });
+  const { isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = query;
+  const { items: products, total } = flattenPages<Product>(query.data as any);
 
   useEffect(() => {
     if (!current) return;
     const ch = supabase
       .channel(`products:${current.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "products", filter: `workspace_id=eq.${current.id}` },
-        () => qc.invalidateQueries({ queryKey: ["products", current.id] }))
+        () => qc.invalidateQueries({ queryKey: ["products-infinite", current.id] }))
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
   }, [current, qc]);
@@ -215,7 +216,19 @@ export default function Produtos() {
             ))}
           </tbody>
         </table>
+        <LoadMoreSentinel
+          hasMore={!!hasNextPage}
+          isFetching={isFetchingNextPage}
+          onIntersect={() => fetchNextPage()}
+        />
       </div>
+      <ListFooter
+        loaded={products.length}
+        total={total}
+        hasMore={!!hasNextPage}
+        singular="produto exibido"
+        plural="produtos exibidos"
+      />
     </div>
   );
 }
