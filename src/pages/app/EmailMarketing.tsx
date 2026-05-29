@@ -25,8 +25,6 @@ import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function EmailMarketing() {
-  const [tab, setTab] = useState("campaigns");
-
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 md:p-6">
       <div>
@@ -34,7 +32,7 @@ export default function EmailMarketing() {
         <p className="text-sm text-muted-foreground">Crie e dispare campanhas de email para suas listas</p>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-4">
+      <Tabs defaultValue="campaigns" className="flex flex-col gap-4">
         <TabsList className="w-fit">
           <TabsTrigger value="campaigns"><Mail className="h-4 w-4 mr-1.5" />Campanhas</TabsTrigger>
           <TabsTrigger value="templates"><FileText className="h-4 w-4 mr-1.5" />Templates</TabsTrigger>
