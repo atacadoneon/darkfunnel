@@ -86,11 +86,35 @@ export default function CompanyRegister() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("subscription_plans" as any)
-        .select("id,slug,name,description,price_monthly_brl,price_annual_brl,price_semester_brl,features,recommended")
-        .order("price_monthly_brl");
-      const list = ((data ?? []) as any[]) as Plan[];
+        .select("*");
+      if (error) {
+        console.error("[subscription_plans]", error);
+        setPlans([]);
+        return;
+      }
+      const raw = ((data ?? []) as any[]);
+      // Normaliza nomes de colunas: aceita _cents OU _brl, recommended OU is_recommended
+      const list: Plan[] = raw.map((r) => {
+        const monthly = r.price_monthly_brl ?? (r.price_monthly_cents != null ? r.price_monthly_cents / 100 : 0);
+        const annual = r.price_annual_brl ?? (r.price_annual_cents != null ? r.price_annual_cents / 100 : null);
+        const semester =
+          r.price_semester_brl ??
+          (r.price_semestral_cents != null ? r.price_semestral_cents / 100 : null) ??
+          (r.price_semester_cents != null ? r.price_semester_cents / 100 : null);
+        return {
+          id: r.id,
+          slug: r.slug,
+          name: r.name,
+          description: r.description ?? null,
+          price_monthly_brl: Number(monthly) || 0,
+          price_annual_brl: annual != null ? Number(annual) : null,
+          price_semester_brl: semester != null ? Number(semester) : null,
+          features: Array.isArray(r.features) ? r.features : null,
+          recommended: r.recommended ?? r.is_recommended ?? false,
+        };
+      }).sort((a, b) => a.price_monthly_brl - b.price_monthly_brl);
       setPlans(list);
       const rec = list.find((p) => p.recommended) ?? list[1] ?? list[0];
       if (rec) setSelectedPlan(rec.slug);
