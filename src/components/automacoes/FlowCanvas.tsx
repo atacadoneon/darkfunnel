@@ -120,6 +120,13 @@ function CanvasInner({ flow, onEditNode, onPickTrigger }: Props) {
     if (confirm("Remover esta conexão?")) deleteEdge.mutate(edge.id);
   }, [deleteEdge]);
 
+  const onNodeClick = useCallback((_: any, node: Node) => {
+    const dbNode = dbNodes.find((n) => n.id === node.id);
+    if (!dbNode || dbNode.node_type === "start") return;
+    onEditNode(dbNode);
+  }, [dbNodes, onEditNode]);
+
+
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -152,6 +159,7 @@ function CanvasInner({ flow, onEditNode, onPickTrigger }: Props) {
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
         onEdgeClick={onEdgeClick}
+        onNodeClick={onNodeClick}
         onMoveEnd={onMoveEnd}
         defaultViewport={flow.viewport ?? { x: 0, y: 0, zoom: 1 }}
         snapToGrid
