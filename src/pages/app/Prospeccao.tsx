@@ -128,9 +128,14 @@ export default function Prospeccao() {
   const canSearch = razao.replace(/\D/g, "").length === 14;
 
   // Filtros mantidos para UI; backend atual só suporta lookup por CNPJ.
-  void cnae; void ufs; void municipio; void porte; void situacao; void limit;
+  void cnae; void municipio; void porte; void situacao; void limit;
   void bairro; void ddd; void yearFrom; void yearTo; void onlyEmail; void onlyPhone;
   void onlyHQ; void mei; void simples; void capitalMin;
+
+  const filteredResults = useMemo(
+    () => results?.filter((row) => ufs.length === 0 || ufs.includes(row.uf)) ?? null,
+    [results, ufs],
+  );
 
   const searchMut = useMutation({
     mutationFn: async () => {
@@ -167,17 +172,20 @@ export default function Prospeccao() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao importar"),
   });
 
-  const toggleUF = (uf: string) => setUfs((p) => p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf]);
+  const toggleUF = (uf: string) => {
+    setUfs((p) => p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf]);
+    setSelected(new Set());
+  };
   const toggleRow = (id: string) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const selectAll = () => setSelected(new Set((results ?? []).map((r) => r.id)));
+  const selectAll = () => setSelected(new Set((filteredResults ?? []).map((r) => r.id)));
   const clearSelection = () => setSelected(new Set());
   const importSelected = () => { if (selected.size === 0) return toast.error("Selecione pelo menos 1"); importMut.mutate([...selected]); };
   const importOne = (id: string) => importMut.mutate([id]);
 
   const exportXlsx = () => {
-    if (!results?.length) return;
+    if (!filteredResults?.length) return;
     const header = ["CNPJ","Razão Social","Fantasia","UF","Município","Telefone","Email"];
-    const rows = results.map((r) => [r.cnpj, r.razao_social, r.nome_fantasia ?? "", r.uf, r.municipio, r.telefone ?? "", r.email ?? ""]);
+    const rows = filteredResults.map((r) => [r.cnpj, r.razao_social, r.nome_fantasia ?? "", r.uf, r.municipio, r.telefone ?? "", r.email ?? ""]);
     const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
