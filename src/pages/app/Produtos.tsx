@@ -216,7 +216,19 @@ export default function Produtos() {
             ))}
           </tbody>
         </table>
+        <LoadMoreSentinel
+          hasMore={!!hasNextPage}
+          isFetching={isFetchingNextPage}
+          onIntersect={() => fetchNextPage()}
+        />
       </div>
+      <ListFooter
+        loaded={products.length}
+        total={total}
+        hasMore={!!hasNextPage}
+        singular="produto exibido"
+        plural="produtos exibidos"
+      />
     </div>
   );
 }
