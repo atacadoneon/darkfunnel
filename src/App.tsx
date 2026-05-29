@@ -53,6 +53,8 @@ import CompanyRegister from "@/pages/company/CompanyRegister";
 import PreparingAccount from "@/pages/company/PreparingAccount";
 import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
+import SettingsShell from "@/components/layout/SettingsShell";
+import SettingsPlaceholder from "@/pages/settings/SettingsPlaceholder";
 import { useUserPresence } from "@/hooks/useUserPresence";
 
 
