@@ -10,6 +10,7 @@ import { Plus, Copy, FileText, RotateCw, Power } from "lucide-react";
 import { toast } from "sonner";
 import { EndpointDialog } from "@/features/inbound-webhooks/EndpointDialog";
 import { EndpointLogsDrawer } from "@/features/inbound-webhooks/EndpointLogsDrawer";
+import { ListFooter } from "@/components/lists/ListFooter";
 
 const BASE_URL = "https://sbyslxhjjfcqlxaehidw.supabase.co/functions/v1/inbound-webhook";
 
@@ -104,6 +105,13 @@ export default function InboundWebhooksPage() {
           </TableBody>
         </Table>
       </Card>
+      <ListFooter
+        loaded={data.length}
+        total={data.length}
+        hasMore={false}
+        singular="endpoint exibido"
+        plural="endpoints exibidos"
+      />
 
       <EndpointDialog open={createOpen} onClose={() => setCreateOpen(false)} />
       <EndpointLogsDrawer endpointId={logsFor} onClose={() => setLogsFor(null)} />
