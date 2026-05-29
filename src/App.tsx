@@ -55,13 +55,8 @@ import SetupWizard from "@/pages/company/SetupWizard";
 import NotFound from "@/pages/NotFound";
 import SettingsShell from "@/components/layout/SettingsShell";
 import SettingsPlaceholder from "@/pages/settings/SettingsPlaceholder";
-import { useUserPresence } from "@/hooks/useUserPresence";
-
-
-function PresenceMount() {
-  useUserPresence();
-  return null;
-}
+// DEBUG-221: removido useUserPresence (gravava em workspace_user_presence).
+// Presence canônica vive em usePresenceHeartbeat (tabela user_presence), montado no AppLayout.
 
 const queryClient = new QueryClient({
   defaultOptions: {
