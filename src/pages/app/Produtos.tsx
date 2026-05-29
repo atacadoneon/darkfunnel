@@ -50,19 +50,17 @@ export default function Produtos() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("todos");
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products", current?.id],
+  const query = useInfinitePaginated<Product>({
+    queryKey: ["products-infinite", current?.id],
+    table: "products",
+    select: "id,workspace_id,sku,name,description,price_cents,cost_cents,stock_qty,unidade,status,thumb_url,tipo_produto,gtin,created_at",
+    filters: { workspace_id: current?.id },
+    order: { col: "created_at", asc: false },
+    pageSize: 100,
     enabled: !!current,
-    queryFn: async (): Promise<Product[]> => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id,workspace_id,sku,name,description,price_cents,cost_cents,stock_qty,unidade,status,thumb_url,tipo_produto,gtin,created_at")
-        .eq("workspace_id", current!.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Product[];
-    },
   });
+  const { isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = query;
+  const { items: products, total } = flattenPages<Product>(query.data as any);
 
   useEffect(() => {
     if (!current) return;
