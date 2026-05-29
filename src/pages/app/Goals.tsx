@@ -770,7 +770,7 @@ function NewWorkspaceGoalDialog({ open, year, month, onOpenChange, onSave }: {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button className="bg-indigo-600 hover:bg-indigo-700" disabled={amount <= 0} onClick={() => onSave(amount)}>
+          <Button disabled={amount <= 0} onClick={() => onSave(amount)}>
             Criar Meta
           </Button>
         </DialogFooter>
@@ -798,7 +798,7 @@ export default function Goals() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <TabBar tab={tab} onChange={setTab} />
           <div className="flex gap-2">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setAddOpen(true)}>
+            <Button onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4 mr-2" /> Adicionar
             </Button>
             {tab !== "geral" && <>
