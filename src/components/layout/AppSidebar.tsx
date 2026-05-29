@@ -331,56 +331,24 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
 
 
       <SidebarFooter className="border-t p-2 gap-2">
-        {/* 3 menus fixos no rodapé com submenus via Popover (click-outside / Esc fecham) */}
+        {/* 3 menus fixos no rodapé: painel lateral full-height ao lado da sidebar */}
         <SidebarMenu>
           {footerMenus.map((menu) => {
             const visibleItems = filterByRole(menu.items);
             if (visibleItems.length === 0) return null;
             const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
             return (
-              <SidebarMenuItem key={menu.key}>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <SidebarMenuButton isActive={isActive} className="flex items-center gap-2">
-                      <menu.icon className="h-4 w-4" />
-                      {!collapsed && <span>{menu.label}</span>}
-                    </SidebarMenuButton>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    side="right"
-                    align="end"
-                    sideOffset={8}
-                    className="w-60 p-1"
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                  >
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                      {menu.label}
-                    </div>
-                    <div className="space-y-0.5">
-                      {visibleItems.map((sub) => (
-                        <NavLink
-                          key={sub.to}
-                          to={sub.to}
-                          end={sub.to === "/admin"}
-                          className={({ isActive: act }) =>
-                            cn(
-                              "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                              "hover:bg-accent hover:text-accent-foreground",
-                              act && "bg-accent text-accent-foreground",
-                            )
-                          }
-                        >
-                          <sub.icon className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{sub.label}</span>
-                        </NavLink>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </SidebarMenuItem>
+              <FooterPopoverItem
+                key={menu.key}
+                menu={menu}
+                items={visibleItems}
+                isActive={isActive}
+                collapsed={collapsed}
+              />
             );
           })}
         </SidebarMenu>
+
 
 
         {!collapsed ? (
