@@ -60,6 +60,14 @@ import ListasPage from "@/pages/settings/ListasPage";
 import MotivosPerdaPage from "@/pages/settings/MotivosPerdaPage";
 import TiposAtividadePage from "@/pages/settings/TiposAtividadePage";
 import TagsPage from "@/pages/settings/TagsPage";
+import PerfilPage from "@/pages/settings/PerfilPage";
+import EmpresaPage from "@/pages/settings/EmpresaPage";
+import PlanosPage from "@/pages/settings/PlanosPage";
+import UsuariosPage from "@/pages/settings/UsuariosPage";
+import DepartamentosPage from "@/pages/settings/DepartamentosPage";
+import HorariosPage from "@/pages/settings/HorariosPage";
+import IntegracoesPage from "@/pages/settings/IntegracoesPage";
+import ArmazenamentoPage from "@/pages/settings/ArmazenamentoPage";
 // DEBUG-221: removido useUserPresence (gravava em workspace_user_presence).
 // Presence canônica vive em usePresenceHeartbeat (tabela user_presence), montado no AppLayout.
 
@@ -151,23 +159,24 @@ const App = () => (
                     <Route path="propostas/:id" element={<PropostaEditor />} />
                     <Route path="trackeamento" element={<Trackeamento />} />
 
-                    {/* Configurações e cadastros — sem segunda sidebar (acessados via popover do menu) */}
+                    {/* Configurações — todas dentro do SettingsShell (segunda sidebar 280px) */}
                     <Route path="settings" element={<Navigate to="/settings/perfil" replace />} />
-                    <Route path="settings/perfil" element={<SettingsPlaceholder title="Meu perfil" />} />
-                    <Route path="settings/planos" element={<SettingsPlaceholder title="Planos e uso" />} />
-                    <Route path="settings/empresa" element={<SettingsPlaceholder title="Empresa" />} />
-                    <Route path="settings/usuarios" element={<SettingsPlaceholder title="Usuários" />} />
                     <Route element={<SettingsShell />}>
+                      <Route path="settings/perfil" element={<PerfilPage />} />
+                      <Route path="settings/planos" element={<PlanosPage />} />
+                      <Route path="settings/empresa" element={<EmpresaPage />} />
+                      <Route path="settings/usuarios" element={<UsuariosPage />} />
                       <Route path="settings/tags" element={<TagsPage />} />
                       <Route path="settings/motivos-perda" element={<MotivosPerdaPage />} />
                       <Route path="settings/listas" element={<ListasPage />} />
                       <Route path="settings/tipos-atividade" element={<TiposAtividadePage />} />
+                      <Route path="settings/departamentos" element={<DepartamentosPage />} />
+                      <Route path="settings/horarios" element={<HorariosPage />} />
+                      <Route path="settings/integracoes" element={<IntegracoesPage />} />
+                      <Route path="settings/armazenamento" element={<ArmazenamentoPage />} />
                     </Route>
-                    <Route path="settings/departamentos" element={<SettingsPlaceholder title="Departamentos" />} />
-                    <Route path="settings/horarios" element={<SettingsPlaceholder title="Horários de trabalho" />} />
-                    <Route path="settings/integracoes" element={<SettingsPlaceholder title="Integrações" />} />
                     <Route path="settings/canais" element={<Settings />} />
-                    <Route path="settings/armazenamento" element={<SettingsPlaceholder title="Armazenamento" />} />
+                    <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/rodizio" element={<SettingsRodizio />} />
                     <Route path="config/mcp-server" element={<MCPServerSettingsPage />} />
