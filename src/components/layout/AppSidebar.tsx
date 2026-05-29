@@ -9,7 +9,6 @@ import {
   Mail,
   Target,
   ListChecks,
-  Calendar,
   CalendarDays,
   Phone,
   MessageSquare,
@@ -28,6 +27,8 @@ import {
   FileText,
   Shield,
   Server,
+  Shuffle,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -41,13 +42,19 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { useIsAdmin, useIsManagerOrAdmin } from "@/features/workspace/permissions";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
@@ -104,6 +111,7 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
   const { current } = useWorkspace();
   const { user } = useAuth();
   const canSeeSettings = useIsManagerOrAdmin();
+  const isOwner = useIsAdmin();
   const navigate = useNavigate();
 
   const [available, setAvailable] = useState<boolean>(() => {
@@ -150,16 +158,20 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
     [],
   );
 
-  const bottomItems: Item[] = [];
-  if (canSeeSettings) {
-    bottomItems.push(
-      { title: "Configurações", url: "/settings", icon: Settings },
-      { title: "Campos Adicionais", url: "/config/custom-fields", icon: ListChecks },
-      { title: "Webhooks de entrada", url: "/config/inbound-webhooks", icon: Workflow },
-      { title: "Servidor MCP", url: "/config/mcp-server", icon: Server },
-    );
-  }
-  if (isPlatformAdmin) bottomItems.push({ title: "Admin", url: "/admin", icon: Shield });
+  type SettingsSubItem = { title: string; url: string; icon: LucideIcon; show: boolean };
+  const settingsSubItems: SettingsSubItem[] = [
+    { title: "Configurações Gerais", url: "/settings", icon: Settings, show: true },
+    { title: "Canais & Conexões", url: "/settings?tab=channels", icon: MessageCircle, show: true },
+    { title: "Equipe & Permissões", url: "/settings?tab=users", icon: Users, show: canSeeSettings },
+    { title: "Rodízio de Leads", url: "/settings/rodizio", icon: Shuffle, show: canSeeSettings },
+    { title: "Campos Adicionais", url: "/config/custom-fields", icon: ListChecks, show: canSeeSettings },
+    { title: "Servidor MCP", url: "/config/mcp-server", icon: Server, show: canSeeSettings },
+    { title: "Webhooks de Entrada", url: "/config/inbound-webhooks", icon: Workflow, show: canSeeSettings },
+    { title: "Administração", url: "/admin", icon: Shield, show: isOwner || !!isPlatformAdmin },
+  ].filter((i) => i.show) as SettingsSubItem[];
+
+  const isSettingsActive =
+    pathname.startsWith("/settings") || pathname.startsWith("/config") || pathname.startsWith("/admin");
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
@@ -257,20 +269,77 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
           </SidebarGroup>
         ))}
 
-        {bottomItems.length > 0 && (
+        {settingsSubItems.length > 0 && (
           <SidebarGroup className="py-1 mt-2 border-t">
             <SidebarGroupContent>
               <SidebarMenu>
-                {bottomItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
-                      <NavLink to={item.url} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
+                {collapsed ? (
+                  <SidebarMenuItem>
+                    <Popover>
+                      <TooltipProvider delayDuration={300}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <PopoverTrigger asChild>
+                              <SidebarMenuButton isActive={isSettingsActive}>
+                                <Settings className="h-4 w-4" />
+                              </SidebarMenuButton>
+                            </PopoverTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">Configurações</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <PopoverContent side="right" align="start" className="w-56 p-1">
+                        <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+                          Configurações
+                        </div>
+                        {settingsSubItems.map((sub) => (
+                          <NavLink
+                            key={sub.title}
+                            to={sub.url}
+                            className={({ isActive }) =>
+                              cn(
+                                "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
+                                isActive && "bg-accent text-accent-foreground",
+                              )
+                            }
+                          >
+                            <sub.icon className="h-4 w-4" />
+                            <span className="truncate">{sub.title}</span>
+                          </NavLink>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
                   </SidebarMenuItem>
-                ))}
+                ) : (
+                  <Collapsible defaultOpen={isSettingsActive} className="group/collapsible">
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton isActive={isSettingsActive}>
+                          <Settings className="h-4 w-4" />
+                          <span>Configurações</span>
+                          <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {settingsSubItems.map((sub) => (
+                            <SidebarMenuSubItem key={sub.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={pathname === sub.url.split("?")[0]}
+                              >
+                                <NavLink to={sub.url} className="flex items-center gap-2">
+                                  <sub.icon className="h-3.5 w-3.5" />
+                                  <span>{sub.title}</span>
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
