@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Package } from "lucide-react";
+import { ArrowLeft, Package, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 type Form = Record<string, any>;
 
 const EMPTY: Form = {
+  kind: "produto",
   tipo_produto: "simples",
   tipo_item_sped: "",
   name: "",
