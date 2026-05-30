@@ -73,6 +73,7 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Leads", url: "/leads", icon: Users },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Discador", url: "/discador", icon: PhoneOutgoing },
+      { title: "Produtos", url: "/produtos", icon: Package },
       { title: "Propostas", url: "/propostas", icon: FileText },
       { title: "Pagamentos", url: "/pagamentos", icon: CreditCard },
     ],
