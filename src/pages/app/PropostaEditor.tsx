@@ -138,6 +138,9 @@ export default function PropostaEditor() {
     if (typeof (prop as any).payment_input === "string") {
       setPaymentInput((prop as any).payment_input);
     }
+    if (typeof (prop as any).payment_freetext === "string") {
+      setPaymentFreetext((prop as any).payment_freetext);
+    }
   }, [prop]);
   useEffect(() => {
     if (!dbItems) return;
