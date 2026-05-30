@@ -196,6 +196,23 @@ export default function Produtos() {
             className="pl-9 rounded-full"
           />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={() => toggleSort("name")}
+        >
+          nome {sortBy === "name" ? (sortAsc ? "↑" : "↓") : ""}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={() => toggleSort("status")}
+        >
+          por situação {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}
+        </Button>
+
         <Popover open={filtersOpen} onOpenChange={(o) => (o ? openFilters() : setFiltersOpen(false))}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="rounded-full" size="sm">
