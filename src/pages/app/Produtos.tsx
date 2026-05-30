@@ -305,6 +305,8 @@ export default function Produtos() {
           <thead>
             <tr className="text-muted-foreground border-b">
               <th className="py-3 w-8"><Checkbox /></th>
+              <th className="py-3 w-8"></th>
+              <th className="py-3 w-20 text-left font-normal">Foto</th>
               <th className="py-3 text-left font-normal">Descrição</th>
               <th className="py-3 text-left font-normal">Código (SKU)</th>
               <th className="py-3 text-left font-normal">Unidade</th>
@@ -317,11 +319,11 @@ export default function Produtos() {
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">Carregando…</td></tr>
+              <tr><td colSpan={11} className="py-8 text-center text-muted-foreground">Carregando…</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
               <tr>
-                <td colSpan={9} className="py-12 text-center">
+                <td colSpan={11} className="py-12 text-center">
                   <Package className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
                   <div className="text-sm text-muted-foreground mb-3">
                     {products.length === 0 ? "Nenhum produto cadastrado" : "Nada encontrado"}
@@ -334,27 +336,31 @@ export default function Produtos() {
                 </td>
               </tr>
             )}
-            {filtered.map((p) => (
+            {filtered.map((p) => {
+              const photo = p.image_url || p.thumb_url;
+              return (
               <tr
                 key={p.id}
                 onClick={() => nav(`/produtos/${p.id}`)}
                 className="border-b hover:bg-muted/40 cursor-pointer"
               >
                 <td className="py-3" onClick={(e) => e.stopPropagation()}><Checkbox /></td>
+                <td className="py-3" onClick={(e) => e.stopPropagation()}>
+                  <button className="text-muted-foreground">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </button>
+                </td>
                 <td className="py-3">
-                  <div className="flex items-center gap-3">
-                    <button className="text-muted-foreground" onClick={(e) => e.stopPropagation()}>
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-                    <div className="w-10 h-10 rounded bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                      {p.thumb_url ? (
-                        <img src={p.thumb_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Package className="w-4 h-4 text-muted-foreground" />
-                      )}
+                  {photo ? (
+                    <img src={photo} alt="" className="h-12 w-12 rounded-md object-cover border border-border" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center border border-border">
+                      <Package className="h-6 w-6 text-muted-foreground" />
                     </div>
-                    <span className="truncate max-w-[420px]">{p.name || "Sem nome"}</span>
-                  </div>
+                  )}
+                </td>
+                <td className="py-3">
+                  <span className="truncate max-w-[420px] block">{p.name || "Sem nome"}</span>
                 </td>
                 <td className="py-3 font-mono">{p.sku || "—"}</td>
                 <td className="py-3">{p.unidade || "UN"}</td>
@@ -364,7 +370,8 @@ export default function Produtos() {
                 <td className="py-3"></td>
                 <td className="py-3 text-muted-foreground"><ChevronDown className="w-4 h-4" /></td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         <LoadMoreSentinel
