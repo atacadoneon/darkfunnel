@@ -3,8 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Phone, PhoneOff, Pause, Square, ChevronRight, ChevronsRight, Loader2, Copy, CheckCircle2,
   Sparkles, AlertTriangle, Target as TargetIcon, MessageSquare, Search, X,
-  Minimize2, Maximize2, RefreshCw,
+  Minimize2, Maximize2, RefreshCw, Trash2, Filter, Trash,
 } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
