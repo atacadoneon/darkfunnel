@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { usePlatformAdmin } from "@/hooks/usePlatformAdmin";
+import { SidebarStateProvider, useSidebarState } from "@/contexts/SidebarContext";
 
 function CreateWorkspacePrompt() {
   const { createWorkspace } = useWorkspace();
