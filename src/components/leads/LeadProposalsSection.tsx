@@ -27,7 +27,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 function statusBadge(status: string) {
   const label = STATUS_LABEL[status] ?? status;
-  const variant: BadgeProps["variant"] = (() => {
+  const variant: BadgeVariant = (() => {
     switch (status) {
       case "rascunho":
         return "secondary";
