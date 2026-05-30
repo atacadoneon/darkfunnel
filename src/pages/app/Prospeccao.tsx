@@ -31,6 +31,46 @@ type ResultRow = {
   email?: string | null;
 };
 
+type ProspectFilters = {
+  cnae: Cnae | null;
+  ufs: string[];
+  municipio: string;
+  porte: string;
+  situacao: string;
+  razao: string;
+  limit: number;
+  bairro: string;
+  ddd: string;
+  yearFrom: number;
+  yearTo: number;
+  onlyEmail: boolean;
+  onlyPhone: boolean;
+  onlyHQ: boolean;
+  mei: string;
+  simples: string;
+  capitalMin: string;
+};
+
+type SavedSearch = {
+  id: string;
+  name: string;
+  filters: Partial<ProspectFilters>;
+  created_at?: string | null;
+  results?: ResultRow[];
+};
+
+const LOCAL_SAVED_SEARCHES_KEY = "prospeccao:saved-searches";
+
+function readLocalSavedSearches(): SavedSearch[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(LOCAL_SAVED_SEARCHES_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function CnaeAutocomplete({ value, onChange }: { value: Cnae | null; onChange: (c: Cnae | null) => void }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -124,6 +164,7 @@ export default function Prospeccao() {
 
   const [results, setResults] = useState<ResultRow[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(() => readLocalSavedSearches());
 
   const canSearch = razao.replace(/\D/g, "").length === 14;
 
@@ -137,14 +178,47 @@ export default function Prospeccao() {
     [results, ufs],
   );
 
+  const currentFilters = useMemo<ProspectFilters>(() => ({
+    cnae, ufs, municipio, porte, situacao, razao, limit, bairro, ddd,
+    yearFrom, yearTo, onlyEmail, onlyPhone, onlyHQ, mei, simples, capitalMin,
+  }), [bairro, capitalMin, cnae, ddd, limit, mei, municipio, onlyEmail, onlyHQ, onlyPhone, porte, razao, simples, situacao, ufs, yearFrom, yearTo]);
+
+  const savedSearchesQuery = useQuery({
+    queryKey: ["saved-searches", current?.id, "prospeccao"],
+    enabled: !!current,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("saved_searches" as any)
+        .select("id,name,filters,created_at")
+        .eq("workspace_id", current!.id)
+        .eq("module", "prospeccao")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const availableSavedSearches = useMemo<SavedSearch[]>(() => {
+    const dbRows = savedSearchesQuery.data?.map((row) => ({
+      id: String(row.id),
+      name: row.name ?? "Busca salva",
+      filters: (row.filters ?? {}) as Partial<ProspectFilters>,
+      created_at: row.created_at ?? null,
+    })) ?? [];
+    return dbRows.length > 0 ? dbRows : savedSearches;
+  }, [savedSearches, savedSearchesQuery.data]);
+
   const searchMut = useMutation({
-    mutationFn: async () => {
-      const cnpjDigits = razao.replace(/\D/g, "");
+    mutationFn: async (override?: { razao?: string; filters?: ProspectFilters }) => {
+      const activeRazao = override?.razao ?? razao;
+      const activeFilters = override?.filters ?? currentFilters;
+      const cnpjDigits = activeRazao.replace(/\D/g, "");
       if (cnpjDigits.length !== 14) {
         throw new Error("Digite um CNPJ válido (14 dígitos) no campo de busca. A busca por filtros ainda não está disponível.");
       }
       const { data, error } = await supabase.functions.invoke("prospect-search-cnpj", {
-        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id },
+        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id, filters: activeFilters, ufs: activeFilters.ufs },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -173,8 +247,50 @@ export default function Prospeccao() {
   });
 
   const toggleUF = (uf: string) => {
-    setUfs((p) => p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf]);
+    setUfs((p) => {
+      const next = p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf];
+      if (razao.replace(/\D/g, "").length === 14) {
+        searchMut.mutate({ filters: { ...currentFilters, ufs: next } });
+      }
+      return next;
+    });
     setSelected(new Set());
+  };
+  const applySavedSearch = (search: SavedSearch) => {
+    const filters = search.filters ?? {};
+    if ("cnae" in filters) setCnae(filters.cnae ?? null);
+    if (Array.isArray(filters.ufs)) setUfs(filters.ufs);
+    if (typeof filters.municipio === "string") setMunicipio(filters.municipio);
+    if (typeof filters.porte === "string") setPorte(filters.porte);
+    if (typeof filters.situacao === "string") setSituacao(filters.situacao);
+    if (typeof filters.razao === "string") setRazao(filters.razao);
+    if (typeof filters.limit === "number") setLimit(filters.limit);
+    if (typeof filters.bairro === "string") setBairro(filters.bairro);
+    if (typeof filters.ddd === "string") setDdd(filters.ddd);
+    if (typeof filters.yearFrom === "number") setYearFrom(filters.yearFrom);
+    if (typeof filters.yearTo === "number") setYearTo(filters.yearTo);
+    if (typeof filters.onlyEmail === "boolean") setOnlyEmail(filters.onlyEmail);
+    if (typeof filters.onlyPhone === "boolean") setOnlyPhone(filters.onlyPhone);
+    if (typeof filters.onlyHQ === "boolean") setOnlyHQ(filters.onlyHQ);
+    if (typeof filters.mei === "string") setMei(filters.mei);
+    if (typeof filters.simples === "string") setSimples(filters.simples);
+    if (typeof filters.capitalMin === "string") setCapitalMin(filters.capitalMin);
+    if (search.results) setResults(search.results);
+    setSelected(new Set());
+    searchMut.mutate({ razao: filters.razao, filters: { ...currentFilters, ...filters } });
+  };
+  const saveCurrentSearchLocally = () => {
+    const nextSearch: SavedSearch = {
+      id: `local-${Date.now()}`,
+      name: razao ? `CNPJ ${razao}` : `Busca ${new Date().toLocaleDateString("pt-BR")}`,
+      filters: currentFilters,
+      created_at: new Date().toISOString(),
+      results: filteredResults ?? undefined,
+    };
+    const next = [nextSearch, ...savedSearches].slice(0, 10);
+    setSavedSearches(next);
+    window.localStorage.setItem(LOCAL_SAVED_SEARCHES_KEY, JSON.stringify(next));
+    toast.success("Busca salva neste navegador");
   };
   const toggleRow = (id: string) => setSelected((p) => {
     const n = new Set(p);
@@ -216,11 +332,35 @@ export default function Prospeccao() {
             <PopoverTrigger asChild>
               <Button size="sm" variant="outline">Buscas salvas</Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-0">
-              <div className="px-3 py-2 border-b text-xs font-medium">Buscas salvas</div>
-              <div className="p-4 text-xs text-muted-foreground text-center">
-                Nenhuma busca salva ainda.
+            <PopoverContent align="end" className="w-80 p-0">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 border-b">
+                <div className="text-xs font-medium">Buscas salvas</div>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={saveCurrentSearchLocally}>
+                  Salvar atual
+                </Button>
               </div>
+              {availableSavedSearches.length === 0 ? (
+                <div className="p-4 text-xs text-muted-foreground text-center">
+                  Nenhuma busca salva ainda.
+                </div>
+              ) : (
+                <div className="max-h-72 overflow-y-auto p-1">
+                  {availableSavedSearches.map((search) => (
+                    <button
+                      key={search.id}
+                      type="button"
+                      className="w-full rounded-sm px-2 py-2 text-left text-xs hover:bg-muted"
+                      onClick={() => applySavedSearch(search)}
+                    >
+                      <div className="font-medium truncate">{search.name}</div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground truncate">
+                        {(search.filters.ufs ?? []).length ? `UF: ${(search.filters.ufs ?? []).join(", ")}` : "Sem UF"}
+                        {search.filters.razao ? ` · ${search.filters.razao}` : ""}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </PopoverContent>
           </Popover>
           <Button size="sm" variant="outline" onClick={exportXlsx} disabled={!filteredResults?.length}>
@@ -370,7 +510,7 @@ export default function Prospeccao() {
           <span className="text-xs text-muted-foreground">
             {canSearch ? "Pronto para buscar" : "Informe ao menos 1 CNAE ou 3 letras de razão social"}
           </span>
-          <Button onClick={() => searchMut.mutate()} disabled={!canSearch || searchMut.isPending} size="sm">
+          <Button onClick={() => searchMut.mutate({})} disabled={!canSearch || searchMut.isPending} size="sm">
             {searchMut.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Search className="w-4 h-4 mr-1" />}
             Buscar empresas
           </Button>
