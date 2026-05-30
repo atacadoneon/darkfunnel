@@ -103,6 +103,7 @@ export default function ProdutoEditor() {
       if (!current) throw new Error("sem workspace");
       const payload: any = {
         workspace_id: current.id,
+        kind: form.kind || "produto",
         tipo_produto: form.tipo_produto || "simples",
         tipo_item_sped: form.tipo_item_sped || null,
         name: (form.name ?? "").trim() || "Sem nome",
