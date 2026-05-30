@@ -152,19 +152,10 @@ export function AppSidebar() {
   const { data: role } = useMyRole();
 
   const {
-    pinned,
-    togglePinned,
-    setExpanded,
     openSubmenu,
     toggleSubmenu,
     pinnedSubmenus,
   } = useSidebarState();
-
-  // Collapse on route change if not pinned
-  useEffect(() => {
-    if (!pinned) setOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, pinned]);
 
 
   const userName =
@@ -178,12 +169,6 @@ export function AppSidebar() {
   const filterByRole = <T extends { roles?: WorkspaceRole[] }>(items: T[]) =>
     items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
-  const handleRailClick = (e: React.MouseEvent) => {
-    if (collapsed) {
-      e.preventDefault();
-      setExpanded(true);
-    }
-  };
 
   return (
     <>
