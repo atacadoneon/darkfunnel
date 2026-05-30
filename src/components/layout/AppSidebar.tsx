@@ -178,8 +178,11 @@ export function AppSidebar() {
   const filterByRole = <T extends { roles?: WorkspaceRole[] }>(items: T[]) =>
     items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
-  const handleRailClick = () => {
-    if (collapsed) setExpanded(true);
+  const handleRailClick = (e: React.MouseEvent) => {
+    if (collapsed) {
+      e.preventDefault();
+      setExpanded(true);
+    }
   };
 
   return (
