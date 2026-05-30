@@ -465,3 +465,109 @@ export default function ProdutoEditor() {
     </div>
   );
 }
+
+function VariationsSection({ parentId, workspaceId }: { parentId: string | null; workspaceId: string | null }) {
+  const qc = useQueryClient();
+  const nav = useNavigate();
+  const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
+  const [price, setPrice] = useState("");
+
+  const { data: variations = [], isLoading } = useQuery({
+    queryKey: ["product-variations", parentId],
+    enabled: !!parentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id,name,sku,price_cents,stock_qty,thumb_url,image_url")
+        .eq("base_product_id", parentId!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const add = useMutation({
+    mutationFn: async () => {
+      if (!parentId || !workspaceId) throw new Error("Salve o produto antes de adicionar variações");
+      const price_cents = price ? Math.round(parseFloat(price.replace(",", ".")) * 100) : 0;
+      const { error } = await supabase.from("products").insert({
+        workspace_id: workspaceId,
+        base_product_id: parentId,
+        kind: "produto",
+        name: name.trim() || "Variação",
+        sku: sku || null,
+        price_cents,
+        status: "active",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setName(""); setSku(""); setPrice("");
+      qc.invalidateQueries({ queryKey: ["product-variations", parentId] });
+      toast.success("Variação adicionada");
+    },
+    onError: (e) => toast.error("Falha ao adicionar variação", { description: String(e) }),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (vid: string) => {
+      const { error } = await supabase.from("products").delete().eq("id", vid);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["product-variations", parentId] }),
+  });
+
+  if (!parentId) {
+    return <p className="text-sm text-muted-foreground">Salve o produto para começar a adicionar variações.</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm font-semibold">Variações</div>
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Carregando…</p>
+      ) : variations.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhuma variação cadastrada.</p>
+      ) : (
+        <div className="border rounded-md divide-y">
+          {variations.map((v: any) => (
+            <div key={v.id} className="flex items-center gap-3 p-3">
+              <div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden">
+                {(v.image_url || v.thumb_url) ? (
+                  <img src={v.image_url || v.thumb_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Package className="w-4 h-4 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm truncate">{v.name}</div>
+                <div className="text-xs text-muted-foreground font-mono">{v.sku || "—"}</div>
+              </div>
+              <div className="text-sm tabular-nums">
+                R$ {((v.price_cents ?? 0) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => nav(`/produtos/${v.id}`)}>editar</Button>
+              <Button size="sm" variant="ghost" onClick={() => remove.mutate(v.id)} title="remover">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+        <div className="text-xs font-medium text-muted-foreground">Adicionar variação</div>
+        <div className="grid grid-cols-3 gap-2">
+          <Input placeholder="Nome (ex: Tamanho M)" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)} />
+          <Input placeholder="Preço" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
+        </div>
+        <Button size="sm" onClick={() => add.mutate()} disabled={add.isPending || !name.trim()}>
+          <Plus className="w-4 h-4 mr-1" /> Adicionar variação
+        </Button>
+      </div>
+    </div>
+  );
+}
+
