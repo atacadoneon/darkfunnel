@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useInfinitePaginated, flattenPages } from "@/components/lists/useInfinitePaginated";
 import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
 import { ListFooter } from "@/components/lists/ListFooter";
+import { useTagsProduto } from "@/hooks/useTagsProduto";
 
 type Product = {
   id: string;
@@ -139,6 +140,7 @@ export default function Produtos() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const { data: tagsProduto = [] } = useTagsProduto();
 
   const query = useInfinitePaginated<Product>({
     queryKey: ["products-infinite", current?.id],
@@ -382,6 +384,9 @@ export default function Produtos() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todas">Todas</SelectItem>
+                    {tagsProduto.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
