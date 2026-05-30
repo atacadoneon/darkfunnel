@@ -117,7 +117,6 @@ const footerMenus: FooterMenu[] = [
     label: "Cadastros",
     icon: FolderPlus,
     items: [
-      { label: "Produtos", to: "/produtos", icon: Package },
       { label: "Listas", to: "/settings/listas", icon: ListIcon },
       { label: "Motivos de Perda", to: "/settings/motivos-perda", icon: XIcon },
       { label: "Tipo de Atividade", to: "/settings/tipos-atividade", icon: CalendarCheck },
