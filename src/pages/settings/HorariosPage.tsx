@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Copy, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBusinessHours, useUpsertBusinessHours, type BusinessHour } from "@/features/settings/settingsHooks";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
 
@@ -48,8 +49,6 @@ export default function HorariosPage() {
     is_closed: r.is_closed,
   })));
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
-
   return (
     <div className="p-6 space-y-4 max-w-3xl mx-auto">
       <header>
@@ -58,7 +57,7 @@ export default function HorariosPage() {
       </header>
 
       <Card className="p-4 space-y-2">
-        {DAY_ORDER.map((day) => {
+        {isLoading ? Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />) : DAY_ORDER.map((day) => {
           const row = byDay(day);
           if (!row) return null;
           return (

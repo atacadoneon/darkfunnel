@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAutomations, useAutomationMutations } from "@/hooks/useAutomations";
 import { AutomationBuilder } from "@/features/automations/AutomationBuilder";
 import {
@@ -74,7 +75,9 @@ export default function Automations() {
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
+        </div>
       ) : filtered.length === 0 ? (
         <Card className="p-12 text-center">
           <Zap className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />

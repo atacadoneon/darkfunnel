@@ -63,7 +63,8 @@ export default function PerfilPage() {
     toast.success("Sessões encerradas");
   };
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
+  // Shell renders instantly; form fields populate as data arrives
+  void isLoading;
 
   return (
     <div className="p-6 space-y-4 max-w-3xl mx-auto">

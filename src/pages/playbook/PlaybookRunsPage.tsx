@@ -12,6 +12,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   usePlaybookRuns, usePlaybooksList, useRunSteps, useUpdateRun, useUpdateRunStep,
 } from "@/features/playbook/hooks";
@@ -69,7 +70,7 @@ export default function PlaybookRunsPage() {
 
       <Card>
         {isLoading ? (
-          <div className="p-8 text-sm text-muted-foreground">Carregando...</div>
+          <div className="p-6 space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : !runs.length ? (
           <div className="p-10 text-center text-sm text-muted-foreground">Nenhuma execução ainda.</div>
         ) : (
