@@ -89,10 +89,24 @@ export default function AppLayout() {
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarStateProvider>
+      <AppShell />
+    </SidebarStateProvider>
+  );
+}
+
+function AppShell() {
+  const { expanded, setExpanded, pinned } = useSidebarState();
+  return (
+    <SidebarProvider open={expanded} onOpenChange={setExpanded} defaultOpen={false}>
       <div className="flex h-svh w-full overflow-hidden">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <div
+          className="flex-1 flex flex-col min-w-0 min-h-0"
+          onMouseDown={() => {
+            if (!pinned && expanded) setExpanded(false);
+          }}
+        >
           <AppTopbar />
           <main className="flex-1 min-h-0 overflow-y-auto">
             <Outlet />
