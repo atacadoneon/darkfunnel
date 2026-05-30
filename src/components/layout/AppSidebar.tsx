@@ -152,7 +152,6 @@ export function AppSidebar() {
   const { current } = useWorkspace();
   const { user } = useAuth();
   const { data: role } = useMyRole();
-  const navigate = useNavigate();
 
   const {
     pinned,
@@ -169,15 +168,6 @@ export function AppSidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, pinned]);
 
-  const availableInit = (typeof window !== "undefined" && localStorage.getItem("presence:manual")) !== "away";
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Erro ao sair");
-      return;
-    }
-    navigate("/login", { replace: true });
-  };
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
