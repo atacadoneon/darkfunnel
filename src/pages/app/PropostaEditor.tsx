@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 
 type PaymentTerm = { dias: number | string; valor: number | string; observacao: string };
-type PaymentType = "parcelas" | "avista" | "entrada_parcelas";
+type PaymentType = "nenhuma" | "texto_livre" | "parcelas" | "avista" | "entrada_parcelas";
 
 type Item = {
   id?: string;
