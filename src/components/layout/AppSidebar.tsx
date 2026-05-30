@@ -1,5 +1,5 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import {
   type LucideIcon,
   LayoutGrid,
@@ -14,9 +14,7 @@ import {
   Workflow,
   Settings,
   HelpCircle,
-  ArrowLeft,
   LifeBuoy,
-  LogOut,
   Search,
   Pin,
   PinOff,
@@ -32,7 +30,6 @@ import {
   List as ListIcon,
   X as XIcon,
   CalendarCheck,
-  User as UserIcon,
   Building2,
   BarChart3,
   FolderTree,
@@ -44,10 +41,7 @@ import {
   Database,
   Shield,
   PlusCircle,
-  ClipboardList,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import {
   Sidebar,
   SidebarContent,
@@ -61,12 +55,13 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useMyRole, type WorkspaceRole } from "@/features/workspace/permissions";
 import { cn } from "@/lib/utils";
 import logoDarkFunnel from "@/assets/darkfunnel-logo.png";
+import { useSidebarState, type SubmenuId } from "@/contexts/SidebarContext";
+import { SubmenuPanel, type SubmenuItem } from "@/components/layout/SubmenuPanel";
 
 type Item = { title: string; url: string; icon: LucideIcon; roles?: WorkspaceRole[] };
 
@@ -98,8 +93,8 @@ const sections: { label: string; items: Item[] }[] = [
   },
 ];
 
-type SubItem = { label: string; to: string; icon: LucideIcon; roles?: WorkspaceRole[] };
-type FooterMenu = { key: string; label: string; icon: LucideIcon; items: SubItem[] };
+type FooterSubItem = SubmenuItem & { roles?: WorkspaceRole[] };
+type FooterMenu = { key: SubmenuId; label: string; icon: LucideIcon; items: FooterSubItem[] };
 
 const footerMenus: FooterMenu[] = [
   {
@@ -148,62 +143,29 @@ const footerMenus: FooterMenu[] = [
   },
 ];
 
-type AppSidebarProps = {
-  pinned?: boolean;
-  onTogglePin?: () => void;
-};
-
-const HOVER_OPEN_DELAY_MS = 2000;
-
-export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}) {
+export function AppSidebar() {
   const { state, setOpen } = useSidebar();
-  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { current } = useWorkspace();
   const { user } = useAuth();
   const { data: role } = useMyRole();
-  const navigate = useNavigate();
 
-  const [available, setAvailable] = useState<boolean>(() => {
-    return (localStorage.getItem("presence:manual") ?? "online") !== "away";
-  });
+  const {
+    pinned,
+    togglePinned,
+    setExpanded,
+    openSubmenu,
+    toggleSubmenu,
+    pinnedSubmenus,
+  } = useSidebarState();
 
-  const toggleAvailable = () => {
-    const next = !available;
-    setAvailable(next);
-    localStorage.setItem("presence:manual", next ? "online" : "away");
-    window.dispatchEvent(new Event("presence:manual-change"));
-  };
+  // Collapse on route change if not pinned
+  useEffect(() => {
+    if (!pinned) setOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, pinned]);
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Erro ao sair");
-      return;
-    }
-    navigate("/login", { replace: true });
-  };
-
-  const handleMouseEnter = () => {
-    if (openTimer.current) clearTimeout(openTimer.current);
-    openTimer.current = setTimeout(() => setOpen(true), HOVER_OPEN_DELAY_MS);
-  };
-
-  const handleMouseLeave = () => {
-    if (openTimer.current) {
-      clearTimeout(openTimer.current);
-      openTimer.current = null;
-    }
-    setOpen(false);
-  };
-
-  useEffect(
-    () => () => {
-      if (openTimer.current) clearTimeout(openTimer.current);
-    },
-    [],
-  );
 
   const userName =
     (user?.user_metadata?.full_name as string | undefined) ??
@@ -213,225 +175,172 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
 
   const wsName = current?.name ?? "Conta";
 
-  const filterByRole = (items: SubItem[]) =>
+  const filterByRole = <T extends { roles?: WorkspaceRole[] }>(items: T[]) =>
     items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
+  const handleRailClick = () => {
+    if (collapsed) setExpanded(true);
+  };
+
   return (
-    <Sidebar collapsible="icon" variant="sidebar" side="left" className="h-svh" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-      <SidebarHeader className="p-3 border-b">
-        {collapsed ? (
-          <div className="flex flex-col items-center gap-2">
-            <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
-            <button
-              type="button"
-              onClick={toggleAvailable}
-              className={cn(
-                "h-2.5 w-2.5 rounded-full transition-colors",
-                available ? "bg-emerald-500" : "bg-red-500",
-              )}
-              title={available ? "Disponível — clique para ficar Ausente" : "Ausente — clique para ficar Disponível"}
-            />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <img
-                src={logoDarkFunnel}
-                alt="DarkFunnel"
-                className="h-8 w-8 shrink-0 object-contain"
-                loading="lazy"
-                width={32}
-                height={32}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold text-sm truncate">DarkFunnel</div>
+    <>
+      <Sidebar collapsible="icon" variant="sidebar" side="left" className="h-svh">
+        <SidebarHeader className="p-3 border-b">
+          {collapsed ? (
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                aria-label="Expandir sidebar"
+              >
+                <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <img
+                  src={logoDarkFunnel}
+                  alt="DarkFunnel"
+                  className="h-8 w-8 shrink-0 object-contain"
+                  loading="lazy"
+                  width={32}
+                  height={32}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-sm truncate">DarkFunnel</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={togglePinned}
+                  className={cn(
+                    "rounded-md p-1.5 transition-colors",
+                    pinned
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground/60 hover:bg-accent hover:text-foreground",
+                  )}
+                  title={pinned ? "Desafixar sidebar" : "Fixar sidebar"}
+                  aria-label={pinned ? "Desafixar sidebar" : "Fixar sidebar"}
+                  aria-pressed={pinned}
+                >
+                  {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
+                <span className="truncate flex-1">{wsName}</span>
+                <NavLink
+                  to="/equipe-online"
+                  className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title="Equipe Online"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                </NavLink>
               </div>
             </div>
+          )}
+        </SidebarHeader>
 
+        <SidebarContent className="gap-0 overflow-y-auto">
+          {sections.map((section) => (
+            <SidebarGroup key={section.label || "main"} className="py-1">
+              {!collapsed && section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {section.items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
+                        <NavLink
+                          to={item.url}
+                          onClick={handleRailClick}
+                          className="flex items-center gap-2"
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!collapsed && <span>{item.title}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
 
-            <div className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
-              <span className="truncate flex-1">{wsName}</span>
-              <NavLink
-                to="/equipe-online"
-                className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                title="Equipe Online"
-              >
-                <Users className="h-3.5 w-3.5" />
-              </NavLink>
+        <SidebarFooter className="border-t p-2 gap-2">
+          <SidebarMenu>
+            {footerMenus.map((menu) => {
+              const visibleItems = filterByRole(menu.items);
+              if (visibleItems.length === 0) return null;
+              const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
+              const isOpen = openSubmenu === menu.key || !!pinnedSubmenus[menu.key];
+              return (
+                <SidebarMenuItem key={menu.key}>
+                  <SidebarMenuButton
+                    isActive={isActive || isOpen}
+                    onClick={() => {
+                      if (collapsed) setExpanded(true);
+                      toggleSubmenu(menu.key);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <menu.icon className="h-4 w-4" />
+                    {!collapsed && <span>{menu.label}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+
+          {!collapsed ? (
+            <>
               <button
                 type="button"
-                onClick={toggleAvailable}
-                className={cn(
-                  "h-3 w-3 rounded-full transition-colors",
-                  available ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600",
-                )}
-                title={available ? "Disponível — clique para ficar Ausente" : "Ausente — clique para ficar Disponível"}
-                aria-label="Alternar disponibilidade"
-              />
-            </div>
-          </div>
-        )}
-      </SidebarHeader>
-
-      <SidebarContent className="gap-0 overflow-y-auto">
-        {sections.map((section) => (
-          <SidebarGroup key={section.label || "main"} className="py-1">
-            {!collapsed && section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {section.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
-                      <NavLink to={item.url} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-
-      </SidebarContent>
-
-
-      <SidebarFooter className="border-t p-2 gap-2">
-        {/* 3 menus fixos no rodapé: painel lateral full-height ao lado da sidebar */}
-        <SidebarMenu>
-          {footerMenus.map((menu) => {
-            const visibleItems = filterByRole(menu.items);
-            if (visibleItems.length === 0) return null;
-            const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
-            return (
-              <FooterPopoverItem
-                key={menu.key}
-                menu={menu}
-                items={visibleItems}
-                isActive={isActive}
-                collapsed={collapsed}
-              />
-            );
-          })}
-        </SidebarMenu>
-
-        {!collapsed ? (
-          <>
-            <button
-              type="button"
-              className="w-full relative flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors"
-            >
-              <span className="relative">
-                <HelpCircle className="h-4 w-4" />
-                <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
-              Ajuda
-            </button>
-            <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs text-muted-foreground">
-              <button
-                type="button"
-                className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                className="w-full relative flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors"
               >
-                <LifeBuoy className="h-3.5 w-3.5" />
-                Suporte
+                <span className="relative">
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Ajuda
               </button>
-              <span className="truncate">{userName}</span>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-1">
-            <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Ajuda">
-              <HelpCircle className="h-4 w-4" />
-            </button>
-            <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Suporte">
-              <LifeBuoy className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </SidebarFooter>
-
-    </Sidebar>
-  );
-}
-
-function FooterPopoverItem({
-  menu,
-  items,
-  isActive,
-  collapsed,
-}: {
-  menu: FooterMenu;
-  items: SubItem[];
-  isActive: boolean;
-  collapsed: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const leftOffset = collapsed
-    ? "var(--sidebar-width-icon, 3rem)"
-    : "var(--sidebar-width, 16rem)";
-
-  return (
-    <SidebarMenuItem>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <SidebarMenuButton isActive={isActive} className="flex items-center gap-2">
-            <menu.icon className="h-4 w-4" />
-            {!collapsed && <span>{menu.label}</span>}
-          </SidebarMenuButton>
-        </PopoverTrigger>
-        <PopoverContent
-          side="right"
-          align="start"
-          sideOffset={0}
-          avoidCollisions={false}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          className="w-72 p-0 rounded-none border-l-0 shadow-2xl bg-card"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: leftOffset,
-            height: "100svh",
-            maxHeight: "100svh",
-            transform: "none",
-          }}
-        >
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <h2 className="text-sm font-semibold">{menu.label}</h2>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-md p-1.5 text-foreground/60 hover:bg-accent hover:text-foreground"
-                aria-label="Fechar"
-              >
-                <XIcon className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-              {items.map((it) => (
-                <NavLink
-                  key={it.to}
-                  to={it.to}
-                  end={it.to === "/admin"}
-                  onClick={() => setOpen(false)}
-                  className={({ isActive: act }) =>
-                    cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
-                      "text-foreground/80 hover:bg-accent hover:text-foreground",
-                      act && "bg-accent text-accent-foreground font-medium",
-                    )
-                  }
+              <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs text-muted-foreground">
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors"
                 >
-                  <it.icon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{it.label}</span>
-                </NavLink>
-              ))}
+                  <LifeBuoy className="h-3.5 w-3.5" />
+                  Suporte
+                </button>
+                <span className="truncate">{userName}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-1">
+              <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Ajuda">
+                <HelpCircle className="h-4 w-4" />
+              </button>
+              <button className="h-9 w-9 rounded-md flex items-center justify-center hover:bg-muted" aria-label="Suporte">
+                <LifeBuoy className="h-4 w-4" />
+              </button>
             </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </SidebarMenuItem>
+          )}
+        </SidebarFooter>
+      </Sidebar>
+
+      {footerMenus.map((menu) => {
+        const visibleItems = filterByRole(menu.items);
+        if (visibleItems.length === 0) return null;
+        return (
+          <SubmenuPanel
+            key={menu.key}
+            id={menu.key}
+            title={menu.label}
+            items={visibleItems.map(({ label, to, icon }) => ({ label, to, icon }))}
+            overlay={openSubmenu === menu.key && !pinnedSubmenus[menu.key]}
+          />
+        );
+      })}
+    </>
   );
 }
-
