@@ -246,17 +246,8 @@ export function AppSidebar({ pinned = false, onTogglePin }: AppSidebarProps = {}
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-sm truncate">DarkFunnel</div>
               </div>
-              {onTogglePin && (
-                <button
-                  type="button"
-                  onClick={onTogglePin}
-                  className="h-7 w-7 shrink-0 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground"
-                  title={pinned ? "Desafixar sidebar" : "Fixar sidebar"}
-                >
-                  {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-                </button>
-              )}
             </div>
+
 
             <div className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
               <span className="truncate flex-1">{wsName}</span>
