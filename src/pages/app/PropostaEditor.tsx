@@ -92,6 +92,9 @@ export default function PropostaEditor() {
   const [items, setItems] = useState<Item[]>([emptyItem(1)]);
   const [showCustomer, setShowCustomer] = useState(false);
   const [showConditions, setShowConditions] = useState(false);
+  const [paymentType, setPaymentType] = useState<PaymentType>("parcelas");
+  const [paymentInput, setPaymentInput] = useState<string>("");
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
 
   const { data: prop } = useQuery({
     queryKey: ["proposal", id],
