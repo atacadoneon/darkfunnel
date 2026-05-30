@@ -27,6 +27,7 @@ type Product = {
   unidade: string | null;
   status: string | null;
   thumb_url: string | null;
+  image_url: string | null;
   tipo_produto: string | null;
   gtin: string | null;
   created_at: string;
