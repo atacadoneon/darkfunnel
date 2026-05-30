@@ -178,8 +178,8 @@ const Sidebar = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "group peer hidden h-svh shrink-0 text-sidebar-foreground transition-[width] duration-200 ease-linear md:block",
-        "w-[var(--sidebar-width-icon)] data-[state=expanded]:w-[var(--sidebar-width)] data-[state=collapsed]:w-[var(--sidebar-width-icon)]",
+        "group peer hidden h-svh shrink-0 text-sidebar-foreground md:block",
+        "w-[var(--sidebar-width-icon)]",
       )}
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
