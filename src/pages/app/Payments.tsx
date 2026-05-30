@@ -4,14 +4,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Copy, Send, ExternalLink, X, Loader2, DollarSign, Receipt, CreditCard, QrCode } from "lucide-react";
+import { Copy, Send, ExternalLink, X, Loader2, Search, Filter, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useCancelPaymentLink, useGateways, usePaymentLinks } from "@/features/payments/hooks";
 import type { PaymentLink } from "@/features/payments/types";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   pending: { label: "Pendente", cls: "border-amber-500/30 text-amber-600 bg-amber-500/10" },
@@ -21,84 +23,156 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   failed: { label: "Falha", cls: "border-destructive/30 text-destructive bg-destructive/10" },
 };
 
+const STATUS_TABS: { key: string; label: string }[] = [
+  { key: "all", label: "todos" },
+  { key: "pending", label: "em aberto" },
+  { key: "paid", label: "aprovado" },
+  { key: "expired", label: "expirado" },
+  { key: "cancelled", label: "cancelado" },
+  { key: "failed", label: "falha" },
+];
+
+const PERIOD_OPTIONS: { key: string; label: string; days: number | null }[] = [
+  { key: "7", label: "Últimos 7 dias", days: 7 },
+  { key: "30", label: "Últimos 30 dias", days: 30 },
+  { key: "90", label: "Últimos 90 dias", days: 90 },
+  { key: "all", label: "Todo período", days: null },
+];
+
 function brl(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function isoDaysAgo(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function Payments() {
-  const [status, setStatus] = useState("all");
+  const [statusTab, setStatusTab] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [periodKey, setPeriodKey] = useState<string>("30");
   const [gatewayId, setGatewayId] = useState("all");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const period = PERIOD_OPTIONS.find((p) => p.key === periodKey) ?? PERIOD_OPTIONS[1];
+  const from = period.days ? isoDaysAgo(period.days) : "";
+
   const { data: gateways = [] } = useGateways();
-  const { data: links = [], isLoading } = usePaymentLinks({
-    status,
+  // Busca SEM filtro de status para alimentar os counts dos tabs
+  const { data: allLinks = [], isLoading } = usePaymentLinks({
+    status: "all",
     gateway_id: gatewayId,
     from: from || undefined,
-    to: to ? `${to}T23:59:59` : undefined,
+    to: undefined,
   });
   const [selected, setSelected] = useState<PaymentLink | null>(null);
   const cancel = useCancelPaymentLink();
 
-  const stats = useMemo(() => {
-    const total = links.reduce((s, l) => s + (l.amount_cents ?? 0), 0);
-    const paid = links.filter((l) => l.status === "paid");
-    const paidVal = paid.reduce((s, l) => s + (l.amount_cents ?? 0), 0);
-    const pending = links.filter((l) => l.status === "pending").length;
-    const conv = links.length ? (paid.length / links.length) * 100 : 0;
-    return { total, paidVal, pending, conv };
-  }, [links]);
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: allLinks.length };
+    for (const l of allLinks) c[l.status] = (c[l.status] ?? 0) + 1;
+    return c;
+  }, [allLinks]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allLinks.filter((l) => {
+      if (statusTab !== "all" && l.status !== statusTab) return false;
+      if (q) {
+        const hay = `${l.customer_name ?? ""} ${l.customer_phone ?? ""} ${l.customer_email ?? ""} ${l.id}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [allLinks, statusTab, search]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setPeriodKey("30");
+    setGatewayId("all");
+    setStatusTab("all");
+  };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <div className="p-6 space-y-4 max-w-7xl mx-auto">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Links de Pagamento</h1>
-          <p className="text-sm text-muted-foreground">Gere, envie e acompanhe cobranças.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Pedidos de venda</h1>
+          <p className="text-sm text-muted-foreground">Gerencie cobranças, status e envios.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard icon={<DollarSign className="h-4 w-4" />} label="Total Gerado" value={brl(stats.total)} />
-        <StatCard icon={<Receipt className="h-4 w-4" />} label="Total Pago" value={brl(stats.paidVal)} accent="emerald" />
-        <StatCard icon={<QrCode className="h-4 w-4" />} label="Conversão" value={`${stats.conv.toFixed(1)}%`} />
-        <StatCard icon={<CreditCard className="h-4 w-4" />} label="Pendentes" value={String(stats.pending)} />
+      {/* Top bar: busca + período + filtros + limpar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[260px] max-w-xl">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquise por cliente ou número"
+            className="pl-9"
+          />
+        </div>
+
+        <Select value={periodKey} onValueChange={setPeriodKey}>
+          <SelectTrigger className="w-auto gap-1">
+            <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PERIOD_OPTIONS.map((p) => (
+              <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1">
+              <Filter className="w-4 h-4" /> filtros
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 space-y-3" align="end">
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">Gateway</label>
+              <Select value={gatewayId} onValueChange={setGatewayId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {gateways.map((g) => <SelectItem key={g.id} value={g.id}>{g.display_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <Button variant="ghost" size="sm" onClick={clearFilters}>limpar filtros</Button>
       </div>
 
-      <Card className="p-4 flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Status</label>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending">Pendente</SelectItem>
-              <SelectItem value="paid">Pago</SelectItem>
-              <SelectItem value="expired">Expirado</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
-              <SelectItem value="failed">Falha</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Gateway</label>
-          <Select value={gatewayId} onValueChange={setGatewayId}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {gateways.map((g) => <SelectItem key={g.id} value={g.id}>{g.display_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">De</label>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Até</label>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
-        </div>
-      </Card>
+      {/* Tabs por status */}
+      <div className="flex gap-1 border-b overflow-x-auto">
+        {STATUS_TABS.map((t) => {
+          const active = statusTab === t.key;
+          const count = counts[t.key] ?? 0;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setStatusTab(t.key)}
+              className={cn(
+                "px-3 py-2 text-sm border-b-2 -mb-px transition-colors whitespace-nowrap flex items-center gap-1.5",
+                active
+                  ? "border-primary text-primary font-medium"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <span className="capitalize">{t.label}</span>
+              <Badge variant="outline" className="text-[10px] h-4 px-1 tabular-nums">{count}</Badge>
+            </button>
+          );
+        })}
+      </div>
 
       <Card>
         <Table>
@@ -117,10 +191,10 @@ export default function Payments() {
             {isLoading && (
               <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Carregando...</TableCell></TableRow>
             )}
-            {!isLoading && links.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhum link encontrado</TableCell></TableRow>
+            {!isLoading && filtered.length === 0 && (
+              <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhum pedido encontrado</TableCell></TableRow>
             )}
-            {links.map((l) => {
+            {filtered.map((l) => {
               const s = STATUS_LABEL[l.status] ?? { label: l.status, cls: "" };
               const gw = gateways.find((g) => g.id === l.gateway_id);
               return (
@@ -156,17 +230,6 @@ export default function Payments() {
         onCancel={async (id) => { await cancel.mutateAsync(id); toast.success("Link cancelado"); setSelected(null); }}
       />
     </div>
-  );
-}
-
-function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: "emerald" }) {
-  return (
-    <Card className="p-4">
-      <div className={`flex items-center gap-2 text-xs ${accent === "emerald" ? "text-emerald-600" : "text-muted-foreground"}`}>
-        {icon} {label}
-      </div>
-      <div className="mt-1 text-xl font-bold">{value}</div>
-    </Card>
   );
 }
 
