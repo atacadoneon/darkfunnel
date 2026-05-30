@@ -71,6 +71,46 @@ export default function DialerRun() {
   const [arbitraryOpen, setArbitraryOpen] = useState(false);
   const [arbitraryDialing, setArbitraryDialing] = useState(false);
 
+  // Filtros locais da fila
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fltStatus, setFltStatus] = useState<string[]>([]);
+  const [fltStages, setFltStages] = useState<string[]>([]);
+  const [fltLastHours, setFltLastHours] = useState<number>(0);
+  const qc = useQueryClient();
+
+  const removeFromQueue = useCallback(async (queueId: string) => {
+    try {
+      const { error } = await (supabase as any).from("dialer_queue").delete().eq("id", queueId);
+      if (error) throw error;
+      toast.success("Removido da fila");
+      qc.invalidateQueries({ queryKey: ["dialer-queue", id] });
+      if (currentItem?.id === queueId) setCurrentItem(null);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao remover");
+    }
+  }, [qc, id, currentItem]);
+
+  const clearQueue = useCallback(async () => {
+    if (!id) return;
+    if (!confirm("Limpar toda a fila? Os leads não serão deletados, apenas removidos da fila.")) return;
+    try {
+      const { error } = await (supabase as any).from("dialer_queue").delete().eq("campaign_id", id);
+      if (error) throw error;
+      toast.success("Fila limpa");
+      qc.invalidateQueries({ queryKey: ["dialer-queue", id] });
+      setCurrentItem(null);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao limpar fila");
+    }
+  }, [id, qc]);
+
+  const clearFilters = () => {
+    setFltStatus([]);
+    setFltStages([]);
+    setFltLastHours(0);
+  };
+
+
   // Fallback: se o item da fila não tem conversation_id, busca a conversa mais recente do contato.
   const { data: fallbackConvId } = useQuery({
     queryKey: ["dialer-contact-conversation", currentItem?.contact_id, ws?.id],
