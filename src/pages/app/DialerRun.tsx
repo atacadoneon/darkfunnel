@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useStages } from "@/features/pipeline/hooks";
 import { useMessages, useConversationById } from "@/features/inbox/hooks";
+import { useQuery } from "@tanstack/react-query";
 import { MessageThread } from "@/features/inbox/MessageThread";
 import { Composer } from "@/features/inbox/Composer";
 import { ConversationHeader } from "@/features/inbox/ConversationHeader";
