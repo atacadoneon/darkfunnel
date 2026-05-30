@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { useLossReasons } from "@/features/workspace/CatalogsAdmin";
 import { normalizePhoneE164, isValidE164, PHONE_INVALID_MSG, PHONE_REQUIRED_MSG } from "@/lib/phone";
 import type { Deal, Stage } from "./hooks";
+import { LeadProposalsSection } from "@/components/leads/LeadProposalsSection";
 
 type Props = {
   open: boolean;
@@ -511,6 +512,12 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
             <Label htmlFor="n">Notas</Label>
             <Textarea id="n" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
+
+          {editing && deal?.contact_id && (
+            <div className="pt-2 border-t">
+              <LeadProposalsSection leadId={deal.contact_id} dealId={deal.id} />
+            </div>
+          )}
 
           {editing && (
             <div className="flex flex-wrap gap-2 pt-2 border-t">
