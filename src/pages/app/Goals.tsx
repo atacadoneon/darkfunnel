@@ -889,6 +889,7 @@ export default function Goals() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [tab, setTab] = useState<TabKey>("geral");
   const [addOpen, setAddOpen] = useState(false);
+  const [isAddSaving, setIsAddSaving] = useState(false);
 
   const createGoal = async (payload: NewGoalPayload) => {
     if (!current) throw new Error("sem workspace");
@@ -963,11 +964,18 @@ export default function Goals() {
         month={month}
         sectors={sectors}
         members={members}
-        isSaving={false}
+        isSaving={isAddSaving}
         onSave={async (payload) => {
-          await createGoal(payload);
-          toast.success("Meta criada");
-          setAddOpen(false);
+          try {
+            setIsAddSaving(true);
+            await createGoal(payload);
+            toast.success("Meta criada");
+            setAddOpen(false);
+          } catch (e) {
+            toast.error((e as Error).message);
+          } finally {
+            setIsAddSaving(false);
+          }
         }}
       />
       </div>
