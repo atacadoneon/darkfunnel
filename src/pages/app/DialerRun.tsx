@@ -283,7 +283,22 @@ export default function DialerRun() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20 min-h-0 overflow-hidden">
-      {/* ============ TOP COMMAND BAR ============ */}
+      {/* ============ DISCAR AGORA HEADER ============ */}
+      <header className="sticky top-0 z-20 bg-background border-b px-5 py-3 flex items-center gap-4 shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold leading-tight">Discar agora</h1>
+          <p className="text-sm text-muted-foreground">Ligue para os leads da sua fila ou disque um número avulso</p>
+        </div>
+        <div className="flex-1" />
+        <Button
+          onClick={() => setArbitraryOpen(true)}
+          className="bg-violet-600 hover:bg-violet-700 text-white gap-2 h-10 px-4 font-medium shadow-sm"
+        >
+          <Phone className="h-4 w-4" /> Discar número avulso
+        </Button>
+      </header>
+
+
       <header className="bg-card border-b px-4 py-2.5 flex items-center gap-3 shrink-0 shadow-sm">
         <Button variant="ghost" size="sm" onClick={() => navigate("/discador")} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
