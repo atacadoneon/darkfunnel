@@ -219,6 +219,44 @@ export default function Calls() {
           <Dialer />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Exportar ligações</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs">Formato</Label>
+              <RadioGroup value={exportFmt} onValueChange={(v) => setExportFmt(v as "csv" | "xlsx")} className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="xlsx" /> <span className="text-sm">Excel (.xlsx)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="csv" /> <span className="text-sm">CSV</span>
+                </label>
+              </RadioGroup>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">De</Label>
+                <Input type="date" value={expFrom} onChange={(e) => setExpFrom(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Até</Label>
+                <Input type="date" value={expTo} onChange={(e) => setExpTo(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Deixe em branco para exportar todas as ligações carregadas.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportOpen(false)} disabled={exporting}>Cancelar</Button>
+            <Button onClick={runExport} disabled={exporting}>
+              {exporting ? "Exportando…" : "Exportar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
