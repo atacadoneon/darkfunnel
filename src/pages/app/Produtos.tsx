@@ -353,32 +353,6 @@ export default function Produtos() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[420px] space-y-3" align="end">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Que estão no e-commerce</Label>
-                <Select value={draft.ecom_in || "_"} onValueChange={(v) => setDraft((d) => ({ ...d, ecom_in: v === "_" ? "" : v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_">Selecione</SelectItem>
-                    <SelectItem value="shopify">Shopify</SelectItem>
-                    <SelectItem value="nuvemshop">Nuvemshop</SelectItem>
-                    <SelectItem value="woocommerce">WooCommerce</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Que não estão no e-commerce</Label>
-                <Select value={draft.ecom_out || "_"} onValueChange={(v) => setDraft((d) => ({ ...d, ecom_out: v === "_" ? "" : v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_">Selecione</SelectItem>
-                    <SelectItem value="shopify">Shopify</SelectItem>
-                    <SelectItem value="nuvemshop">Nuvemshop</SelectItem>
-                    <SelectItem value="woocommerce">WooCommerce</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
             <div>
               <Label className="text-xs">Categoria</Label>
               <Input value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} placeholder="escolher categoria" />
