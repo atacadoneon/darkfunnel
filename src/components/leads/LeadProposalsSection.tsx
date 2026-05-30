@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Zap, FileText, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { QuickProposalDialog } from "./QuickProposalDialog";
 import { useLeadPurchases, useLeadProposals } from "@/hooks/useLeadProposals";
+
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline" | "success" | "warning";
 
 const BRL = (cents: number | null | undefined) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(((cents ?? 0)) / 100);
@@ -25,7 +27,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 function statusBadge(status: string) {
   const label = STATUS_LABEL[status] ?? status;
-  const variant: BadgeProps["variant"] = (() => {
+  const variant: BadgeVariant = (() => {
     switch (status) {
       case "rascunho":
         return "secondary";
