@@ -441,22 +441,7 @@ export default function PropostaEditor() {
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="entrega-dif"
-              checked={form.endereco_entrega_diferente}
-              onCheckedChange={(v) => setF("endereco_entrega_diferente", !!v)}
-            />
-            <Label htmlFor="entrega-dif" className="font-normal cursor-pointer">
-              O endereço de entrega do cliente é diferente do endereço de cobrança
-            </Label>
-          </div>
-
-          {/* Introdução */}
-          <div>
-            <Label>Introdução</Label>
-            <Textarea rows={3} value={form.intro} onChange={(e) => setF("intro", e.target.value)} />
-          </div>
+          {/* Cabeçalho meta */}
 
           {/* Cabeçalho meta */}
           <div className="grid grid-cols-4 gap-3">
