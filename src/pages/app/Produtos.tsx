@@ -89,6 +89,8 @@ export default function Produtos() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
+  const [sortBy, setSortBy] = useState<"name" | "status" | null>(null);
+  const [sortAsc, setSortAsc] = useState(true);
 
   const query = useInfinitePaginated<Product>({
     queryKey: ["products-infinite", current?.id],
@@ -121,7 +123,17 @@ export default function Produtos() {
     return c;
   }, [products]);
 
-  const filtered = useFilteredProducts(products, search, filters);
+  const filteredBase = useFilteredProducts(products, search, filters);
+  const filtered = useMemo(() => {
+    if (!sortBy) return filteredBase;
+    const arr = [...filteredBase];
+    arr.sort((a, b) => {
+      const av = sortBy === "name" ? (a.name ?? "") : (a.status ?? "");
+      const bv = sortBy === "name" ? (b.name ?? "") : (b.status ?? "");
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    return arr;
+  }, [filteredBase, sortBy, sortAsc]);
 
   const toggleCategory = (cat: Category) => {
     setFilters((f) => ({
@@ -130,6 +142,16 @@ export default function Produtos() {
         ? f.categories.filter((c) => c !== cat)
         : [...f.categories, cat],
     }));
+  };
+
+  const toggleSort = (key: "name" | "status") => {
+    if (sortBy === key) {
+      if (sortAsc) setSortAsc(false);
+      else { setSortBy(null); setSortAsc(true); }
+    } else {
+      setSortBy(key);
+      setSortAsc(true);
+    }
   };
 
   const openFilters = () => {
@@ -143,6 +165,7 @@ export default function Produtos() {
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS);
   };
+
 
   const allActive = filters.categories.length === 0;
 
