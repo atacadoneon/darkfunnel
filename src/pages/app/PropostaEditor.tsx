@@ -272,6 +272,7 @@ export default function PropostaEditor() {
         payment_type: paymentType,
         payment_input: paymentInput || null,
         payment_terms: paymentTerms,
+        payment_freetext: paymentFreetext || null,
       };
       let propId = id;
       if (isNew) {
