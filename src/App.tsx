@@ -24,6 +24,7 @@ import Settings from "@/pages/app/Settings";
 import Pipeline from "@/pages/app/Pipeline";
 import Dashboard from "@/pages/app/Dashboard";
 import Tasks from "@/pages/app/Tasks";
+import Leads from "@/pages/app/Leads";
 import AutomacoesPage from "@/pages/AutomacoesPage";
 import AutomacaoEditorPage from "@/pages/AutomacaoEditorPage";
 import Cadence from "@/pages/app/Cadence";
