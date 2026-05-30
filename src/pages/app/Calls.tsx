@@ -49,20 +49,61 @@ export default function Calls() {
     return { total, tdur, conn: total ? (connected / total) * 100 : 0, cost };
   }, [calls]);
 
-  const exportXlsx = async () => {
-    const xlsx = await import("xlsx");
-    const rows = calls.map(c => ({
-      Data: c.initiated_at ? format(new Date(c.initiated_at), "yyyy-MM-dd HH:mm") : "",
-      Contato: c.contact?.display_name ?? c.contact?.phone_e164 ?? "",
-      De: c.from_number, Para: c.to_number,
-      Direção: c.direction, Canal: c.channel,
-      Duração: formatDuration(c.duration_seconds), Outcome: c.outcome,
-      Custo: (c.cost_cents ?? 0) / 100,
-    }));
-    const ws = xlsx.utils.json_to_sheet(rows);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Ligações");
-    xlsx.writeFile(wb, `ligacoes_${Date.now()}.xlsx`);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFmt, setExportFmt] = useState<"csv" | "xlsx">("xlsx");
+  const [expFrom, setExpFrom] = useState("");
+  const [expTo, setExpTo] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  const buildRows = (data: CallRow[]) => data.map(c => ({
+    Data: c.initiated_at ? format(new Date(c.initiated_at), "yyyy-MM-dd HH:mm") : "",
+    Contato: c.contact?.display_name ?? c.contact?.phone_e164 ?? "",
+    De: c.from_number, Para: c.to_number,
+    Direção: c.direction, Canal: c.channel,
+    Duração: formatDuration(c.duration_seconds), Outcome: c.outcome,
+    Custo: (c.cost_cents ?? 0) / 100,
+  }));
+
+  const runExport = async () => {
+    setExporting(true);
+    try {
+      const fromTs = expFrom ? new Date(expFrom).getTime() : null;
+      const toTs = expTo ? new Date(expTo + "T23:59:59").getTime() : null;
+      const filteredCalls = calls.filter(c => {
+        if (!c.initiated_at) return true;
+        const t = new Date(c.initiated_at).getTime();
+        if (fromTs && t < fromTs) return false;
+        if (toTs && t > toTs) return false;
+        return true;
+      });
+      if (filteredCalls.length === 0) {
+        toast.error("Nenhuma ligação no período selecionado");
+        return;
+      }
+      const rows = buildRows(filteredCalls);
+      const stamp = Date.now();
+      if (exportFmt === "csv") {
+        const Papa = (await import("papaparse")).default;
+        const csv = Papa.unparse(rows);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `ligacoes_${stamp}.csv`;
+        a.click(); URL.revokeObjectURL(url);
+      } else {
+        const xlsx = await import("xlsx");
+        const ws = xlsx.utils.json_to_sheet(rows);
+        const wb = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(wb, ws, "Ligações");
+        xlsx.writeFile(wb, `ligacoes_${stamp}.xlsx`);
+      }
+      toast.success(`${filteredCalls.length} ligações exportadas`);
+      setExportOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao exportar");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -76,7 +117,7 @@ export default function Calls() {
             <TabsTrigger value="discador" className="h-6 text-xs">Discador Automático</TabsTrigger>
           </TabsList>
           <div className="flex-1" />
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={exportXlsx} disabled={calls.length === 0}>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setExpFrom(from); setExpTo(to); setExportOpen(true); }} disabled={calls.length === 0}>
             <Download className="h-3 w-3 mr-1" /> Exportar
           </Button>
         </div>
