@@ -588,6 +588,15 @@ export default function DialerRun() {
                       <ChevronsRight className="h-4 w-4" />
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); void removeFromQueue(q.id); }}
+                    title="Remover da fila"
+                    className="opacity-0 group-hover:opacity-100 h-7 w-7 inline-flex items-center justify-center rounded text-destructive hover:bg-destructive/10 transition"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+
                 </div>
               );
             })}
