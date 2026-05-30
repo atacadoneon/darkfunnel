@@ -64,6 +64,8 @@ export default function DialerRun() {
   const [coachHidden, setCoachHidden] = useState(false);
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [arbitraryOpen, setArbitraryOpen] = useState(false);
+  const [arbitraryDialing, setArbitraryDialing] = useState(false);
 
   // Fallback: se o item da fila não tem conversation_id, busca a conversa mais recente do contato.
   const { data: fallbackConvId } = useQuery({
