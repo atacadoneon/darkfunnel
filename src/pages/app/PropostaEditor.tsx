@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { FreetextEditor } from "@/components/proposals/FreetextEditor";
+import { SellerSelect } from "@/components/sellers/SellerSelect";
 
 type PaymentTerm = { dias: number | string; valor: number | string; observacao: string };
 type PaymentType = "nenhuma" | "texto_livre" | "parcelas" | "avista" | "entrada_parcelas";
