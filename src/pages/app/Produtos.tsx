@@ -274,7 +274,7 @@ export default function Produtos() {
           onClick={() => setFilters((f) => ({ ...f, categories: [] }))}
           aria-pressed={allActive}
           className={`pb-2 text-sm transition-colors ${
-            allActive ? "border-b-2 border-primary text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+            allActive ? "border-b-2 border-foreground text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <div>todos</div>
@@ -288,13 +288,14 @@ export default function Produtos() {
               onClick={() => toggleCategory(t.key)}
               aria-pressed={active}
               className={`pb-2 text-sm transition-colors ${
-                active ? "border-b-2 border-primary text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                active ? "border-b-2 border-foreground text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <div>{t.label}</div>
               <div className="text-xs tabular-nums">{String(counts[t.key]).padStart(2, "0")}</div>
             </button>
           );
+
         })}
       </div>
 
