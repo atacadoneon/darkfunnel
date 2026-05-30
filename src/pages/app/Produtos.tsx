@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Search, MoreHorizontal, ChevronDown, Filter, Sliders, Download, Calendar as CalIcon } from "lucide-react";
+import { Package, Plus, Search, MoreHorizontal, ChevronDown, Filter, Sliders, Download, Printer, Calendar as CalIcon } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { Button } from "@/components/ui/button";
