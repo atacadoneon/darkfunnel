@@ -152,19 +152,10 @@ export function AppSidebar() {
   const { data: role } = useMyRole();
 
   const {
-    pinned,
-    togglePinned,
-    setExpanded,
     openSubmenu,
     toggleSubmenu,
     pinnedSubmenus,
   } = useSidebarState();
-
-  // Collapse on route change if not pinned
-  useEffect(() => {
-    if (!pinned) setOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, pinned]);
 
 
   const userName =
@@ -178,12 +169,6 @@ export function AppSidebar() {
   const filterByRole = <T extends { roles?: WorkspaceRole[] }>(items: T[]) =>
     items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
-  const handleRailClick = (e: React.MouseEvent) => {
-    if (collapsed) {
-      e.preventDefault();
-      setExpanded(true);
-    }
-  };
 
   return (
     <>
@@ -191,13 +176,7 @@ export function AppSidebar() {
         <SidebarHeader className="p-3 border-b">
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setExpanded(true)}
-                aria-label="Expandir sidebar"
-              >
-                <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
-              </button>
+              <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
             </div>
           ) : (
             <div className="space-y-3">
@@ -213,21 +192,6 @@ export function AppSidebar() {
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-sm truncate">DarkFunnel</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={togglePinned}
-                  className={cn(
-                    "rounded-md p-1.5 transition-colors",
-                    pinned
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground/60 hover:bg-accent hover:text-foreground",
-                  )}
-                  title={pinned ? "Desafixar sidebar" : "Fixar sidebar"}
-                  aria-label={pinned ? "Desafixar sidebar" : "Fixar sidebar"}
-                  aria-pressed={pinned}
-                >
-                  {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                </button>
               </div>
 
               <div className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
@@ -244,6 +208,7 @@ export function AppSidebar() {
           )}
         </SidebarHeader>
 
+
         <SidebarContent className="gap-0 overflow-y-auto">
           {sections.map((section) => (
             <SidebarGroup key={section.label || "main"} className="py-1">
@@ -255,7 +220,6 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
                         <NavLink
                           to={item.url}
-                          onClick={handleRailClick}
                           className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
                         >
                           <item.icon className="h-5 w-5" />
@@ -281,13 +245,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={menu.key}>
                   <SidebarMenuButton
                     isActive={isActive || isOpen}
-                    onClick={() => {
-                      if (collapsed) {
-                        setExpanded(true);
-                        return;
-                      }
-                      toggleSubmenu(menu.key);
-                    }}
+                    onClick={() => toggleSubmenu(menu.key)}
                     className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
                   >
                     <menu.icon className="h-5 w-5" />

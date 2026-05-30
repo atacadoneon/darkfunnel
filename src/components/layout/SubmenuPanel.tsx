@@ -47,9 +47,6 @@ export function SubmenuPanel({ id, title, items, overlay }: SubmenuPanelProps) {
       if (!isOpen) return;
       const t = e.target as Node;
       if (ref.current?.contains(t)) return;
-      // ignore clicks on sidebar rail (so user can switch submenus)
-      const sidebar = document.querySelector('[data-sidebar="sidebar"]');
-      if (sidebar?.contains(t)) return;
       setOpenSubmenu(null);
     };
     window.addEventListener("keydown", onKey);
@@ -63,8 +60,8 @@ export function SubmenuPanel({ id, title, items, overlay }: SubmenuPanelProps) {
   if (!visible) return null;
 
   const leftOffset = expanded
-    ? "var(--sidebar-width, 19.2rem)"
-    : "var(--sidebar-width-icon, 3rem)";
+    ? "var(--sidebar-width, 16rem)"
+    : "var(--sidebar-width-icon, 3.875rem)";
 
   return (
     <div
