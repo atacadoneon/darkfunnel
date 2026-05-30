@@ -881,12 +881,52 @@ function NewGoalDialog({ open, year, month, sectors, members, isSaving, onOpenCh
 // ============= PAGE =============
 export default function Goals() {
   const { current } = useWorkspace();
-  const { upsertGoal } = useGoalMutations();
+  const queryClient = useQueryClient();
+  const { data: sectors = [] } = useSectors();
+  const { data: members = [] } = useWorkspaceMembers();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [tab, setTab] = useState<TabKey>("geral");
   const [addOpen, setAddOpen] = useState(false);
+
+  const createGoal = async (payload: NewGoalPayload) => {
+    if (!current) throw new Error("sem workspace");
+    const start = parseISO(payload.period_start);
+    const insertPayload = {
+      workspace_id: current.id,
+      name: payload.name,
+      target_value: payload.target_value,
+      period_start: payload.period_start,
+      period_end: payload.period_end,
+      scope: payload.scope,
+      scope_ref_id: payload.scope_ref_id,
+      metric_type: payload.metric_type,
+      year: start.getFullYear(),
+      month: start.getMonth() + 1,
+      target_amount: payload.target_value,
+      working_days_mask: 0b0111110,
+      holidays: [],
+    };
+    const { error } = await supabase.from("goals").insert(insertPayload as any);
+    if (error) {
+      const legacyPayload = {
+        workspace_id: current.id,
+        year: start.getFullYear(),
+        month: start.getMonth() + 1,
+        scope: payload.scope === "department" ? "sector" : payload.scope,
+        scope_ref_id: payload.scope_ref_id,
+        target_amount: payload.target_value,
+        working_days_mask: 0b0111110,
+        holidays: [],
+      };
+      const { error: legacyError } = await supabase.from("goals").insert(legacyPayload as any);
+      if (legacyError) throw legacyError;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["goal", current.id] });
+    await queryClient.invalidateQueries({ queryKey: ["goals-sector", current.id] });
+    await queryClient.invalidateQueries({ queryKey: ["goals-user", current.id] });
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -916,16 +956,16 @@ export default function Goals() {
       {tab === "geral" && <GeralTab year={year} month={month} setYear={setYear} setMonth={setMonth} />}
       {tab === "setoriais" && <SetoresTab year={year} month={month} />}
       {tab === "vendedores" && <VendedoresTab year={year} month={month} />}
-      <NewWorkspaceGoalDialog
+      <NewGoalDialog
         open={addOpen}
         onOpenChange={setAddOpen}
         year={year}
         month={month}
-        onSave={async (amount) => {
-          await upsertGoal.mutateAsync({
-            year, month, scope: "workspace", scope_ref_id: null,
-            target_amount: amount, working_days_mask: 0b0111110, holidays: [],
-          });
+        sectors={sectors}
+        members={members}
+        isSaving={false}
+        onSave={async (payload) => {
+          await createGoal(payload);
           toast.success("Meta criada");
           setAddOpen(false);
         }}
