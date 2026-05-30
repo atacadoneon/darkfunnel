@@ -69,7 +69,8 @@ const sections: { label: string; items: Item[] }[] = [
   {
     label: "",
     items: [
-      { title: "CRM & Leads", url: "/funildevendas", icon: Filter },
+      { title: "CRM", url: "/funildevendas", icon: Filter },
+      { title: "Leads", url: "/leads", icon: Users },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Discador", url: "/discador", icon: PhoneOutgoing },
       { title: "Propostas", url: "/propostas", icon: FileText },
