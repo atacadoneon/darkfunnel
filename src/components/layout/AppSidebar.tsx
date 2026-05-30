@@ -176,13 +176,7 @@ export function AppSidebar() {
         <SidebarHeader className="p-3 border-b">
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setExpanded(true)}
-                aria-label="Expandir sidebar"
-              >
-                <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
-              </button>
+              <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
             </div>
           ) : (
             <div className="space-y-3">
@@ -198,21 +192,6 @@ export function AppSidebar() {
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-sm truncate">DarkFunnel</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={togglePinned}
-                  className={cn(
-                    "rounded-md p-1.5 transition-colors",
-                    pinned
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground/60 hover:bg-accent hover:text-foreground",
-                  )}
-                  title={pinned ? "Desafixar sidebar" : "Fixar sidebar"}
-                  aria-label={pinned ? "Desafixar sidebar" : "Fixar sidebar"}
-                  aria-pressed={pinned}
-                >
-                  {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-                </button>
               </div>
 
               <div className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
@@ -228,6 +207,7 @@ export function AppSidebar() {
             </div>
           )}
         </SidebarHeader>
+
 
         <SidebarContent className="gap-0 overflow-y-auto">
           {sections.map((section) => (
