@@ -221,7 +221,6 @@ export function AppSidebar() {
                         <NavLink
                           to={item.url}
                           className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
-                          className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
                         >
                           <item.icon className="h-5 w-5" />
                           {!collapsed && <span>{item.title}</span>}
