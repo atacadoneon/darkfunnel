@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Search, MoreHorizontal, ChevronDown, Filter } from "lucide-react";
+import { Package, Plus, Search, MoreHorizontal, ChevronDown, Filter, Sliders, Download, Calendar as CalIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { useInfinitePaginated, flattenPages } from "@/components/lists/useInfinitePaginated";
 import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
 import { ListFooter } from "@/components/lists/ListFooter";
