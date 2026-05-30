@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+
 import { useInfinitePaginated, flattenPages } from "@/components/lists/useInfinitePaginated";
 import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
 import { ListFooter } from "@/components/lists/ListFooter";
