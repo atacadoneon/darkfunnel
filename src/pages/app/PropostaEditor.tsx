@@ -442,8 +442,6 @@ export default function PropostaEditor() {
           )}
 
           {/* Cabeçalho meta */}
-
-          {/* Cabeçalho meta */}
           <div className="grid grid-cols-4 gap-3">
             <div>
               <Label>N° Proposta</Label>
