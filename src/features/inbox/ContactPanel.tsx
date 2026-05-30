@@ -13,6 +13,7 @@ import {
   ActivitiesTab, CustomFieldsTab, AdsTab,
 } from "@/features/pipeline/LeadEditDialog";
 import { Timeline } from "@/components/leads/Timeline";
+import { LeadProposalsSection } from "@/components/leads/LeadProposalsSection";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -173,6 +174,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
 
       <div className="px-3 py-2 lead-compact">
         {renderTab()}
+        {deal && <div className="mt-4"><LeadProposalsSection leadId={conversation.contact_id} dealId={deal.id} /></div>}
       </div>
 
 

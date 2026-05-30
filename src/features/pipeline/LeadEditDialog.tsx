@@ -398,6 +398,8 @@ export function InfoTab({ dealId, onClose }: { dealId: string; onClose: () => vo
         </Grid2>
       </Section>
 
+      {contactId && <LeadProposalsSection leadId={contactId} dealId={dealId} />}
+
       <Section title="Observações" subtitle="Contexto comercial e anotações internas">
         <Textarea rows={4} maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: Lead pediu retorno amanhã às 14h..." />
         <div className="text-[10px] text-right text-muted-foreground mt-1">{notes.length}/1000</div>

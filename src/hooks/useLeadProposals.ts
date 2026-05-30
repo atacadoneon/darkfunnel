@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 
 export type LeadPurchase = {
   id: string;
@@ -22,9 +23,10 @@ export type LeadProposal = {
 };
 
 export function useLeadPurchases(leadId: string | null | undefined) {
+  const { current } = useWorkspace();
   return useQuery({
-    queryKey: ["lead-purchases", leadId],
-    enabled: !!leadId,
+    queryKey: ["lead-purchases", current?.id, leadId],
+    enabled: !!current && !!leadId,
     queryFn: async (): Promise<LeadPurchase[]> => {
       const { data: deals, error: de } = await supabase
         .from("deals").select("id").eq("contact_id", leadId!);
@@ -43,9 +45,10 @@ export function useLeadPurchases(leadId: string | null | undefined) {
 }
 
 export function useLeadProposals(leadId: string | null | undefined) {
+  const { current } = useWorkspace();
   return useQuery({
-    queryKey: ["lead-proposals", leadId],
-    enabled: !!leadId,
+    queryKey: ["lead-proposals", current?.id, leadId],
+    enabled: !!current && !!leadId,
     queryFn: async (): Promise<LeadProposal[]> => {
       const { data, error } = await supabase
         .from("proposals")
@@ -78,8 +81,9 @@ export function useQuickProposal() {
       return data as string;
     },
     onSuccess: (_d, v) => {
-      qc.invalidateQueries({ queryKey: ["lead-proposals", v.leadId] });
-      qc.invalidateQueries({ queryKey: ["lead-purchases", v.leadId] });
+      qc.invalidateQueries({ queryKey: ["lead-proposals"] });
+      qc.invalidateQueries({ queryKey: ["lead-purchases"] });
+      qc.invalidateQueries({ queryKey: ["proposals"] });
     },
   });
 }
