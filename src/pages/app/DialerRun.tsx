@@ -3,8 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft, Phone, PhoneOff, Pause, Square, ChevronRight, ChevronsRight, Loader2, Copy, CheckCircle2,
   Sparkles, AlertTriangle, Target as TargetIcon, MessageSquare, Search, X,
-  Minimize2, Maximize2, RefreshCw,
+  Minimize2, Maximize2, RefreshCw, Trash2, Filter, Trash,
 } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -66,6 +70,46 @@ export default function DialerRun() {
   const [search, setSearch] = useState("");
   const [arbitraryOpen, setArbitraryOpen] = useState(false);
   const [arbitraryDialing, setArbitraryDialing] = useState(false);
+
+  // Filtros locais da fila
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fltStatus, setFltStatus] = useState<string[]>([]);
+  const [fltStages, setFltStages] = useState<string[]>([]);
+  const [fltLastHours, setFltLastHours] = useState<number>(0);
+  const qc = useQueryClient();
+
+  const removeFromQueue = useCallback(async (queueId: string) => {
+    try {
+      const { error } = await (supabase as any).from("dialer_queue").delete().eq("id", queueId);
+      if (error) throw error;
+      toast.success("Removido da fila");
+      qc.invalidateQueries({ queryKey: ["dialer-queue", id] });
+      if (currentItem?.id === queueId) setCurrentItem(null);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao remover");
+    }
+  }, [qc, id, currentItem]);
+
+  const clearQueue = useCallback(async () => {
+    if (!id) return;
+    if (!confirm("Limpar toda a fila? Os leads não serão deletados, apenas removidos da fila.")) return;
+    try {
+      const { error } = await (supabase as any).from("dialer_queue").delete().eq("campaign_id", id);
+      if (error) throw error;
+      toast.success("Fila limpa");
+      qc.invalidateQueries({ queryKey: ["dialer-queue", id] });
+      setCurrentItem(null);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao limpar fila");
+    }
+  }, [id, qc]);
+
+  const clearFilters = () => {
+    setFltStatus([]);
+    setFltStages([]);
+    setFltLastHours(0);
+  };
+
 
   // Fallback: se o item da fila não tem conversation_id, busca a conversa mais recente do contato.
   const { data: fallbackConvId } = useQuery({
@@ -272,14 +316,32 @@ export default function DialerRun() {
 
   const filteredQueue = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return queue;
+    const cutoff = fltLastHours > 0 ? Date.now() - fltLastHours * 3600 * 1000 : null;
     return queue.filter((it) => {
-      const name = (it.contact?.display_name ?? "").toLowerCase();
-      const phone = (it.phone_e164 ?? it.contact?.phone_e164 ?? "").toLowerCase();
-      const deal = (it.deal?.title ?? "").toLowerCase();
-      return name.includes(q) || phone.includes(q) || deal.includes(q);
+      if (q) {
+        const name = (it.contact?.display_name ?? "").toLowerCase();
+        const phone = (it.phone_e164 ?? it.contact?.phone_e164 ?? "").toLowerCase();
+        const deal = (it.deal?.title ?? "").toLowerCase();
+        if (!(name.includes(q) || phone.includes(q) || deal.includes(q))) return false;
+      }
+      if (fltStatus.length > 0) {
+        const st = it.outcome ?? it.status;
+        if (!fltStatus.includes(st as string)) return false;
+      }
+      if (fltStages.length > 0) {
+        const sid = it.deal?.stage_id;
+        if (!sid || !fltStages.includes(sid)) return false;
+      }
+      if (cutoff && it.completed_at) {
+        if (new Date(it.completed_at).getTime() < cutoff) return false;
+      }
+      return true;
     });
-  }, [queue, search]);
+  }, [queue, search, fltStatus, fltStages, fltLastHours]);
+
+  const activeFiltersCount =
+    (fltStatus.length > 0 ? 1 : 0) + (fltStages.length > 0 ? 1 : 0) + (fltLastHours > 0 ? 1 : 0);
+
 
   return (
     <div className="h-full flex flex-col bg-muted/20 min-h-0 overflow-hidden">
@@ -368,17 +430,106 @@ export default function DialerRun() {
       <div className="flex-1 grid grid-cols-[300px_1fr_auto] min-h-0 overflow-hidden">
         {/* LEFT — QUEUE LIST */}
         <aside className="border-r bg-card flex flex-col min-h-0 overflow-hidden">
-          <div className="p-2.5 border-b shrink-0">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar na fila..."
-                className="h-8 pl-7 text-xs"
-              />
+          <div className="p-2 border-b shrink-0 space-y-2">
+            <div className="flex items-center gap-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar na fila..."
+                  className="h-8 pl-7 text-xs"
+                />
+              </div>
+              <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8 px-2 relative">
+                    <Filter className="h-3.5 w-3.5" />
+                    {activeFiltersCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[9px] flex items-center justify-center">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 space-y-3" align="start">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Status / Resultado</Label>
+                    <div className="flex flex-wrap gap-1">
+                      {["pending", "calling", "atendeu", "nao_atendeu", "convertido", "sem_interesse", "reagendar"].map((s) => {
+                        const on = fltStatus.includes(s);
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() =>
+                              setFltStatus((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]))
+                            }
+                            className={cn(
+                              "text-[10px] px-2 py-1 rounded-full border",
+                              on ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted",
+                            )}
+                          >
+                            {s}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Etapas (stages)</Label>
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                      {stages.map((st) => {
+                        const on = fltStages.includes(st.id);
+                        return (
+                          <button
+                            key={st.id}
+                            type="button"
+                            onClick={() =>
+                              setFltStages((p) => (p.includes(st.id) ? p.filter((x) => x !== st.id) : [...p, st.id]))
+                            }
+                            className={cn(
+                              "text-[10px] px-2 py-1 rounded-full border",
+                              on ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted",
+                            )}
+                          >
+                            {st.name}
+                          </button>
+                        );
+                      })}
+                      {stages.length === 0 && (
+                        <span className="text-[10px] text-muted-foreground">Nenhuma etapa</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Ligar nas últimas {fltLastHours || "—"} horas</Label>
+                    <Slider
+                      min={0}
+                      max={72}
+                      step={1}
+                      value={[fltLastHours]}
+                      onValueChange={(v) => setFltLastHours(v[0])}
+                    />
+                  </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <Button size="sm" variant="ghost" onClick={clearFilters}>Limpar filtros</Button>
+                    <Button size="sm" onClick={() => setFiltersOpen(false)}>Aplicar</Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 text-destructive hover:text-destructive"
+                onClick={clearQueue}
+                title="Limpar fila"
+              >
+                <Trash className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
+
           <div className="flex-1 overflow-y-auto min-h-0">
             {filteredQueue.length === 0 && (
               <div className="text-xs text-muted-foreground italic text-center py-8">
@@ -437,6 +588,15 @@ export default function DialerRun() {
                       <ChevronsRight className="h-4 w-4" />
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); void removeFromQueue(q.id); }}
+                    title="Remover da fila"
+                    className="opacity-0 group-hover:opacity-100 h-7 w-7 inline-flex items-center justify-center rounded text-destructive hover:bg-destructive/10 transition"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+
                 </div>
               );
             })}

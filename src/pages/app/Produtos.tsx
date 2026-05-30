@@ -89,6 +89,8 @@ export default function Produtos() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
+  const [sortBy, setSortBy] = useState<"name" | "status" | null>(null);
+  const [sortAsc, setSortAsc] = useState(true);
 
   const query = useInfinitePaginated<Product>({
     queryKey: ["products-infinite", current?.id],
@@ -121,7 +123,17 @@ export default function Produtos() {
     return c;
   }, [products]);
 
-  const filtered = useFilteredProducts(products, search, filters);
+  const filteredBase = useFilteredProducts(products, search, filters);
+  const filtered = useMemo(() => {
+    if (!sortBy) return filteredBase;
+    const arr = [...filteredBase];
+    arr.sort((a, b) => {
+      const av = sortBy === "name" ? (a.name ?? "") : (a.status ?? "");
+      const bv = sortBy === "name" ? (b.name ?? "") : (b.status ?? "");
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    return arr;
+  }, [filteredBase, sortBy, sortAsc]);
 
   const toggleCategory = (cat: Category) => {
     setFilters((f) => ({
@@ -130,6 +142,16 @@ export default function Produtos() {
         ? f.categories.filter((c) => c !== cat)
         : [...f.categories, cat],
     }));
+  };
+
+  const toggleSort = (key: "name" | "status") => {
+    if (sortBy === key) {
+      if (sortAsc) setSortAsc(false);
+      else { setSortBy(null); setSortAsc(true); }
+    } else {
+      setSortBy(key);
+      setSortAsc(true);
+    }
   };
 
   const openFilters = () => {
@@ -143,6 +165,7 @@ export default function Produtos() {
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS);
   };
+
 
   const allActive = filters.categories.length === 0;
 
@@ -173,6 +196,23 @@ export default function Produtos() {
             className="pl-9 rounded-full"
           />
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={() => toggleSort("name")}
+        >
+          nome {sortBy === "name" ? (sortAsc ? "↑" : "↓") : ""}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={() => toggleSort("status")}
+        >
+          por situação {sortBy === "status" ? (sortAsc ? "↑" : "↓") : ""}
+        </Button>
+
         <Popover open={filtersOpen} onOpenChange={(o) => (o ? openFilters() : setFiltersOpen(false))}>
           <PopoverTrigger asChild>
             <Button variant="outline" className="rounded-full" size="sm">
@@ -234,7 +274,7 @@ export default function Produtos() {
           onClick={() => setFilters((f) => ({ ...f, categories: [] }))}
           aria-pressed={allActive}
           className={`pb-2 text-sm transition-colors ${
-            allActive ? "border-b-2 border-primary text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+            allActive ? "border-b-2 border-foreground text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <div>todos</div>
@@ -248,13 +288,14 @@ export default function Produtos() {
               onClick={() => toggleCategory(t.key)}
               aria-pressed={active}
               className={`pb-2 text-sm transition-colors ${
-                active ? "border-b-2 border-primary text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                active ? "border-b-2 border-foreground text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <div>{t.label}</div>
               <div className="text-xs tabular-nums">{String(counts[t.key]).padStart(2, "0")}</div>
             </button>
           );
+
         })}
       </div>
 

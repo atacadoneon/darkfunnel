@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ComponentType } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Pin, PinOff, X as XIcon, type LucideIcon } from "lucide-react";
+import { ChevronLeft, Pin, PinOff, X as XIcon, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarState, type SubmenuId } from "@/contexts/SidebarContext";
 
@@ -60,19 +60,28 @@ export function SubmenuPanel({ id, title, items, overlay }: SubmenuPanelProps) {
   if (!visible) return null;
 
   const leftOffset = expanded
-    ? "var(--sidebar-width, 16rem)"
+    ? "var(--sidebar-width, 12rem)"
     : "var(--sidebar-width-icon, 3.875rem)";
 
   return (
     <div
       ref={ref}
       className={cn(
-        "fixed top-0 h-svh w-72 bg-sidebar border-r border-border shadow-xl flex flex-col",
+        "fixed top-0 h-svh w-[210px] bg-sidebar border-r border-border shadow-xl flex flex-col",
         overlay ? "z-50" : "z-40",
       )}
       style={{ left: leftOffset }}
     >
-      <div className="flex items-center justify-between border-b px-3 py-3 gap-2">
+      <div className="flex items-center justify-between border-b px-2 py-2.5 gap-1">
+        <button
+          type="button"
+          onClick={() => closeSubmenu(id)}
+          className="rounded-md p-1.5 text-foreground/60 hover:bg-accent hover:text-foreground"
+          aria-label="Recolher"
+          title="Recolher"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
         <button
           type="button"
           onClick={() => togglePinSubmenu(id)}
@@ -92,6 +101,7 @@ export function SubmenuPanel({ id, title, items, overlay }: SubmenuPanelProps) {
           <XIcon className="h-4 w-4" />
         </button>
       </div>
+
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
         {items.map((it) => {
           const active = pathname.startsWith(it.to);
