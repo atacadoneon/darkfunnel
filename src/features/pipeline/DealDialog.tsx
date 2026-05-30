@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { SellerSelect } from "@/components/sellers/SellerSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -424,17 +425,7 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
           <div className="space-y-1.5">
             <Label>Vendedor responsável</Label>
             {canReassign ? (
-              <Select value={assignedTo ?? user?.id ?? ""} onValueChange={setAssignedTo}>
-                <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
-                <SelectContent>
-                  {members.map((m) => (
-                    <SelectItem key={m.user_id} value={m.user_id}>
-                      {m.display_name || m.email || m.user_id.slice(0, 8)}
-                      {m.user_id === user?.id && " (você)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SellerSelect value={assignedTo ?? user?.id ?? ""} onValueChange={setAssignedTo} />
             ) : (
               <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
                 <Lock className="h-3.5 w-3.5 text-muted-foreground" />

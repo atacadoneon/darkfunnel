@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { FreetextEditor } from "@/components/proposals/FreetextEditor";
+import { SellerSelect } from "@/components/sellers/SellerSelect";
 
 type PaymentTerm = { dias: number | string; valor: number | string; observacao: string };
 type PaymentType = "nenhuma" | "texto_livre" | "parcelas" | "avista" | "entrada_parcelas";
@@ -456,7 +457,7 @@ export default function PropostaEditor() {
             </div>
             <div>
               <Label>Vendedor</Label>
-              <Input value={form.vendedor_user_id ?? ""} onChange={(e) => setF("vendedor_user_id", e.target.value)} placeholder="—" />
+              <SellerSelect value={form.vendedor_user_id ?? ""} onValueChange={(v) => setF("vendedor_user_id", v)} />
             </div>
             <div>
               <Label>Data</Label>
