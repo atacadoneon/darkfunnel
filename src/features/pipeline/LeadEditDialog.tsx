@@ -867,3 +867,20 @@ function MultiSelectSimple({ options, values, onChange, placeholder }: {
     </div>
   );
 }
+
+/* =============== PROPOSALS TAB =============== */
+export function ProposalsTab({ dealId }: { dealId: string }) {
+  const { data: deal } = useQuery({
+    queryKey: ["deal-contact", dealId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals").select("contact_id").eq("id", dealId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  if (!deal?.contact_id) {
+    return <p className="text-sm text-muted-foreground">Carregando lead…</p>;
+  }
+  return <LeadProposalsSection leadId={deal.contact_id} dealId={dealId} />;
+}
