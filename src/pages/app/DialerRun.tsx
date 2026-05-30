@@ -34,6 +34,7 @@ import {
 } from "@/features/dialer/hooks";
 import { CallTimer } from "@/components/voice/CallTimer";
 import { StandaloneDialpad } from "@/components/dialer/StandaloneDialpad";
+import { DialerChatCenter } from "@/components/dialer/DialerChatCenter";
 import { cn } from "@/lib/utils";
 
 type RunState = "idle" | "dialing" | "in_call" | "outcome";
@@ -603,7 +604,7 @@ export default function DialerRun() {
           </div>
         </aside>
 
-        {/* CENTER — CONVERSATION (reuse Inbox components) */}
+        {/* CENTER — CONVERSATION (reuse Inbox components via DialerChatCenter) */}
         <section className="flex flex-col min-h-0 min-w-0 overflow-hidden bg-background">
           {!currentItem ? (
             <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
@@ -613,27 +614,8 @@ export default function DialerRun() {
               </div>
               <StandaloneDialpad onCall={dialArbitrary} loading={arbitraryDialing} />
             </div>
-          ) : conversation ? (
-            <>
-              <ConversationHeader conversation={conversation} />
-              <MessageThread
-                messages={messages}
-                contactAvatar={conversation.contacts?.profile_pic_url ?? null}
-              />
-              <Composer conversation={conversation} />
-            </>
-          ) : resolvedConvId ? (
-            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Carregando conversa...
-            </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center p-6 text-center">
-              <div>
-                <MessageSquare className="h-12 w-12 mx-auto opacity-30 mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Nenhuma conversa anterior com este lead.</p>
-                <p className="text-xs mt-1 text-muted-foreground">Ligue para iniciar o contato.</p>
-              </div>
-            </div>
+            <DialerChatCenter leadId={currentItem.contact_id} />
           )}
         </section>
 
