@@ -121,6 +121,7 @@ const footerMenus: FooterMenu[] = [
       { label: "Motivos de Perda", to: "/settings/motivos-perda", icon: XIcon },
       { label: "Tipo de Atividade", to: "/settings/tipos-atividade", icon: CalendarCheck },
       { label: "Tags", to: "/settings/tags", icon: Tag },
+      { label: "Tags de Produto", to: "/settings/tags-produto", icon: Tag },
     ],
   },
   {

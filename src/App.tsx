@@ -61,6 +61,7 @@ import ListasPage from "@/pages/settings/ListasPage";
 import MotivosPerdaPage from "@/pages/settings/MotivosPerdaPage";
 import TiposAtividadePage from "@/pages/settings/TiposAtividadePage";
 import TagsPage from "@/pages/settings/TagsPage";
+import TagsProdutoPage from "@/pages/settings/TagsProdutoPage";
 import PerfilPage from "@/pages/settings/PerfilPage";
 import EmpresaPage from "@/pages/settings/EmpresaPage";
 import PlanosPage from "@/pages/settings/PlanosPage";
@@ -170,6 +171,7 @@ const App = () => (
                     <Route path="settings/empresa" element={<EmpresaPage />} />
                     <Route path="settings/usuarios" element={<UsuariosPage />} />
                     <Route path="settings/tags" element={<TagsPage />} />
+                    <Route path="settings/tags-produto" element={<TagsProdutoPage />} />
                     <Route path="settings/motivos-perda" element={<MotivosPerdaPage />} />
                     <Route path="settings/listas" element={<ListasPage />} />
                     <Route path="settings/tipos-atividade" element={<TiposAtividadePage />} />
