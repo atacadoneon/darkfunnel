@@ -277,6 +277,19 @@ export default function Prospeccao() {
     setSelected(new Set());
     setTimeout(() => searchMut.mutate(), 0);
   };
+  const saveCurrentSearchLocally = () => {
+    const nextSearch: SavedSearch = {
+      id: `local-${Date.now()}`,
+      name: razao ? `CNPJ ${razao}` : `Busca ${new Date().toLocaleDateString("pt-BR")}`,
+      filters: currentFilters,
+      created_at: new Date().toISOString(),
+      results: filteredResults ?? undefined,
+    };
+    const next = [nextSearch, ...savedSearches].slice(0, 10);
+    setSavedSearches(next);
+    window.localStorage.setItem(LOCAL_SAVED_SEARCHES_KEY, JSON.stringify(next));
+    toast.success("Busca salva neste navegador");
+  };
   const toggleRow = (id: string) => setSelected((p) => {
     const n = new Set(p);
     if (n.has(id)) n.delete(id);
@@ -317,11 +330,35 @@ export default function Prospeccao() {
             <PopoverTrigger asChild>
               <Button size="sm" variant="outline">Buscas salvas</Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-0">
-              <div className="px-3 py-2 border-b text-xs font-medium">Buscas salvas</div>
-              <div className="p-4 text-xs text-muted-foreground text-center">
-                Nenhuma busca salva ainda.
+            <PopoverContent align="end" className="w-80 p-0">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 border-b">
+                <div className="text-xs font-medium">Buscas salvas</div>
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={saveCurrentSearchLocally}>
+                  Salvar atual
+                </Button>
               </div>
+              {availableSavedSearches.length === 0 ? (
+                <div className="p-4 text-xs text-muted-foreground text-center">
+                  Nenhuma busca salva ainda.
+                </div>
+              ) : (
+                <div className="max-h-72 overflow-y-auto p-1">
+                  {availableSavedSearches.map((search) => (
+                    <button
+                      key={search.id}
+                      type="button"
+                      className="w-full rounded-sm px-2 py-2 text-left text-xs hover:bg-muted"
+                      onClick={() => applySavedSearch(search)}
+                    >
+                      <div className="font-medium truncate">{search.name}</div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground truncate">
+                        {(search.filters.ufs ?? []).length ? `UF: ${(search.filters.ufs ?? []).join(", ")}` : "Sem UF"}
+                        {search.filters.razao ? ` · ${search.filters.razao}` : ""}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </PopoverContent>
           </Popover>
           <Button size="sm" variant="outline" onClick={exportXlsx} disabled={!filteredResults?.length}>
