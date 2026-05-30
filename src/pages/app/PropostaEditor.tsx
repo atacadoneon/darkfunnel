@@ -169,6 +169,47 @@ export default function PropostaEditor() {
     return { itensCents, total };
   }, [items, form.discount, form.freight]);
 
+  const gerarParcelas = () => {
+    const raw = paymentInput.trim();
+    if (!raw) {
+      toast.error("Informe uma condição (ex: 30 60 90 ou 6x)");
+      return;
+    }
+    const totalReais = totals.total / 100;
+    const novo: PaymentTerm[] = [];
+    const mx = raw.toLowerCase().match(/^(\d+)x$/);
+    if (mx) {
+      const n = parseInt(mx[1], 10);
+      if (!n) return;
+      const valor = +(totalReais / n).toFixed(2);
+      for (let i = 1; i <= n; i++) {
+        novo.push({ dias: i * 30, valor, observacao: `Parcela ${i}/${n}` });
+      }
+    } else {
+      const dias = raw.split(/\s+/).map((d) => parseInt(d, 10)).filter((n) => !isNaN(n));
+      if (dias.length === 0) {
+        toast.error("Formato inválido");
+        return;
+      }
+      const valor = +(totalReais / dias.length).toFixed(2);
+      dias.forEach((d, i) => {
+        novo.push({
+          dias: d,
+          valor,
+          observacao: dias.length === 1 ? "Parcela única" : `Parcela ${i + 1}/${dias.length}`,
+        });
+      });
+    }
+    setPaymentTerms(novo);
+  };
+
+  const setParcela = (i: number, patch: Partial<PaymentTerm>) =>
+    setPaymentTerms((arr) => arr.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  const addParcela = () =>
+    setPaymentTerms((arr) => [...arr, { dias: 30, valor: 0, observacao: "" }]);
+  const removeParcela = (i: number) =>
+    setPaymentTerms((arr) => arr.filter((_, j) => j !== i));
+
   const save = useMutation({
     mutationFn: async () => {
       if (!current || !user) throw new Error("sem workspace");
