@@ -210,13 +210,15 @@ export default function Prospeccao() {
   }, [savedSearches, savedSearchesQuery.data]);
 
   const searchMut = useMutation({
-    mutationFn: async () => {
-      const cnpjDigits = razao.replace(/\D/g, "");
+    mutationFn: async (override?: { razao?: string; filters?: ProspectFilters }) => {
+      const activeRazao = override?.razao ?? razao;
+      const activeFilters = override?.filters ?? currentFilters;
+      const cnpjDigits = activeRazao.replace(/\D/g, "");
       if (cnpjDigits.length !== 14) {
         throw new Error("Digite um CNPJ válido (14 dígitos) no campo de busca. A busca por filtros ainda não está disponível.");
       }
       const { data, error } = await supabase.functions.invoke("prospect-search-cnpj", {
-        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id, filters: currentFilters, ufs },
+        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id, filters: activeFilters, ufs: activeFilters.ufs },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -248,7 +250,7 @@ export default function Prospeccao() {
     setUfs((p) => {
       const next = p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf];
       if (razao.replace(/\D/g, "").length === 14) {
-        setTimeout(() => searchMut.mutate(), 0);
+        searchMut.mutate({ filters: { ...currentFilters, ufs: next } });
       }
       return next;
     });
@@ -275,7 +277,7 @@ export default function Prospeccao() {
     if (typeof filters.capitalMin === "string") setCapitalMin(filters.capitalMin);
     if (search.results) setResults(search.results);
     setSelected(new Set());
-    setTimeout(() => searchMut.mutate(), 0);
+    searchMut.mutate({ razao: filters.razao, filters: { ...currentFilters, ...filters } });
   };
   const saveCurrentSearchLocally = () => {
     const nextSearch: SavedSearch = {
