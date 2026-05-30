@@ -178,8 +178,11 @@ export function AppSidebar() {
   const filterByRole = <T extends { roles?: WorkspaceRole[] }>(items: T[]) =>
     items.filter((it) => !it.roles || (role && it.roles.includes(role)));
 
-  const handleRailClick = () => {
-    if (collapsed) setExpanded(true);
+  const handleRailClick = (e: React.MouseEvent) => {
+    if (collapsed) {
+      e.preventDefault();
+      setExpanded(true);
+    }
   };
 
   return (
@@ -255,7 +258,7 @@ export function AppSidebar() {
                           onClick={handleRailClick}
                           className="flex items-center gap-2"
                         >
-                          <item.icon className="h-4 w-4" />
+                          <item.icon className="h-5 w-5" />
                           {!collapsed && <span>{item.title}</span>}
                         </NavLink>
                       </SidebarMenuButton>
@@ -279,12 +282,15 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     isActive={isActive || isOpen}
                     onClick={() => {
-                      if (collapsed) setExpanded(true);
+                      if (collapsed) {
+                        setExpanded(true);
+                        return;
+                      }
                       toggleSubmenu(menu.key);
                     }}
                     className="flex items-center gap-2"
                   >
-                    <menu.icon className="h-4 w-4" />
+                    <menu.icon className="h-5 w-5" />
                     {!collapsed && <span>{menu.label}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
