@@ -218,6 +218,15 @@ export default function DialerRun() {
     navigate("/discador");
   }, [id, setStatus, navigate]);
 
+  const endCampaign = useCallback(async () => {
+    if (!id) return;
+    if (!confirm("Encerrar campanha? Isso marcará como concluída.")) return;
+    await setStatus.mutateAsync({ id, status: "completed" });
+    navigate("/discador");
+  }, [id, setStatus, navigate]);
+
+
+
   /* --------- Discar número avulso --------- */
   const dialArbitrary = useCallback(async (rawDigits: string) => {
     if (!ws) return;
