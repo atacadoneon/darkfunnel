@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Search, MoreHorizontal, ChevronDown, Filter, Sliders, Download, Calendar as CalIcon } from "lucide-react";
+import { Package, Plus, Search, MoreHorizontal, ChevronDown, Filter, Sliders, Download, Printer, Calendar as CalIcon } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { Button } from "@/components/ui/button";
@@ -230,7 +231,6 @@ export default function Produtos() {
     <div className="px-8 py-6">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <div className="text-xs text-muted-foreground mb-1">início › cadastros › produtos</div>
           <h1 className="text-2xl font-bold tracking-tight">Produtos</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -249,9 +249,14 @@ export default function Produtos() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => toast({ title: "Em breve" })}>
+                <Printer className="w-4 h-4 mr-2" /> Imprimir
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast({ title: "Em breve" })}>
+                <Download className="w-4 h-4 mr-2" /> Importar produtos da integração
+              </DropdownMenuItem>
               <DropdownMenuItem>Importar CSV</DropdownMenuItem>
               <DropdownMenuItem>Exportar lista</DropdownMenuItem>
-              <DropdownMenuItem>Imprimir etiquetas</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -348,32 +353,6 @@ export default function Produtos() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[420px] space-y-3" align="end">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs">Que estão no e-commerce</Label>
-                <Select value={draft.ecom_in || "_"} onValueChange={(v) => setDraft((d) => ({ ...d, ecom_in: v === "_" ? "" : v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_">Selecione</SelectItem>
-                    <SelectItem value="shopify">Shopify</SelectItem>
-                    <SelectItem value="nuvemshop">Nuvemshop</SelectItem>
-                    <SelectItem value="woocommerce">WooCommerce</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Que não estão no e-commerce</Label>
-                <Select value={draft.ecom_out || "_"} onValueChange={(v) => setDraft((d) => ({ ...d, ecom_out: v === "_" ? "" : v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_">Selecione</SelectItem>
-                    <SelectItem value="shopify">Shopify</SelectItem>
-                    <SelectItem value="nuvemshop">Nuvemshop</SelectItem>
-                    <SelectItem value="woocommerce">WooCommerce</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
             <div>
               <Label className="text-xs">Categoria</Label>
               <Input value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} placeholder="escolher categoria" />
