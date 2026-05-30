@@ -446,9 +446,12 @@ export default function DialerRun() {
         {/* CENTER — CONVERSATION (reuse Inbox components) */}
         <section className="flex flex-col min-h-0 min-w-0 overflow-hidden bg-background">
           {!currentItem ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
-              <Phone className="h-12 w-12 opacity-30" />
-              <span className="text-sm">Selecione um lead na fila ao lado</span>
+            <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-semibold">Discador</h2>
+                <p className="text-xs text-muted-foreground">Selecione um lead à esquerda ou disque um número</p>
+              </div>
+              <StandaloneDialpad onCall={dialArbitrary} loading={arbitraryDialing} />
             </div>
           ) : conversation ? (
             <>
