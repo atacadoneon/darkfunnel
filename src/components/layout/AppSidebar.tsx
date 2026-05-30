@@ -220,7 +220,15 @@ export function AppSidebar() {
         <SidebarContent className="gap-0 overflow-y-auto">
           {sections.map((section) => (
             <SidebarGroup key={section.label || "main"} className="py-1">
-              {!collapsed && section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
+              {section.label && (
+                collapsed ? (
+                  <div className="h-8 flex items-center justify-center text-sidebar-foreground/40 text-xs select-none" aria-hidden>
+                    —
+                  </div>
+                ) : (
+                  <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                )
+              )}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {section.items.map((item) => (
@@ -240,6 +248,7 @@ export function AppSidebar() {
               </SidebarGroupContent>
             </SidebarGroup>
           ))}
+
         </SidebarContent>
 
         <SidebarFooter className="border-t p-2 gap-2">
