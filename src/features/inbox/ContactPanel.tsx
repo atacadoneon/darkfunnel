@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { RefreshCw, User, History, ShoppingCart, Paperclip, Calendar, Box, Megaphone, FileText } from "lucide-react";
+import { RefreshCw, User, History, ShoppingCart, Paperclip, Calendar, Box, Megaphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,10 @@ import { useContactDeal } from "./inboxFeatureHooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
 import {
   InfoTab, HistoryTab, PurchasesTab, AttachmentsTab,
-  ActivitiesTab, CustomFieldsTab, AdsTab, ProposalsTab,
+  ActivitiesTab, CustomFieldsTab, AdsTab,
 } from "@/features/pipeline/LeadEditDialog";
 import { Timeline } from "@/components/leads/Timeline";
+import { LeadProposalsSection } from "@/components/leads/LeadProposalsSection";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -33,7 +34,7 @@ type ContactFull = {
   city: string | null;
 };
 
-type TabKey = "info" | "history" | "purchases" | "proposals" | "attachments" | "activities" | "custom" | "ads";
+type TabKey = "info" | "history" | "purchases" | "attachments" | "activities" | "custom" | "ads";
 
 export function ContactPanel({ conversation }: { conversation: ConversationRow }) {
   const [activeTab, setActiveTab] = useState<TabKey>("info");
