@@ -4,8 +4,9 @@ import { format } from "date-fns";
 import {
   User, Tag as TagIcon, ShoppingCart, Paperclip, Calendar,
   Box, Megaphone, Plus, Trash2, Download, Loader2, History,
-  ArrowRight, Phone, Mail, Building2, MapPin, MessageSquare, CreditCard,
+  ArrowRight, Phone, Mail, Building2, MapPin, MessageSquare, CreditCard, FileText,
 } from "lucide-react";
+import { LeadProposalsSection } from "@/components/leads/LeadProposalsSection";
 import { PaymentLinkDialog } from "@/features/payments/PaymentLinkDialog";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
@@ -107,10 +108,11 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
           </div>
         </DialogHeader>
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-6 mt-3 grid grid-cols-7 h-auto bg-transparent p-1 gap-1 rounded-lg border">
+          <TabsList className="mx-6 mt-3 grid grid-cols-8 h-auto bg-transparent p-1 gap-1 rounded-lg border">
             <TabsTrigger value="info" title="Informações" className="flex-col gap-1 py-2"><User className="h-4 w-4" /><span className="text-[10px]">Informações</span></TabsTrigger>
             <TabsTrigger value="history" title="Histórico" className="flex-col gap-1 py-2"><History className="h-4 w-4" /><span className="text-[10px]">Histórico</span></TabsTrigger>
             <TabsTrigger value="purchases" title="Compras" className="flex-col gap-1 py-2"><ShoppingCart className="h-4 w-4" /><span className="text-[10px]">Compras</span></TabsTrigger>
+            <TabsTrigger value="proposals" title="Propostas" className="flex-col gap-1 py-2"><FileText className="h-4 w-4" /><span className="text-[10px]">Propostas</span></TabsTrigger>
             <TabsTrigger value="attachments" title="Anexos" className="flex-col gap-1 py-2"><Paperclip className="h-4 w-4" /><span className="text-[10px]">Anexos</span></TabsTrigger>
             <TabsTrigger value="activities" title="Atividades" className="flex-col gap-1 py-2"><Calendar className="h-4 w-4" /><span className="text-[10px]">Atividades</span></TabsTrigger>
             <TabsTrigger value="custom" title="Campos Extra" className="flex-col gap-1 py-2"><Box className="h-4 w-4" /><span className="text-[10px]">Extras</span></TabsTrigger>
@@ -121,6 +123,7 @@ export function LeadEditDialog({ open, onOpenChange, dealId }: Props) {
             <TabsContent value="info" className="m-0"><InfoTab dealId={dealId} onClose={() => onOpenChange(false)} /></TabsContent>
             <TabsContent value="history" className="m-0"><HistoryTab dealId={dealId} /></TabsContent>
             <TabsContent value="purchases" className="m-0"><PurchasesTab dealId={dealId} /></TabsContent>
+            <TabsContent value="proposals" className="m-0"><ProposalsTab dealId={dealId} /></TabsContent>
             <TabsContent value="attachments" className="m-0"><AttachmentsTab dealId={dealId} /></TabsContent>
             <TabsContent value="activities" className="m-0"><ActivitiesTab dealId={dealId} /></TabsContent>
             <TabsContent value="custom" className="m-0"><CustomFieldsTab dealId={dealId} /></TabsContent>
@@ -863,4 +866,21 @@ function MultiSelectSimple({ options, values, onChange, placeholder }: {
       )}
     </div>
   );
+}
+
+/* =============== PROPOSALS TAB =============== */
+export function ProposalsTab({ dealId }: { dealId: string }) {
+  const { data: deal } = useQuery({
+    queryKey: ["deal-contact", dealId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals").select("contact_id").eq("id", dealId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  if (!deal?.contact_id) {
+    return <p className="text-sm text-muted-foreground">Carregando lead…</p>;
+  }
+  return <LeadProposalsSection leadId={deal.contact_id} dealId={dealId} />;
 }
