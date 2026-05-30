@@ -31,9 +31,20 @@ type Product = {
   thumb_url: string | null;
   image_url: string | null;
   tipo_produto: string | null;
+  kind: string | null;
+  base_product_id: string | null;
   gtin: string | null;
+  marca: string | null;
+  categoria: string | null;
+  ncm: string | null;
   created_at: string;
+  updated_at?: string | null;
 };
+
+type KindTab = "todos" | "produto" | "servico" | "assinatura";
+type RefineKey = "none" | "codigo" | "codigo_parcial" | "codigo_fornecedor" | "gtin" | "descricao" | "palavras";
+type StatusKey = "all" | "ativos" | "inativos" | "excluidos";
+type SortKey = "name" | "recent" | "updated" | "sku";
 
 type Category = "simples" | "kit" | "variacoes" | "fabricado" | "materia_prima";
 
