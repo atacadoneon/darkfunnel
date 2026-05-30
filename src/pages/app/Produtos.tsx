@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Package, Plus, Search, MoreHorizontal, ChevronDown } from "lucide-react";
+import { Package, Plus, Search, MoreHorizontal, ChevronDown, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useInfinitePaginated, flattenPages } from "@/components/lists/useInfinitePaginated";
 import { LoadMoreSentinel } from "@/components/lists/LoadMoreSentinel";
 import { ListFooter } from "@/components/lists/ListFooter";
@@ -28,10 +32,16 @@ type Product = {
   created_at: string;
 };
 
-type Tab = "todos" | "simples" | "kit" | "variacoes" | "fabricado" | "materia_prima";
+type Category = "simples" | "kit" | "variacoes" | "fabricado" | "materia_prima";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "todos", label: "todos" },
+type Filters = {
+  categories: Category[];
+  price_range: [number, number];
+  status: "all" | "ativo" | "inativo";
+  has_stock: boolean;
+};
+
+const CHIPS: { key: Category; label: string }[] = [
   { key: "simples", label: "simples" },
   { key: "kit", label: "kits" },
   { key: "variacoes", label: "variações" },
@@ -39,8 +49,36 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "materia_prima", label: "matéria-prima" },
 ];
 
+const DEFAULT_FILTERS: Filters = {
+  categories: [],
+  price_range: [0, 100000],
+  status: "all",
+  has_stock: false,
+};
+
 function brNum(v: number | null | undefined) {
   return (v ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function useFilteredProducts(products: Product[], search: string, filters: Filters) {
+  return useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const [minP, maxP] = filters.price_range;
+    return products.filter((p) => {
+      const cat = (p.tipo_produto || "simples") as Category;
+      if (filters.categories.length > 0 && !filters.categories.includes(cat)) return false;
+      const priceReais = (p.price_cents ?? 0) / 100;
+      if (priceReais < minP || priceReais > maxP) return false;
+      if (filters.status !== "all" && (p.status || "ativo") !== filters.status) return false;
+      if (filters.has_stock && (p.stock_qty ?? 0) <= 0) return false;
+      if (q && !(
+        p.name?.toLowerCase().includes(q) ||
+        p.sku?.toLowerCase().includes(q) ||
+        p.gtin?.toLowerCase().includes(q)
+      )) return false;
+      return true;
+    });
+  }, [products, search, filters]);
 }
 
 export default function Produtos() {
@@ -48,7 +86,9 @@ export default function Produtos() {
   const qc = useQueryClient();
   const nav = useNavigate();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<Tab>("todos");
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
 
   const query = useInfinitePaginated<Product>({
     queryKey: ["products-infinite", current?.id],
@@ -73,26 +113,38 @@ export default function Produtos() {
   }, [current, qc]);
 
   const counts = useMemo(() => {
-    const c: Record<Tab, number> = { todos: products.length, simples: 0, kit: 0, variacoes: 0, fabricado: 0, materia_prima: 0 };
+    const c: Record<Category | "todos", number> = { todos: products.length, simples: 0, kit: 0, variacoes: 0, fabricado: 0, materia_prima: 0 };
     for (const p of products) {
-      const t = (p.tipo_produto || "simples") as Tab;
-      if (t in c && t !== "todos") c[t]++;
+      const t = (p.tipo_produto || "simples") as Category;
+      if (t in c) c[t]++;
     }
     return c;
   }, [products]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return products.filter((p) => {
-      if (tab !== "todos" && (p.tipo_produto || "simples") !== tab) return false;
-      if (!q) return true;
-      return (
-        p.name?.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q) ||
-        p.gtin?.toLowerCase().includes(q)
-      );
-    });
-  }, [products, search, tab]);
+  const filtered = useFilteredProducts(products, search, filters);
+
+  const toggleCategory = (cat: Category) => {
+    setFilters((f) => ({
+      ...f,
+      categories: f.categories.includes(cat)
+        ? f.categories.filter((c) => c !== cat)
+        : [...f.categories, cat],
+    }));
+  };
+
+  const openFilters = () => {
+    setDraft(filters);
+    setFiltersOpen(true);
+  };
+  const applyFilters = () => {
+    setFilters(draft);
+    setFiltersOpen(false);
+  };
+  const resetFilters = () => {
+    setDraft(DEFAULT_FILTERS);
+  };
+
+  const allActive = filters.categories.length === 0;
 
   return (
     <div className="px-8 py-6">
@@ -111,8 +163,8 @@ export default function Produtos() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
-        <div className="relative flex-1 max-w-xl">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-[240px] max-w-xl">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -121,32 +173,89 @@ export default function Produtos() {
             className="pl-9 rounded-full"
           />
         </div>
-        <Button variant="outline" className="rounded-full" size="sm">
-          ↓ nome
-        </Button>
-        <Button variant="outline" className="rounded-full" size="sm">
-          por situação
-        </Button>
-        <Button variant="outline" className="rounded-full" size="sm">
-          filtros
-        </Button>
+        <Popover open={filtersOpen} onOpenChange={(o) => (o ? openFilters() : setFiltersOpen(false))}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="rounded-full" size="sm">
+              <Filter className="w-4 h-4 mr-1" /> filtros
+              {(filters.status !== "all" || filters.has_stock || filters.price_range[0] > 0 || filters.price_range[1] < 100000) && (
+                <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px]">•</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 space-y-4" align="end">
+            <div className="space-y-2">
+              <Label className="text-xs">Faixa de preço (R$)</Label>
+              <Slider
+                min={0}
+                max={100000}
+                step={50}
+                value={draft.price_range}
+                onValueChange={(v) => setDraft((d) => ({ ...d, price_range: [v[0], v[1]] as [number, number] }))}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+                <span>R$ {brNum(draft.price_range[0])}</span>
+                <span>R$ {brNum(draft.price_range[1])}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Status</Label>
+              <div className="flex gap-2">
+                {(["all", "ativo", "inativo"] as const).map((s) => (
+                  <Button
+                    key={s}
+                    size="sm"
+                    variant={draft.status === s ? "default" : "outline"}
+                    className="rounded-full flex-1 capitalize"
+                    onClick={() => setDraft((d) => ({ ...d, status: s }))}
+                  >
+                    {s === "all" ? "todos" : s}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="has_stock" className="text-xs">Com estoque</Label>
+              <Switch
+                id="has_stock"
+                checked={draft.has_stock}
+                onCheckedChange={(c) => setDraft((d) => ({ ...d, has_stock: c }))}
+              />
+            </div>
+            <div className="flex justify-between pt-2 border-t">
+              <Button size="sm" variant="ghost" onClick={resetFilters}>limpar</Button>
+              <Button size="sm" onClick={applyFilters}>aplicar</Button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
-      <div className="flex items-end gap-8 border-b mb-2">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`pb-2 text-sm transition-colors ${
-              tab === t.key
-                ? "border-b-2 border-primary text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <div>{t.label}</div>
-            <div className="text-xs tabular-nums">{String(counts[t.key]).padStart(2, "0")}</div>
-          </button>
-        ))}
+      <div className="flex items-end gap-8 border-b mb-2 flex-wrap">
+        <button
+          onClick={() => setFilters((f) => ({ ...f, categories: [] }))}
+          aria-pressed={allActive}
+          className={`pb-2 text-sm transition-colors ${
+            allActive ? "border-b-2 border-primary text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <div>todos</div>
+          <div className="text-xs tabular-nums">{String(counts.todos).padStart(2, "0")}</div>
+        </button>
+        {CHIPS.map((t) => {
+          const active = filters.categories.includes(t.key);
+          return (
+            <button
+              key={t.key}
+              onClick={() => toggleCategory(t.key)}
+              aria-pressed={active}
+              className={`pb-2 text-sm transition-colors ${
+                active ? "border-b-2 border-primary text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div>{t.label}</div>
+              <div className="text-xs tabular-nums">{String(counts[t.key]).padStart(2, "0")}</div>
+            </button>
+          );
+        })}
       </div>
 
       <div className="overflow-x-auto">
