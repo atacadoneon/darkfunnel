@@ -224,25 +224,6 @@ export default function ProdutoEditor() {
               <Input value={form.tipo_item_sped} onChange={(e) => set("tipo_item_sped", e.target.value)} placeholder="Selecione" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Tipo do Produto</Label>
-              <Select value={form.tipo_produto} onValueChange={(v) => set("tipo_produto", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="simples">Simples</SelectItem>
-                  <SelectItem value="kit">Kit</SelectItem>
-                  <SelectItem value="variacoes">Com Variações</SelectItem>
-                  <SelectItem value="fabricado">Fabricado</SelectItem>
-                  <SelectItem value="materia_prima">Matéria-Prima</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Tipo do item SPED</Label>
-              <Input value={form.tipo_item_sped} onChange={(e) => set("tipo_item_sped", e.target.value)} placeholder="Selecione" />
-            </div>
-          </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <Label>Nome do produto *</Label>
