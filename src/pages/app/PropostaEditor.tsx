@@ -263,6 +263,9 @@ export default function PropostaEditor() {
         anexo_url: form.anexo_url || null,
         subtotal_cents: totals.itensCents,
         total_cents: totals.total,
+        payment_type: paymentType,
+        payment_input: paymentInput || null,
+        payment_terms: paymentTerms,
       };
       let propId = id;
       if (isNew) {
