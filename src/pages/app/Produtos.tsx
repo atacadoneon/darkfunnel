@@ -140,6 +140,7 @@ export default function Produtos() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const { data: tagsProduto = [] } = useTagsProduto();
 
   const query = useInfinitePaginated<Product>({
     queryKey: ["products-infinite", current?.id],
