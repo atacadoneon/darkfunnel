@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { useLossReasons } from "@/features/workspace/CatalogsAdmin";
 import { normalizePhoneE164, isValidE164, PHONE_INVALID_MSG, PHONE_REQUIRED_MSG } from "@/lib/phone";
 import type { Deal, Stage } from "./hooks";
+import { LeadProposalsSection } from "@/components/leads/LeadProposalsSection";
 
 type Props = {
   open: boolean;
