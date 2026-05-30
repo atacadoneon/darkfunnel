@@ -128,6 +128,13 @@ export default function PropostaEditor() {
       discount: ((prop.discount_cents ?? 0) / 100).toFixed(2),
       freight: ((prop.freight_cents ?? 0) / 100).toFixed(2),
     }));
+    if ((prop as any).payment_type) setPaymentType((prop as any).payment_type);
+    if (Array.isArray((prop as any).payment_terms)) {
+      setPaymentTerms((prop as any).payment_terms as PaymentTerm[]);
+    }
+    if (typeof (prop as any).payment_input === "string") {
+      setPaymentInput((prop as any).payment_input);
+    }
   }, [prop]);
   useEffect(() => {
     if (!dbItems) return;
