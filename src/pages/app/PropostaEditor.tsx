@@ -616,10 +616,16 @@ export default function PropostaEditor() {
             <h3 className="font-semibold">Condições comerciais</h3>
 
             <div className="max-w-xs">
+          <section className="border-t pt-4 space-y-4">
+            <h3 className="font-semibold">Condições comerciais</h3>
+
+            <div className="max-w-xs">
               <Label>Tipo</Label>
               <Select value={paymentType} onValueChange={(v) => setPaymentType(v as PaymentType)}>
                 <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="nenhuma">Nenhuma</SelectItem>
+                  <SelectItem value="texto_livre">Texto livre</SelectItem>
                   <SelectItem value="parcelas">Parcelas</SelectItem>
                   <SelectItem value="avista">À vista</SelectItem>
                   <SelectItem value="entrada_parcelas">Entrada + Parcelas</SelectItem>
@@ -627,76 +633,84 @@ export default function PropostaEditor() {
               </Select>
             </div>
 
-            <div>
-              <Label>Condição de pagamento</Label>
-              <div className="flex gap-2 max-w-xl">
-                <Input
-                  value={paymentInput}
-                  onChange={(e) => setPaymentInput(e.target.value)}
-                  placeholder="Ex: 30 60 90  ou  6x  ou  30"
-                />
-                <Button variant="outline" onClick={gerarParcelas} type="button">
-                  <Repeat className="h-4 w-4 mr-1" /> gerar parcelas
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Exemplos: <strong>30</strong> (30 dias direto); <strong>30 60 90</strong> (vencimentos em 30, 60 e 90 dias); <strong>6x</strong> (6 parcelas iguais a cada 30 dias)
-              </p>
-            </div>
-
-            {paymentTerms.length > 0 && (
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-24">Dias</TableHead>
-                      <TableHead className="w-40">Valor</TableHead>
-                      <TableHead>Observação</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paymentTerms.map((p, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={p.dias}
-                            onChange={(e) => setParcela(i, { dias: e.target.value })}
-                            className="h-8"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={p.valor}
-                            onChange={(e) => setParcela(i, { valor: e.target.value })}
-                            className="h-8"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={p.observacao}
-                            onChange={(e) => setParcela(i, { observacao: e.target.value })}
-                            className="h-8"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" onClick={() => removeParcela(i)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            {paymentType === "texto_livre" && (
+              <div>
+                <Label>Texto das condições</Label>
+                <FreetextEditor value={paymentFreetext} onChange={setPaymentFreetext} />
               </div>
             )}
 
-            <Button variant="link" onClick={addParcela} type="button" className="px-0">
-              <Plus className="h-4 w-4 mr-1" /> adicionar parcela
-            </Button>
+            {(paymentType === "parcelas" || paymentType === "entrada_parcelas") && (
+              <>
+                {paymentType === "entrada_parcelas" && (
+                  <div className="max-w-xs">
+                    <Label>Entrada (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={paymentEntrada}
+                      onChange={(e) => setPaymentEntrada(e.target.value)}
+                      placeholder="0,00"
+                    />
+                  </div>
+                )}
+                <div>
+                  <Label>Condição de pagamento</Label>
+                  <div className="flex gap-2 max-w-xl">
+                    <Input
+                      value={paymentInput}
+                      onChange={(e) => setPaymentInput(e.target.value)}
+                      placeholder="Ex: 30 60 90  ou  6x  ou  30"
+                    />
+                    <Button variant="outline" onClick={gerarParcelas} type="button">
+                      <Repeat className="h-4 w-4 mr-1" /> gerar parcelas
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Exemplos: <strong>30</strong> (30 dias direto); <strong>30 60 90</strong> (vencimentos em 30, 60 e 90 dias); <strong>6x</strong> (6 parcelas iguais a cada 30 dias)
+                  </p>
+                </div>
+
+                {paymentTerms.length > 0 && (
+                  <div className="border rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-24">Dias</TableHead>
+                          <TableHead className="w-40">Valor</TableHead>
+                          <TableHead>Observação</TableHead>
+                          <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paymentTerms.map((p, i) => (
+                          <TableRow key={i}>
+                            <TableCell>
+                              <Input type="number" value={p.dias} onChange={(e) => setParcela(i, { dias: e.target.value })} className="h-8" />
+                            </TableCell>
+                            <TableCell>
+                              <Input type="number" step="0.01" value={p.valor} onChange={(e) => setParcela(i, { valor: e.target.value })} className="h-8" />
+                            </TableCell>
+                            <TableCell>
+                              <Input value={p.observacao} onChange={(e) => setParcela(i, { observacao: e.target.value })} className="h-8" />
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" onClick={() => removeParcela(i)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                <Button variant="link" onClick={addParcela} type="button" className="px-0">
+                  <Plus className="h-4 w-4 mr-1" /> adicionar parcela
+                </Button>
+              </>
+            )}
           </section>
 
           {/* Condições gerais */}
