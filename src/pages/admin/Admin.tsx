@@ -60,13 +60,7 @@ export default function Admin() {
   const ad = flattenPages<Record<string, unknown>>(audit.data as any);
   const fl = flattenPages<Record<string, unknown>>(flags.data as any);
 
-  if (isLoading)
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
-    );
-  if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  if (!isLoading && !isAdmin) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="p-6 space-y-4 h-full overflow-y-auto">

@@ -35,16 +35,16 @@ export default function AutomacaoEditorPage() {
     if (flow) { setName(flow.name); setDescription(flow.description ?? ""); }
   }, [flow]);
 
-  if (isLoading) {
-    return <div className="p-8 text-sm text-muted-foreground">Carregando...</div>;
-  }
-  if (!flow) {
+  if (!isLoading && !flow) {
     return (
       <div className="p-8">
         <p className="text-sm">Automação não encontrada.</p>
         <Button variant="link" onClick={() => navigate("/automacoes")}>Voltar</Button>
       </div>
     );
+  }
+  if (!flow) {
+    return <div className="p-8 text-sm text-muted-foreground">Carregando editor…</div>;
   }
 
   const handleSaveName = () => {

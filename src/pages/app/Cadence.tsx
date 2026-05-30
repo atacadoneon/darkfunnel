@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCadences, useCadenceMutations } from "@/hooks/useCadences";
 import { CadenceDialog } from "@/features/cadence/CadenceDialog";
 import { TRIGGER_LABEL, type Cadence } from "@/types/cadence";
@@ -22,7 +23,7 @@ export default function Cadence() {
       <div className="h-10 flex items-center gap-2 border-b">
         <MessageSquare className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-semibold">Fluxo de Cadência</h1>
-        <Badge variant="outline" className="text-[10px] h-4">{count}</Badge>
+        <Badge variant="outline" className="text-[10px] h-4">{isLoading ? "—" : count}</Badge>
         <span className="text-[11px] text-muted-foreground hidden sm:inline">Envio automático em sequência</span>
         <Button size="sm" className="ml-auto h-7 text-xs" onClick={() => setCreating(true)}>
           <Plus className="h-3 w-3 mr-1" /> Nova Cadência
@@ -30,7 +31,9 @@ export default function Cadence() {
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
+        </div>
       ) : items.length === 0 ? (
         <Card className="p-12 text-center">
           <MessageSquare className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />

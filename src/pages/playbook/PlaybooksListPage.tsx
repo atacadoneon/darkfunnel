@@ -11,6 +11,7 @@ import {
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { usePlaybooksList, usePlaybookMutations, CATEGORIES } from "@/features/playbook/hooks";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
 export default function PlaybooksListPage() {
@@ -69,7 +70,9 @@ export default function PlaybooksListPage() {
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 w-full" />)}
+        </div>
       ) : filtered.length === 0 ? (
         <Card className="p-10 text-center border-dashed">
           <BookOpen className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />

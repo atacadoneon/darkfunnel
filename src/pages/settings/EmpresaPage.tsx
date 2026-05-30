@@ -22,7 +22,7 @@ export default function EmpresaPage() {
   const save = () => update.mutate(form);
   const copyId = () => { if (data?.id) { navigator.clipboard.writeText(data.id); toast.success("ID copiado"); } };
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Carregando…</div>;
+  // Render shell instantly; inputs show empty placeholders until data arrives
 
   return (
     <div className="p-6 space-y-4 max-w-4xl mx-auto">

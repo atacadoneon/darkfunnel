@@ -18,6 +18,7 @@ import { TaskColumn } from "@/features/tasks/TaskColumn";
 import { TaskCard } from "@/features/tasks/TaskCard";
 import { TaskDrawer } from "@/features/tasks/TaskDrawer";
 import { EmptyState } from "@/components/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type View = "kanban" | "list" | "calendar";
 
@@ -139,7 +140,16 @@ export default function Tasks() {
 
       <div className="flex-1 overflow-hidden relative">
         {isLoading ? (
-          <div className="p-6 text-sm text-muted-foreground">Carregando...</div>
+          <div className="h-full overflow-x-auto overflow-y-hidden p-4 md:p-6">
+            <div className="flex gap-4 h-full">
+              {TASK_STATUSES.map((s) => (
+                <div key={s.value} className="w-72 shrink-0 space-y-2">
+                  <Skeleton className="h-6 w-32" />
+                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                </div>
+              ))}
+            </div>
+          </div>
         ) : tasks.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <EmptyState
