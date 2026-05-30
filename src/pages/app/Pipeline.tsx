@@ -84,12 +84,7 @@ export default function Pipeline() {
   const [params, setParams] = useSearchParams();
   const showArchived = params.get("archived") === "1";
   const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
-  const tab = (params.get("tab") as Tab) || "funil";
-  const setTab = (t: Tab) => {
-    const next = new URLSearchParams(params);
-    if (t === "funil") next.delete("tab"); else next.set("tab", t);
-    setParams(next, { replace: true });
-  };
+  const tab: Tab = "funil";
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [config, setConfig] = useState<ConfigKey>(null);
