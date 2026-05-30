@@ -186,10 +186,10 @@ const Sidebar = React.forwardRef<
       data-variant={variant}
       data-side={side}
     >
-      {/* This is what handles the sidebar gap on desktop */}
+      {/* Gap fixo no tamanho do rail — sidebar expandida vira overlay e NÃO empurra o conteúdo */}
       <div
         className={cn(
-          "relative h-svh w-[var(--sidebar-width-icon)] bg-transparent transition-[width] duration-200 ease-linear group-data-[state=expanded]:w-[var(--sidebar-width)] group-data-[state=collapsed]:w-[var(--sidebar-width-icon)]",
+          "relative h-svh w-[var(--sidebar-width-icon)] bg-transparent",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -199,7 +199,7 @@ const Sidebar = React.forwardRef<
       />
       <div
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width-icon)] transition-[left,right,width] duration-200 ease-linear group-data-[state=expanded]:w-[var(--sidebar-width)] group-data-[state=collapsed]:w-[var(--sidebar-width-icon)] md:flex",
+          "fixed inset-y-0 z-30 hidden h-svh w-[var(--sidebar-width-icon)] transition-[left,right,width] duration-200 ease-linear group-data-[state=expanded]:w-[var(--sidebar-width)] group-data-[state=collapsed]:w-[var(--sidebar-width-icon)] group-data-[state=expanded]:shadow-2xl md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
