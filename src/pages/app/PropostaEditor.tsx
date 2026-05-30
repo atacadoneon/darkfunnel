@@ -18,6 +18,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { FreetextEditor } from "@/components/proposals/FreetextEditor";
 
 type PaymentTerm = { dias: number | string; valor: number | string; observacao: string };
 type PaymentType = "nenhuma" | "texto_livre" | "parcelas" | "avista" | "entrada_parcelas";
