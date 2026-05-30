@@ -31,6 +31,46 @@ type ResultRow = {
   email?: string | null;
 };
 
+type ProspectFilters = {
+  cnae: Cnae | null;
+  ufs: string[];
+  municipio: string;
+  porte: string;
+  situacao: string;
+  razao: string;
+  limit: number;
+  bairro: string;
+  ddd: string;
+  yearFrom: number;
+  yearTo: number;
+  onlyEmail: boolean;
+  onlyPhone: boolean;
+  onlyHQ: boolean;
+  mei: string;
+  simples: string;
+  capitalMin: string;
+};
+
+type SavedSearch = {
+  id: string;
+  name: string;
+  filters: Partial<ProspectFilters>;
+  created_at?: string | null;
+  results?: ResultRow[];
+};
+
+const LOCAL_SAVED_SEARCHES_KEY = "prospeccao:saved-searches";
+
+function readLocalSavedSearches(): SavedSearch[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(LOCAL_SAVED_SEARCHES_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function CnaeAutocomplete({ value, onChange }: { value: Cnae | null; onChange: (c: Cnae | null) => void }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
