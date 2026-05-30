@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Search, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Search, Trash2, Upload, Repeat } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -9,12 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
+
+type PaymentTerm = { dias: number | string; valor: number | string; observacao: string };
+type PaymentType = "parcelas" | "avista" | "entrada_parcelas";
 
 type Item = {
   id?: string;
@@ -86,6 +92,9 @@ export default function PropostaEditor() {
   const [items, setItems] = useState<Item[]>([emptyItem(1)]);
   const [showCustomer, setShowCustomer] = useState(false);
   const [showConditions, setShowConditions] = useState(false);
+  const [paymentType, setPaymentType] = useState<PaymentType>("parcelas");
+  const [paymentInput, setPaymentInput] = useState<string>("");
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
 
   const { data: prop } = useQuery({
     queryKey: ["proposal", id],
@@ -119,6 +128,13 @@ export default function PropostaEditor() {
       discount: ((prop.discount_cents ?? 0) / 100).toFixed(2),
       freight: ((prop.freight_cents ?? 0) / 100).toFixed(2),
     }));
+    if ((prop as any).payment_type) setPaymentType((prop as any).payment_type);
+    if (Array.isArray((prop as any).payment_terms)) {
+      setPaymentTerms((prop as any).payment_terms as PaymentTerm[]);
+    }
+    if (typeof (prop as any).payment_input === "string") {
+      setPaymentInput((prop as any).payment_input);
+    }
   }, [prop]);
   useEffect(() => {
     if (!dbItems) return;
@@ -152,6 +168,47 @@ export default function PropostaEditor() {
     const total = Math.max(0, itensCents - desc + frete);
     return { itensCents, total };
   }, [items, form.discount, form.freight]);
+
+  const gerarParcelas = () => {
+    const raw = paymentInput.trim();
+    if (!raw) {
+      toast.error("Informe uma condição (ex: 30 60 90 ou 6x)");
+      return;
+    }
+    const totalReais = totals.total / 100;
+    const novo: PaymentTerm[] = [];
+    const mx = raw.toLowerCase().match(/^(\d+)x$/);
+    if (mx) {
+      const n = parseInt(mx[1], 10);
+      if (!n) return;
+      const valor = +(totalReais / n).toFixed(2);
+      for (let i = 1; i <= n; i++) {
+        novo.push({ dias: i * 30, valor, observacao: `Parcela ${i}/${n}` });
+      }
+    } else {
+      const dias = raw.split(/\s+/).map((d) => parseInt(d, 10)).filter((n) => !isNaN(n));
+      if (dias.length === 0) {
+        toast.error("Formato inválido");
+        return;
+      }
+      const valor = +(totalReais / dias.length).toFixed(2);
+      dias.forEach((d, i) => {
+        novo.push({
+          dias: d,
+          valor,
+          observacao: dias.length === 1 ? "Parcela única" : `Parcela ${i + 1}/${dias.length}`,
+        });
+      });
+    }
+    setPaymentTerms(novo);
+  };
+
+  const setParcela = (i: number, patch: Partial<PaymentTerm>) =>
+    setPaymentTerms((arr) => arr.map((p, j) => (j === i ? { ...p, ...patch } : p)));
+  const addParcela = () =>
+    setPaymentTerms((arr) => [...arr, { dias: 30, valor: 0, observacao: "" }]);
+  const removeParcela = (i: number) =>
+    setPaymentTerms((arr) => arr.filter((_, j) => j !== i));
 
   const save = useMutation({
     mutationFn: async () => {
@@ -206,6 +263,9 @@ export default function PropostaEditor() {
         anexo_url: form.anexo_url || null,
         subtotal_cents: totals.itensCents,
         total_cents: totals.total,
+        payment_type: paymentType,
+        payment_input: paymentInput || null,
+        payment_terms: paymentTerms,
       };
       let propId = id;
       if (isNew) {
@@ -296,8 +356,6 @@ export default function PropostaEditor() {
             <button onClick={() => setShowCustomer((v) => !v)} className="hover:underline">
               dados do cliente
             </button>
-            <button className="hover:underline">ver últimas vendas</button>
-            <button className="hover:underline">pessoas de contato</button>
           </div>
 
           {showCustomer && (
@@ -382,23 +440,6 @@ export default function PropostaEditor() {
               </div>
             </div>
           )}
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="entrega-dif"
-              checked={form.endereco_entrega_diferente}
-              onCheckedChange={(v) => setF("endereco_entrega_diferente", !!v)}
-            />
-            <Label htmlFor="entrega-dif" className="font-normal cursor-pointer">
-              O endereço de entrega do cliente é diferente do endereço de cobrança
-            </Label>
-          </div>
-
-          {/* Introdução */}
-          <div>
-            <Label>Introdução</Label>
-            <Textarea rows={3} value={form.intro} onChange={(e) => setF("intro", e.target.value)} />
-          </div>
 
           {/* Cabeçalho meta */}
           <div className="grid grid-cols-4 gap-3">
@@ -564,19 +605,92 @@ export default function PropostaEditor() {
           </div>
 
           {/* Condições comerciais */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">Condições comerciais</h3>
-            <Select value={form.condicoes_comerciais} onValueChange={(v) => setF("condicoes_comerciais", v)}>
-              <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nenhuma">Nenhuma</SelectItem>
-                <SelectItem value="a_vista">À vista</SelectItem>
-                <SelectItem value="30">30 dias</SelectItem>
-                <SelectItem value="30_60">30/60 dias</SelectItem>
-                <SelectItem value="30_60_90">30/60/90 dias</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <section className="border-t pt-4 space-y-4">
+            <h3 className="font-semibold">Condições comerciais</h3>
+
+            <div className="max-w-xs">
+              <Label>Tipo</Label>
+              <Select value={paymentType} onValueChange={(v) => setPaymentType(v as PaymentType)}>
+                <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="parcelas">Parcelas</SelectItem>
+                  <SelectItem value="avista">À vista</SelectItem>
+                  <SelectItem value="entrada_parcelas">Entrada + Parcelas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Condição de pagamento</Label>
+              <div className="flex gap-2 max-w-xl">
+                <Input
+                  value={paymentInput}
+                  onChange={(e) => setPaymentInput(e.target.value)}
+                  placeholder="Ex: 30 60 90  ou  6x  ou  30"
+                />
+                <Button variant="outline" onClick={gerarParcelas} type="button">
+                  <Repeat className="h-4 w-4 mr-1" /> gerar parcelas
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Exemplos: <strong>30</strong> (30 dias direto); <strong>30 60 90</strong> (vencimentos em 30, 60 e 90 dias); <strong>6x</strong> (6 parcelas iguais a cada 30 dias)
+              </p>
+            </div>
+
+            {paymentTerms.length > 0 && (
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">Dias</TableHead>
+                      <TableHead className="w-40">Valor</TableHead>
+                      <TableHead>Observação</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paymentTerms.map((p, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={p.dias}
+                            onChange={(e) => setParcela(i, { dias: e.target.value })}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={p.valor}
+                            onChange={(e) => setParcela(i, { valor: e.target.value })}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={p.observacao}
+                            onChange={(e) => setParcela(i, { observacao: e.target.value })}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => removeParcela(i)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            <Button variant="link" onClick={addParcela} type="button" className="px-0">
+              <Plus className="h-4 w-4 mr-1" /> adicionar parcela
+            </Button>
+          </section>
 
           {/* Condições gerais */}
           <div className="border-t pt-4">
@@ -597,14 +711,6 @@ export default function PropostaEditor() {
             )}
           </div>
 
-          {/* Assinatura */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">Assinatura</h3>
-            <div className="space-y-2 max-w-md">
-              <Input value={form.assinatura_saudacao} onChange={(e) => setF("assinatura_saudacao", e.target.value)} />
-              <Input value={form.assinatura_departamento} onChange={(e) => setF("assinatura_departamento", e.target.value)} />
-            </div>
-          </div>
 
           {/* Anexo */}
           <div className="border-t pt-4">
