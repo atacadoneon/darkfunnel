@@ -316,14 +316,32 @@ export default function DialerRun() {
 
   const filteredQueue = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return queue;
+    const cutoff = fltLastHours > 0 ? Date.now() - fltLastHours * 3600 * 1000 : null;
     return queue.filter((it) => {
-      const name = (it.contact?.display_name ?? "").toLowerCase();
-      const phone = (it.phone_e164 ?? it.contact?.phone_e164 ?? "").toLowerCase();
-      const deal = (it.deal?.title ?? "").toLowerCase();
-      return name.includes(q) || phone.includes(q) || deal.includes(q);
+      if (q) {
+        const name = (it.contact?.display_name ?? "").toLowerCase();
+        const phone = (it.phone_e164 ?? it.contact?.phone_e164 ?? "").toLowerCase();
+        const deal = (it.deal?.title ?? "").toLowerCase();
+        if (!(name.includes(q) || phone.includes(q) || deal.includes(q))) return false;
+      }
+      if (fltStatus.length > 0) {
+        const st = it.outcome ?? it.status;
+        if (!fltStatus.includes(st as string)) return false;
+      }
+      if (fltStages.length > 0) {
+        const sid = it.deal?.stage_id;
+        if (!sid || !fltStages.includes(sid)) return false;
+      }
+      if (cutoff && it.completed_at) {
+        if (new Date(it.completed_at).getTime() < cutoff) return false;
+      }
+      return true;
     });
-  }, [queue, search]);
+  }, [queue, search, fltStatus, fltStages, fltLastHours]);
+
+  const activeFiltersCount =
+    (fltStatus.length > 0 ? 1 : 0) + (fltStages.length > 0 ? 1 : 0) + (fltLastHours > 0 ? 1 : 0);
+
 
   return (
     <div className="h-full flex flex-col bg-muted/20 min-h-0 overflow-hidden">
