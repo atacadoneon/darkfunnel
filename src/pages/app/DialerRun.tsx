@@ -29,6 +29,7 @@ import {
   type DialerQueueItem, type QueueOutcome, type AiCoach,
 } from "@/features/dialer/hooks";
 import { CallTimer } from "@/components/voice/CallTimer";
+import { StandaloneDialpad } from "@/components/dialer/StandaloneDialpad";
 import { cn } from "@/lib/utils";
 
 type RunState = "idle" | "dialing" | "in_call" | "outcome";
@@ -63,6 +64,8 @@ export default function DialerRun() {
   const [coachHidden, setCoachHidden] = useState(false);
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [arbitraryOpen, setArbitraryOpen] = useState(false);
+  const [arbitraryDialing, setArbitraryDialing] = useState(false);
 
   // Fallback: se o item da fila não tem conversation_id, busca a conversa mais recente do contato.
   const { data: fallbackConvId } = useQuery({
@@ -223,6 +226,34 @@ export default function DialerRun() {
   }, [id, setStatus, navigate]);
 
 
+
+  /* --------- Discar número avulso --------- */
+  const dialArbitrary = useCallback(async (rawDigits: string) => {
+    if (!ws) return;
+    const to = (await import("@/lib/phone")).toZenviaBR(rawDigits);
+    if (!/^\d{10,11}$/.test(to)) { toast.error(`Telefone inválido: "${to}"`); return; }
+    setArbitraryDialing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("voice-outbound", {
+        body: { workspace_id: ws.id, to, channel: "pstn" },
+      });
+      if (error) throw error;
+      const cid = (data as any)?.call_id ?? null;
+      setActiveCallId(cid);
+      setCallStartedAt(new Date().toISOString());
+      setRunState("dialing");
+      setArbitraryOpen(false);
+      toast.success(`Discando ${to}...`);
+    } catch (e: any) {
+      console.error("[Dialer] arbitrary call failed", e);
+      toast.error(e?.message ?? "Erro ao ligar");
+    } finally {
+      setArbitraryDialing(false);
+    }
+  }, [ws]);
+
+
+
   const insertIntoComposer = useCallback((text: string) => {
     if (!currentItem?.conversation_id) {
       navigator.clipboard.writeText(text);
@@ -252,7 +283,22 @@ export default function DialerRun() {
 
   return (
     <div className="h-full flex flex-col bg-muted/20 min-h-0 overflow-hidden">
-      {/* ============ TOP COMMAND BAR ============ */}
+      {/* ============ DISCAR AGORA HEADER ============ */}
+      <header className="sticky top-0 z-20 bg-background border-b px-5 py-3 flex items-center gap-4 shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold leading-tight">Discar agora</h1>
+          <p className="text-sm text-muted-foreground">Ligue para os leads da sua fila ou disque um número avulso</p>
+        </div>
+        <div className="flex-1" />
+        <Button
+          onClick={() => setArbitraryOpen(true)}
+          className="bg-violet-600 hover:bg-violet-700 text-white gap-2 h-10 px-4 font-medium shadow-sm"
+        >
+          <Phone className="h-4 w-4" /> Discar número avulso
+        </Button>
+      </header>
+
+
       <header className="bg-card border-b px-4 py-2.5 flex items-center gap-3 shrink-0 shadow-sm">
         <Button variant="ghost" size="sm" onClick={() => navigate("/discador")} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Voltar
@@ -400,9 +446,12 @@ export default function DialerRun() {
         {/* CENTER — CONVERSATION (reuse Inbox components) */}
         <section className="flex flex-col min-h-0 min-w-0 overflow-hidden bg-background">
           {!currentItem ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2">
-              <Phone className="h-12 w-12 opacity-30" />
-              <span className="text-sm">Selecione um lead na fila ao lado</span>
+            <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto">
+              <div className="text-center mb-4">
+                <h2 className="text-lg font-semibold">Discador</h2>
+                <p className="text-xs text-muted-foreground">Selecione um lead à esquerda ou disque um número</p>
+              </div>
+              <StandaloneDialpad onCall={dialArbitrary} loading={arbitraryDialing} />
             </div>
           ) : conversation ? (
             <>
@@ -620,6 +669,15 @@ export default function DialerRun() {
           <Sparkles className="h-5 w-5" />
         </button>
       )}
+
+      <Dialog open={arbitraryOpen} onOpenChange={setArbitraryOpen}>
+        <DialogContent className="max-w-sm p-0">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Discar número avulso</DialogTitle>
+          </DialogHeader>
+          <StandaloneDialpad onCall={dialArbitrary} loading={arbitraryDialing} />
+        </DialogContent>
+      </Dialog>
 
       <OutcomeModal
         open={outcomeOpen}
