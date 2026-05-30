@@ -159,46 +159,8 @@ export default function Pipeline() {
     );
   }
 
-  const wsName = current?.name ?? "Conta";
-  const totalLeads = deals.length;
-
   return (
     <div className="flex flex-col h-full">
-      {/* Header compacto */}
-      <div className="h-10 flex items-center gap-2 px-3 border-b">
-        <div className="h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs shrink-0">
-          {wsName.charAt(0).toUpperCase()}
-        </div>
-        <h1 className="text-sm font-semibold truncate">{wsName}</h1>
-        <span className="text-[10px] px-1.5 h-4 rounded-full bg-muted text-muted-foreground border inline-flex items-center">
-          {totalLeads} {totalLeads === 1 ? "lead" : "leads"}
-        </span>
-        <div className="ml-auto hidden md:flex items-center gap-1">
-          <Button size="sm" className="h-7 text-xs gap-1" onClick={() => onAddDeal(stages[0].id)}>
-            <Plus className="h-3 w-3" /> Novo Lead
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-                <SettingsIcon className="h-3 w-3" /> Config
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => setConfig("stages")}><Layers className="h-4 w-4 mr-2" /> Etapas do Funil</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setConfig("loss")}><TagIcon className="h-4 w-4 mr-2" /> Motivos de Perda</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setConfig("origins")}><Megaphone className="h-4 w-4 mr-2" /> Canais de Origem</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setConfig("products")}><Package className="h-4 w-4 mr-2" /> Serviços/Produtos</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setConfig("capture")}><Webhook className="h-4 w-4 mr-2" /> Captura de Leads</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setConfig("automations")}><Timer className="h-4 w-4 mr-2" /> Automações</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setImportOpen(true)}>
-            <Upload className="h-3 w-3" /> Importar
-          </Button>
-        </div>
-      </div>
-
-
       {/* Search + Filters */}
       <div className="px-4 md:px-6 pt-4 pb-3 flex items-center gap-2">
         <div className="relative flex-1 max-w-md">
@@ -234,6 +196,27 @@ export default function Pipeline() {
               </button>
             </div>
           )}
+          <Button size="sm" className="h-9 gap-1" onClick={() => onAddDeal(stages[0].id)}>
+            <Plus className="h-4 w-4" /> Novo Lead
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-1">
+                <SettingsIcon className="h-4 w-4" /> Config
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setConfig("stages")}><Layers className="h-4 w-4 mr-2" /> Etapas do Funil</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("loss")}><TagIcon className="h-4 w-4 mr-2" /> Motivos de Perda</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("origins")}><Megaphone className="h-4 w-4 mr-2" /> Canais de Origem</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("products")}><Package className="h-4 w-4 mr-2" /> Serviços/Produtos</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("capture")}><Webhook className="h-4 w-4 mr-2" /> Captura de Leads</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("automations")}><Timer className="h-4 w-4 mr-2" /> Automações</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" className="h-9 gap-1" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importar
+          </Button>
         </div>
       </div>
 
