@@ -164,6 +164,7 @@ export default function Prospeccao() {
 
   const [results, setResults] = useState<ResultRow[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(() => readLocalSavedSearches());
 
   const canSearch = razao.replace(/\D/g, "").length === 14;
 
@@ -176,6 +177,37 @@ export default function Prospeccao() {
     () => results?.filter((row) => ufs.length === 0 || ufs.includes(row.uf)) ?? null,
     [results, ufs],
   );
+
+  const currentFilters = useMemo<ProspectFilters>(() => ({
+    cnae, ufs, municipio, porte, situacao, razao, limit, bairro, ddd,
+    yearFrom, yearTo, onlyEmail, onlyPhone, onlyHQ, mei, simples, capitalMin,
+  }), [bairro, capitalMin, cnae, ddd, limit, mei, municipio, onlyEmail, onlyHQ, onlyPhone, porte, razao, simples, situacao, ufs, yearFrom, yearTo]);
+
+  const savedSearchesQuery = useQuery({
+    queryKey: ["saved-searches", current?.id, "prospeccao"],
+    enabled: !!current,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("saved_searches" as any)
+        .select("id,name,filters,created_at")
+        .eq("workspace_id", current!.id)
+        .eq("module", "prospeccao")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const availableSavedSearches = useMemo<SavedSearch[]>(() => {
+    const dbRows = savedSearchesQuery.data?.map((row) => ({
+      id: String(row.id),
+      name: row.name ?? "Busca salva",
+      filters: (row.filters ?? {}) as Partial<ProspectFilters>,
+      created_at: row.created_at ?? null,
+    })) ?? [];
+    return dbRows.length > 0 ? dbRows : savedSearches;
+  }, [savedSearches, savedSearchesQuery.data]);
 
   const searchMut = useMutation({
     mutationFn: async () => {
