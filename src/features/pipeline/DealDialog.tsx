@@ -513,6 +513,12 @@ export function DealDialog({ open, onOpenChange, stages, deal, defaultStageId }:
             <Textarea id="n" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
           </div>
 
+          {editing && deal?.contact_id && (
+            <div className="pt-2 border-t">
+              <LeadProposalsSection leadId={deal.contact_id} dealId={deal.id} />
+            </div>
+          )}
+
           {editing && (
             <div className="flex flex-wrap gap-2 pt-2 border-t">
               {wonStage && (
