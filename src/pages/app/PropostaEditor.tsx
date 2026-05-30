@@ -356,8 +356,6 @@ export default function PropostaEditor() {
             <button onClick={() => setShowCustomer((v) => !v)} className="hover:underline">
               dados do cliente
             </button>
-            <button className="hover:underline">ver últimas vendas</button>
-            <button className="hover:underline">pessoas de contato</button>
           </div>
 
           {showCustomer && (
