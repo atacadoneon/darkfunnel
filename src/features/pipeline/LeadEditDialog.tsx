@@ -4,8 +4,9 @@ import { format } from "date-fns";
 import {
   User, Tag as TagIcon, ShoppingCart, Paperclip, Calendar,
   Box, Megaphone, Plus, Trash2, Download, Loader2, History,
-  ArrowRight, Phone, Mail, Building2, MapPin, MessageSquare, CreditCard,
+  ArrowRight, Phone, Mail, Building2, MapPin, MessageSquare, CreditCard, FileText,
 } from "lucide-react";
+import { LeadProposalsSection } from "@/components/leads/LeadProposalsSection";
 import { PaymentLinkDialog } from "@/features/payments/PaymentLinkDialog";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
