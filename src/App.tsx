@@ -24,6 +24,7 @@ import Settings from "@/pages/app/Settings";
 import Pipeline from "@/pages/app/Pipeline";
 import Dashboard from "@/pages/app/Dashboard";
 import Tasks from "@/pages/app/Tasks";
+import Leads from "@/pages/app/Leads";
 import AutomacoesPage from "@/pages/AutomacoesPage";
 import AutomacaoEditorPage from "@/pages/AutomacaoEditorPage";
 import Cadence from "@/pages/app/Cadence";
@@ -133,7 +134,7 @@ const App = () => (
                     <Route path="chats" element={<Inbox />} />
                     <Route path="whatsapp/chat" element={<Navigate to="/chats" replace />} />
                     <Route path="funildevendas" element={<Pipeline />} />
-                    <Route path="leads" element={<Pipeline />} />
+                    <Route path="leads" element={<Leads />} />
                     <Route path="negocios" element={<Navigate to="/funildevendas" replace />} />
                     <Route path="emailmarketing" element={<EmailMarketing />} />
                     <Route path="email-marketing" element={<Navigate to="/emailmarketing" replace />} />
