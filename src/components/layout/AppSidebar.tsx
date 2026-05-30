@@ -282,12 +282,15 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     isActive={isActive || isOpen}
                     onClick={() => {
-                      if (collapsed) setExpanded(true);
+                      if (collapsed) {
+                        setExpanded(true);
+                        return;
+                      }
                       toggleSubmenu(menu.key);
                     }}
                     className="flex items-center gap-2"
                   >
-                    <menu.icon className="h-4 w-4" />
+                    <menu.icon className="h-5 w-5" />
                     {!collapsed && <span>{menu.label}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
