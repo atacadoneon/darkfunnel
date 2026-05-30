@@ -261,10 +261,6 @@ export default function Pipeline() {
         />
       )}
 
-      {tab === "banco" && <div className="flex-1 min-h-0 overflow-hidden"><Contacts /></div>}
-      {tab === "dashboard" && (
-        <PipelineDashboard deals={deals} stages={stages} members={members} origins={origins} />
-      )}
 
       <DealDialog open={dialogOpen} onOpenChange={setDialogOpen} stages={stages} deal={editingDeal} defaultStageId={defaultStageId} />
 
