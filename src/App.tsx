@@ -134,7 +134,7 @@ const App = () => (
                     <Route path="chats" element={<Inbox />} />
                     <Route path="whatsapp/chat" element={<Navigate to="/chats" replace />} />
                     <Route path="funildevendas" element={<Pipeline />} />
-                    <Route path="leads" element={<Pipeline />} />
+                    <Route path="leads" element={<Leads />} />
                     <Route path="negocios" element={<Navigate to="/funildevendas" replace />} />
                     <Route path="emailmarketing" element={<EmailMarketing />} />
                     <Route path="email-marketing" element={<Navigate to="/emailmarketing" replace />} />
