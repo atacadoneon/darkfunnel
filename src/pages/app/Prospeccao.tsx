@@ -510,7 +510,7 @@ export default function Prospeccao() {
           <span className="text-xs text-muted-foreground">
             {canSearch ? "Pronto para buscar" : "Informe ao menos 1 CNAE ou 3 letras de razão social"}
           </span>
-          <Button onClick={() => searchMut.mutate()} disabled={!canSearch || searchMut.isPending} size="sm">
+          <Button onClick={() => searchMut.mutate({})} disabled={!canSearch || searchMut.isPending} size="sm">
             {searchMut.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Search className="w-4 h-4 mr-1" />}
             Buscar empresas
           </Button>
