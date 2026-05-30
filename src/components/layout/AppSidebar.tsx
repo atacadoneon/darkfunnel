@@ -73,6 +73,7 @@ const sections: { label: string; items: Item[] }[] = [
       { title: "Leads", url: "/leads", icon: Users },
       { title: "WhatsApp", url: "/chats", icon: MessageCircle },
       { title: "Discador", url: "/discador", icon: PhoneOutgoing },
+      { title: "Produtos", url: "/produtos", icon: Package },
       { title: "Propostas", url: "/propostas", icon: FileText },
       { title: "Pagamentos", url: "/pagamentos", icon: CreditCard },
     ],
@@ -116,7 +117,6 @@ const footerMenus: FooterMenu[] = [
     label: "Cadastros",
     icon: FolderPlus,
     items: [
-      { label: "Produtos", to: "/produtos", icon: Package },
       { label: "Listas", to: "/settings/listas", icon: ListIcon },
       { label: "Motivos de Perda", to: "/settings/motivos-perda", icon: XIcon },
       { label: "Tipo de Atividade", to: "/settings/tipos-atividade", icon: CalendarCheck },
