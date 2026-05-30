@@ -216,7 +216,7 @@ export default function Prospeccao() {
         throw new Error("Digite um CNPJ válido (14 dígitos) no campo de busca. A busca por filtros ainda não está disponível.");
       }
       const { data, error } = await supabase.functions.invoke("prospect-search-cnpj", {
-        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id },
+        body: { action: "lookup_cnpj", cnpj: cnpjDigits, workspace_id: current?.id, filters: currentFilters, ufs },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -245,8 +245,37 @@ export default function Prospeccao() {
   });
 
   const toggleUF = (uf: string) => {
-    setUfs((p) => p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf]);
+    setUfs((p) => {
+      const next = p.includes(uf) ? p.filter((x) => x !== uf) : [...p, uf];
+      if (razao.replace(/\D/g, "").length === 14) {
+        setTimeout(() => searchMut.mutate(), 0);
+      }
+      return next;
+    });
     setSelected(new Set());
+  };
+  const applySavedSearch = (search: SavedSearch) => {
+    const filters = search.filters ?? {};
+    if ("cnae" in filters) setCnae(filters.cnae ?? null);
+    if (Array.isArray(filters.ufs)) setUfs(filters.ufs);
+    if (typeof filters.municipio === "string") setMunicipio(filters.municipio);
+    if (typeof filters.porte === "string") setPorte(filters.porte);
+    if (typeof filters.situacao === "string") setSituacao(filters.situacao);
+    if (typeof filters.razao === "string") setRazao(filters.razao);
+    if (typeof filters.limit === "number") setLimit(filters.limit);
+    if (typeof filters.bairro === "string") setBairro(filters.bairro);
+    if (typeof filters.ddd === "string") setDdd(filters.ddd);
+    if (typeof filters.yearFrom === "number") setYearFrom(filters.yearFrom);
+    if (typeof filters.yearTo === "number") setYearTo(filters.yearTo);
+    if (typeof filters.onlyEmail === "boolean") setOnlyEmail(filters.onlyEmail);
+    if (typeof filters.onlyPhone === "boolean") setOnlyPhone(filters.onlyPhone);
+    if (typeof filters.onlyHQ === "boolean") setOnlyHQ(filters.onlyHQ);
+    if (typeof filters.mei === "string") setMei(filters.mei);
+    if (typeof filters.simples === "string") setSimples(filters.simples);
+    if (typeof filters.capitalMin === "string") setCapitalMin(filters.capitalMin);
+    if (search.results) setResults(search.results);
+    setSelected(new Set());
+    setTimeout(() => searchMut.mutate(), 0);
   };
   const toggleRow = (id: string) => setSelected((p) => {
     const n = new Set(p);
