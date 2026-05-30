@@ -34,6 +34,7 @@ import {
 } from "@/features/dialer/hooks";
 import { CallTimer } from "@/components/voice/CallTimer";
 import { StandaloneDialpad } from "@/components/dialer/StandaloneDialpad";
+import { DialerChatCenter } from "@/components/dialer/DialerChatCenter";
 import { cn } from "@/lib/utils";
 
 type RunState = "idle" | "dialing" | "in_call" | "outcome";
