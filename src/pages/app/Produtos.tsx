@@ -95,7 +95,7 @@ export default function Produtos() {
   const query = useInfinitePaginated<Product>({
     queryKey: ["products-infinite", current?.id],
     table: "products",
-    select: "id,workspace_id,sku,name,description,price_cents,cost_cents,stock_qty,unidade,status,thumb_url,tipo_produto,gtin,created_at",
+    select: "id,workspace_id,sku,name,description,price_cents,cost_cents,stock_qty,unidade,status,thumb_url,image_url,tipo_produto,gtin,created_at",
     filters: { workspace_id: current?.id },
     order: { col: "created_at", asc: false },
     pageSize: 100,
