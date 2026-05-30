@@ -29,6 +29,7 @@ import {
   type DialerQueueItem, type QueueOutcome, type AiCoach,
 } from "@/features/dialer/hooks";
 import { CallTimer } from "@/components/voice/CallTimer";
+import { StandaloneDialpad } from "@/components/dialer/StandaloneDialpad";
 import { cn } from "@/lib/utils";
 
 type RunState = "idle" | "dialing" | "in_call" | "outcome";
