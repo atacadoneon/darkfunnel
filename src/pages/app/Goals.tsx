@@ -4,7 +4,7 @@ import {
   Target, Save, BarChart3, Trophy, Building2, Calendar as CalIcon,
   DollarSign, TrendingUp, Users, Plus, Info,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -752,25 +752,124 @@ function NewUserGoalDialog({ target, year, month, onClose, onSave }: {
   );
 }
 
-function NewWorkspaceGoalDialog({ open, year, month, onOpenChange, onSave }: {
+type NewGoalScope = "workspace" | "department" | "user";
+type NewGoalPayload = {
+  name: string;
+  target_value: number;
+  period_start: string;
+  period_end: string;
+  scope: NewGoalScope;
+  scope_ref_id: string | null;
+  metric_type: string;
+};
+
+function NewGoalDialog({ open, year, month, sectors, members, isSaving, onOpenChange, onSave }: {
   open: boolean; year: number; month: number;
-  onOpenChange: (open: boolean) => void; onSave: (amount: number) => Promise<void>;
+  sectors: { id: string; name: string }[];
+  members: any[];
+  isSaving: boolean;
+  onOpenChange: (open: boolean) => void; onSave: (payload: NewGoalPayload) => Promise<void>;
 }) {
-  const [amount, setAmount] = useState(0);
-  useEffect(() => { if (open) setAmount(0); }, [open]);
+  const defaultStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const defaultEnd = isoLocal(new Date(year, month, 0));
+  const [name, setName] = useState("");
+  const [targetValue, setTargetValue] = useState(0);
+  const [periodStart, setPeriodStart] = useState(defaultStart);
+  const [periodEnd, setPeriodEnd] = useState(defaultEnd);
+  const [scope, setScope] = useState<NewGoalScope>("workspace");
+  const [scopeRefId, setScopeRefId] = useState("");
+  const [metricType, setMetricType] = useState("revenue");
+
+  useEffect(() => {
+    if (!open) return;
+    setName("");
+    setTargetValue(0);
+    setPeriodStart(defaultStart);
+    setPeriodEnd(defaultEnd);
+    setScope("workspace");
+    setScopeRefId("");
+    setMetricType("revenue");
+  }, [defaultEnd, defaultStart, open]);
+
+  const requiresScopeRef = scope !== "workspace";
+  const scopeOptions = scope === "department" ? sectors : members.map((m) => ({
+    id: m.user_id,
+    name: m.display_name ?? m.full_name ?? m.email ?? "Usuário",
+  }));
+  const canSubmit = name.trim().length > 0 && targetValue > 0 && !!periodStart && !!periodEnd && (!requiresScopeRef || !!scopeRefId);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Adicionar meta — {MONTHS[month-1]} {year}</DialogTitle>
         </DialogHeader>
-        <div>
-          <Label>Meta Mensal (R$)</Label>
-          <Input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value) || 0)} autoFocus />
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>Nome</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Meta de faturamento mensal" autoFocus />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Valor alvo</Label>
+              <Input type="number" min={0} value={targetValue} onChange={(e) => setTargetValue(Number(e.target.value) || 0)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Métrica</Label>
+              <Select value={metricType} onValueChange={setMetricType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="revenue">Faturamento</SelectItem>
+                  <SelectItem value="deals">Negócios</SelectItem>
+                  <SelectItem value="activities">Atividades</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Início do período</Label>
+              <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Fim do período</Label>
+              <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Escopo</Label>
+              <Select value={scope} onValueChange={(value) => { setScope(value as NewGoalScope); setScopeRefId(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="workspace">Workspace</SelectItem>
+                  <SelectItem value="department">Departamento</SelectItem>
+                  <SelectItem value="user">Usuário</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>{scope === "department" ? "Departamento" : "Usuário"}</Label>
+              <Select value={scopeRefId} onValueChange={setScopeRefId} disabled={!requiresScopeRef}>
+                <SelectTrigger><SelectValue placeholder={requiresScopeRef ? "Selecione" : "Não se aplica"} /></SelectTrigger>
+                <SelectContent>
+                  {scopeOptions.map((option) => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button disabled={amount <= 0} onClick={() => onSave(amount)}>
+          <Button disabled={!canSubmit || isSaving} onClick={() => onSave({
+            name: name.trim(),
+            target_value: targetValue,
+            period_start: periodStart,
+            period_end: periodEnd,
+            scope,
+            scope_ref_id: requiresScopeRef ? scopeRefId : null,
+            metric_type: metricType,
+          })}>
             Criar Meta
           </Button>
         </DialogFooter>
