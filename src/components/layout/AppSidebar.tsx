@@ -173,14 +173,21 @@ export function AppSidebar() {
   return (
     <>
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="h-svh">
-        <SidebarHeader className="p-3 border-b">
+        <SidebarHeader className="p-2 border-b">
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
               <img src={logoDarkFunnel} alt="DarkFunnel" className="h-8 w-8 object-contain" loading="lazy" width={32} height={32} />
+              <NavLink
+                to="/equipe-online"
+                className="h-8 w-8 rounded-md flex items-center justify-center bg-background/40 border text-xs font-semibold hover:bg-muted text-foreground/80 hover:text-foreground transition-colors uppercase"
+                title={wsName}
+              >
+                {wsName.charAt(0)}
+              </NavLink>
             </div>
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 px-1">
                 <img
                   src={logoDarkFunnel}
                   alt="DarkFunnel"
@@ -194,11 +201,11 @@ export function AppSidebar() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
-                <span className="truncate flex-1">{wsName}</span>
+              <div className="flex items-center gap-2 rounded-md border bg-background/40 px-2 py-1.5 text-sm">
+                <span className="truncate flex-1 text-xs">{wsName}</span>
                 <NavLink
                   to="/equipe-online"
-                  className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  className="h-6 w-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
                   title="Equipe Online"
                 >
                   <Users className="h-3.5 w-3.5" />
@@ -207,6 +214,7 @@ export function AppSidebar() {
             </div>
           )}
         </SidebarHeader>
+
 
 
         <SidebarContent className="gap-0 overflow-y-auto">
