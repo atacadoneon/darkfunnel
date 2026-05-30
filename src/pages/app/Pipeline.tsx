@@ -196,6 +196,27 @@ export default function Pipeline() {
               </button>
             </div>
           )}
+          <Button size="sm" className="h-9 gap-1" onClick={() => onAddDeal(stages[0].id)}>
+            <Plus className="h-4 w-4" /> Novo Lead
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-1">
+                <SettingsIcon className="h-4 w-4" /> Config
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setConfig("stages")}><Layers className="h-4 w-4 mr-2" /> Etapas do Funil</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("loss")}><TagIcon className="h-4 w-4 mr-2" /> Motivos de Perda</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("origins")}><Megaphone className="h-4 w-4 mr-2" /> Canais de Origem</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("products")}><Package className="h-4 w-4 mr-2" /> Serviços/Produtos</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("capture")}><Webhook className="h-4 w-4 mr-2" /> Captura de Leads</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfig("automations")}><Timer className="h-4 w-4 mr-2" /> Automações</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" className="h-9 gap-1" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importar
+          </Button>
         </div>
       </div>
 
