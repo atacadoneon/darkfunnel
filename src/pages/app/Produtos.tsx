@@ -249,9 +249,14 @@ export default function Produtos() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Mais ações</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => toast({ title: "Em breve" })}>
+                <Printer className="w-4 h-4 mr-2" /> Imprimir
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast({ title: "Em breve" })}>
+                <Download className="w-4 h-4 mr-2" /> Importar produtos da integração
+              </DropdownMenuItem>
               <DropdownMenuItem>Importar CSV</DropdownMenuItem>
               <DropdownMenuItem>Exportar lista</DropdownMenuItem>
-              <DropdownMenuItem>Imprimir etiquetas</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
