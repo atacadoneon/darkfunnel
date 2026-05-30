@@ -16,21 +16,16 @@ type Props = {
   dealId?: string | null;
 };
 
-// Converts masked input "1.234,56" or "1234,56" or "1234.56" to cents
 function parseBRLToCents(input: string): number | null {
   if (!input) return null;
-  const cleaned = input.replace(/[^0-9,.-]/g, "").trim();
-  if (!cleaned) return null;
-  // remove thousand separators (dots) then convert comma to dot
-  const normalized = cleaned.replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".");
-  const n = Number(normalized);
-  if (!Number.isFinite(n) || n < 0) return null;
-  return Math.round(n * 100);
+  const digits = input.replace(/\D/g, "");
+  if (!digits) return null;
+  return Number(digits);
 }
 
 function formatBRLMask(input: string): string {
-  // Keep raw user input; format on blur is overkill. Just sanitize.
-  return input.replace(/[^0-9.,]/g, "");
+  const cents = parseBRLToCents(input) ?? 0;
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 }
 
 export function QuickProposalDialog({ open, onOpenChange, leadId, dealId }: Props) {
@@ -67,7 +62,7 @@ export function QuickProposalDialog({ open, onOpenChange, leadId, dealId }: Prop
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="qp-prod">Tipo de produto</Label>
+            <Label htmlFor="qp-prod">Tipo do produto</Label>
             <Input
               id="qp-prod"
               value={productName}

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Zap, FileText, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { QuickProposalDialog } from "./QuickProposalDialog";
 import { useLeadPurchases, useLeadProposals } from "@/hooks/useLeadProposals";
 
@@ -25,26 +25,26 @@ const STATUS_LABEL: Record<string, string> = {
 
 function statusBadge(status: string) {
   const label = STATUS_LABEL[status] ?? status;
-  const cls = (() => {
+  const variant: BadgeProps["variant"] = (() => {
     switch (status) {
       case "rascunho":
-        return "bg-muted text-muted-foreground border-transparent";
+        return "secondary";
       case "em_aberto":
       case "aguardando":
-        return "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400";
+        return "warning";
       case "aprovada":
       case "concluida":
-        return "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400";
+        return "success";
       case "nao_aprovada":
       case "cancelada":
-        return "bg-red-500/15 text-red-700 border-red-500/30 dark:text-red-400";
+        return "destructive";
       case "modelo":
-        return "border-foreground/30 text-foreground bg-transparent";
+        return "outline";
       default:
-        return "bg-muted text-muted-foreground border-transparent";
+        return "secondary";
     }
   })();
-  return <Badge variant="outline" className={cls}>{label}</Badge>;
+  return <Badge variant={variant}>{label}</Badge>;
 }
 
 type Props = { leadId: string; dealId?: string | null };
@@ -81,7 +81,7 @@ export function LeadProposalsSection({ leadId, dealId }: Props) {
           <ShoppingCart className="h-4 w-4" /> Compras ({purchases.length})
         </div>
         {purchases.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-3">Nenhuma compra ainda.</p>
+          <p className="text-sm text-muted-foreground py-3">Nenhuma compra ainda</p>
         ) : (
           <div className="space-y-2">
             {purchases.map((p) => (
@@ -103,11 +103,12 @@ export function LeadProposalsSection({ leadId, dealId }: Props) {
           <FileText className="h-4 w-4" /> Propostas ({proposals.length})
         </div>
         {proposals.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-3">Nenhuma proposta criada.</p>
+          <p className="text-sm text-muted-foreground py-3">Nenhuma proposta criada</p>
         ) : (
           <div className="space-y-2">
             {proposals.map((pr) => {
-              const title = `${pr.series ?? "P"}-${String(pr.number ?? "—").padStart(4, "0")}`;
+              const numberText = pr.number != null ? String(pr.number).padStart(4, "0") : "—";
+              const title = `${pr.series ?? "P"}-${numberText}`;
               return (
                 <Card
                   key={pr.id}

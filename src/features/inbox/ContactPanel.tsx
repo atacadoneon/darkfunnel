@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { RefreshCw, User, History, ShoppingCart, Paperclip, Calendar, Box, Megaphone } from "lucide-react";
+import { RefreshCw, User, History, ShoppingCart, Paperclip, Calendar, Box, Megaphone, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { useContactDeal } from "./inboxFeatureHooks";
 import { DealDialog } from "@/features/pipeline/DealDialog";
 import {
   InfoTab, HistoryTab, PurchasesTab, AttachmentsTab,
-  ActivitiesTab, CustomFieldsTab, AdsTab,
+  ActivitiesTab, CustomFieldsTab, AdsTab, ProposalsTab,
 } from "@/features/pipeline/LeadEditDialog";
 import { Timeline } from "@/components/leads/Timeline";
 
@@ -33,7 +33,7 @@ type ContactFull = {
   city: string | null;
 };
 
-type TabKey = "info" | "history" | "purchases" | "attachments" | "activities" | "custom" | "ads";
+type TabKey = "info" | "history" | "purchases" | "proposals" | "attachments" | "activities" | "custom" | "ads";
 
 export function ContactPanel({ conversation }: { conversation: ConversationRow }) {
   const [activeTab, setActiveTab] = useState<TabKey>("info");
@@ -92,6 +92,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
     { key: "info", icon: <User className="h-3.5 w-3.5" />, label: "Informações" },
     { key: "history", icon: <History className="h-3.5 w-3.5" />, label: "Histórico" },
     { key: "purchases", icon: <ShoppingCart className="h-3.5 w-3.5" />, label: "Compras" },
+    { key: "proposals", icon: <FileText className="h-3.5 w-3.5" />, label: "Propostas" },
     { key: "attachments", icon: <Paperclip className="h-3.5 w-3.5" />, label: "Anexos" },
     { key: "activities", icon: <Calendar className="h-3.5 w-3.5" />, label: "Atividades" },
     { key: "custom", icon: <Box className="h-3.5 w-3.5" />, label: "Extras" },
@@ -115,6 +116,7 @@ export function ContactPanel({ conversation }: { conversation: ConversationRow }
     switch (activeTab) {
       case "info": return <InfoTab dealId={deal.id} onClose={() => { /* inline mode */ }} />;
       case "purchases": return <PurchasesTab dealId={deal.id} />;
+      case "proposals": return <ProposalsTab dealId={deal.id} />;
       case "attachments": return <AttachmentsTab dealId={deal.id} />;
       case "activities": return <ActivitiesTab dealId={deal.id} />;
       case "custom": return <CustomFieldsTab dealId={deal.id} />;
