@@ -670,6 +670,15 @@ export default function DialerRun() {
         </button>
       )}
 
+      <Dialog open={arbitraryOpen} onOpenChange={setArbitraryOpen}>
+        <DialogContent className="max-w-sm p-0">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Discar número avulso</DialogTitle>
+          </DialogHeader>
+          <StandaloneDialpad onCall={dialArbitrary} loading={arbitraryDialing} />
+        </DialogContent>
+      </Dialog>
+
       <OutcomeModal
         open={outcomeOpen}
         onOpenChange={setOutcomeOpen}
