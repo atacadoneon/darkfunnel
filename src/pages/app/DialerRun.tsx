@@ -218,12 +218,31 @@ export default function DialerRun() {
     navigate("/discador");
   }, [id, setStatus, navigate]);
 
-  const endCampaign = useCallback(async () => {
-    if (!id) return;
-    if (!confirm("Encerrar campanha? Isso marcará como concluída.")) return;
-    await setStatus.mutateAsync({ id, status: "completed" });
-    navigate("/discador");
-  }, [id, setStatus, navigate]);
+  /* --------- Discar número avulso --------- */
+  const dialArbitrary = useCallback(async (rawDigits: string) => {
+    if (!ws) return;
+    const to = (await import("@/lib/phone")).toZenviaBR(rawDigits);
+    if (!/^\d{10,11}$/.test(to)) { toast.error(`Telefone inválido: "${to}"`); return; }
+    setArbitraryDialing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("voice-outbound", {
+        body: { workspace_id: ws.id, to, channel: "pstn" },
+      });
+      if (error) throw error;
+      const cid = (data as any)?.call_id ?? null;
+      setActiveCallId(cid);
+      setCallStartedAt(new Date().toISOString());
+      setRunState("dialing");
+      setArbitraryOpen(false);
+      toast.success(`Discando ${to}...`);
+    } catch (e: any) {
+      console.error("[Dialer] arbitrary call failed", e);
+      toast.error(e?.message ?? "Erro ao ligar");
+    } finally {
+      setArbitraryDialing(false);
+    }
+  }, [ws]);
+
 
 
   const insertIntoComposer = useCallback((text: string) => {
