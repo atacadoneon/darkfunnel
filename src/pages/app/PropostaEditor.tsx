@@ -605,19 +605,92 @@ export default function PropostaEditor() {
           </div>
 
           {/* Condições comerciais */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">Condições comerciais</h3>
-            <Select value={form.condicoes_comerciais} onValueChange={(v) => setF("condicoes_comerciais", v)}>
-              <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nenhuma">Nenhuma</SelectItem>
-                <SelectItem value="a_vista">À vista</SelectItem>
-                <SelectItem value="30">30 dias</SelectItem>
-                <SelectItem value="30_60">30/60 dias</SelectItem>
-                <SelectItem value="30_60_90">30/60/90 dias</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <section className="border-t pt-4 space-y-4">
+            <h3 className="font-semibold">Condições comerciais</h3>
+
+            <div className="max-w-xs">
+              <Label>Tipo</Label>
+              <Select value={paymentType} onValueChange={(v) => setPaymentType(v as PaymentType)}>
+                <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="parcelas">Parcelas</SelectItem>
+                  <SelectItem value="avista">À vista</SelectItem>
+                  <SelectItem value="entrada_parcelas">Entrada + Parcelas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Condição de pagamento</Label>
+              <div className="flex gap-2 max-w-xl">
+                <Input
+                  value={paymentInput}
+                  onChange={(e) => setPaymentInput(e.target.value)}
+                  placeholder="Ex: 30 60 90  ou  6x  ou  30"
+                />
+                <Button variant="outline" onClick={gerarParcelas} type="button">
+                  <Repeat className="h-4 w-4 mr-1" /> gerar parcelas
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Exemplos: <strong>30</strong> (30 dias direto); <strong>30 60 90</strong> (vencimentos em 30, 60 e 90 dias); <strong>6x</strong> (6 parcelas iguais a cada 30 dias)
+              </p>
+            </div>
+
+            {paymentTerms.length > 0 && (
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">Dias</TableHead>
+                      <TableHead className="w-40">Valor</TableHead>
+                      <TableHead>Observação</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paymentTerms.map((p, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={p.dias}
+                            onChange={(e) => setParcela(i, { dias: e.target.value })}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={p.valor}
+                            onChange={(e) => setParcela(i, { valor: e.target.value })}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={p.observacao}
+                            onChange={(e) => setParcela(i, { observacao: e.target.value })}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => removeParcela(i)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            <Button variant="link" onClick={addParcela} type="button" className="px-0">
+              <Plus className="h-4 w-4 mr-1" /> adicionar parcela
+            </Button>
+          </section>
 
           {/* Condições gerais */}
           <div className="border-t pt-4">
@@ -638,14 +711,6 @@ export default function PropostaEditor() {
             )}
           </div>
 
-          {/* Assinatura */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-3">Assinatura</h3>
-            <div className="space-y-2 max-w-md">
-              <Input value={form.assinatura_saudacao} onChange={(e) => setF("assinatura_saudacao", e.target.value)} />
-              <Input value={form.assinatura_departamento} onChange={(e) => setF("assinatura_departamento", e.target.value)} />
-            </div>
-          </div>
 
           {/* Anexo */}
           <div className="border-t pt-4">
