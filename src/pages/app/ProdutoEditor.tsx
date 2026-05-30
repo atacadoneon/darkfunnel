@@ -391,6 +391,12 @@ export default function ProdutoEditor() {
           <p className="text-sm text-muted-foreground">Componentes do kit — disponível para produtos do tipo Kit.</p>
         </TabsContent>
 
+        {(form.kind || "produto") === "produto" && (
+          <TabsContent value="variacoes" className="mt-4">
+            <VariationsSection parentId={isNew ? null : id!} workspaceId={current?.id ?? null} />
+          </TabsContent>
+        )}
+
         <TabsContent value="precos" className="space-y-4 mt-4">
           <div className="grid grid-cols-3 gap-3">
             <div>
