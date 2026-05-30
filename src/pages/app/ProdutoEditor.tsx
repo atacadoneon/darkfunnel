@@ -187,12 +187,43 @@ export default function ProdutoEditor() {
           <TabsTrigger value="ficha">ficha técnica</TabsTrigger>
           <TabsTrigger value="anuncios">anúncios</TabsTrigger>
           <TabsTrigger value="kits">kits</TabsTrigger>
+          {(form.kind || "produto") === "produto" && <TabsTrigger value="variacoes">variações</TabsTrigger>}
           <TabsTrigger value="precos">preços</TabsTrigger>
           <TabsTrigger value="custos">custos</TabsTrigger>
           <TabsTrigger value="outros">outros</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gerais" className="space-y-4 mt-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Tipo</Label>
+              <Select value={form.kind || "produto"} onValueChange={(v) => set("kind", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="produto">Produto</SelectItem>
+                  <SelectItem value="servico">Serviço</SelectItem>
+                  <SelectItem value="assinatura">Assinatura</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Tipo do Produto</Label>
+              <Select value={form.tipo_produto} onValueChange={(v) => set("tipo_produto", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simples">Simples</SelectItem>
+                  <SelectItem value="kit">Kit</SelectItem>
+                  <SelectItem value="variacoes">Com Variações</SelectItem>
+                  <SelectItem value="fabricado">Fabricado</SelectItem>
+                  <SelectItem value="materia_prima">Matéria-Prima</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Tipo do item SPED</Label>
+              <Input value={form.tipo_item_sped} onChange={(e) => set("tipo_item_sped", e.target.value)} placeholder="Selecione" />
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Tipo do Produto</Label>
