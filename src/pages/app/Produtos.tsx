@@ -231,7 +231,6 @@ export default function Produtos() {
     <div className="px-8 py-6">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <div className="text-xs text-muted-foreground mb-1">início › cadastros › produtos</div>
           <h1 className="text-2xl font-bold tracking-tight">Produtos</h1>
         </div>
         <div className="flex items-center gap-2">
