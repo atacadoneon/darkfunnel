@@ -3,11 +3,14 @@ import { Phone, PhoneIncoming, PhoneOutgoing, MessageCircle, Download, FileText 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { EmptyState } from "@/components/EmptyState";
 import { useCallsList, formatDuration, type CallRow } from "@/features/voice/hooks";
 import { formatBRL } from "@/features/wallet/hooks";
@@ -15,6 +18,7 @@ import { useDialer } from "@/features/voice/VoiceProvider";
 import { CallDrawer } from "@/features/voice/CallDrawer";
 import Dialer from "@/pages/app/Dialer";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function Calls() {
   const { open } = useDialer();
@@ -45,20 +49,61 @@ export default function Calls() {
     return { total, tdur, conn: total ? (connected / total) * 100 : 0, cost };
   }, [calls]);
 
-  const exportXlsx = async () => {
-    const xlsx = await import("xlsx");
-    const rows = calls.map(c => ({
-      Data: c.initiated_at ? format(new Date(c.initiated_at), "yyyy-MM-dd HH:mm") : "",
-      Contato: c.contact?.display_name ?? c.contact?.phone_e164 ?? "",
-      De: c.from_number, Para: c.to_number,
-      Direção: c.direction, Canal: c.channel,
-      Duração: formatDuration(c.duration_seconds), Outcome: c.outcome,
-      Custo: (c.cost_cents ?? 0) / 100,
-    }));
-    const ws = xlsx.utils.json_to_sheet(rows);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Ligações");
-    xlsx.writeFile(wb, `ligacoes_${Date.now()}.xlsx`);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFmt, setExportFmt] = useState<"csv" | "xlsx">("xlsx");
+  const [expFrom, setExpFrom] = useState("");
+  const [expTo, setExpTo] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  const buildRows = (data: CallRow[]) => data.map(c => ({
+    Data: c.initiated_at ? format(new Date(c.initiated_at), "yyyy-MM-dd HH:mm") : "",
+    Contato: c.contact?.display_name ?? c.contact?.phone_e164 ?? "",
+    De: c.from_number, Para: c.to_number,
+    Direção: c.direction, Canal: c.channel,
+    Duração: formatDuration(c.duration_seconds), Outcome: c.outcome,
+    Custo: (c.cost_cents ?? 0) / 100,
+  }));
+
+  const runExport = async () => {
+    setExporting(true);
+    try {
+      const fromTs = expFrom ? new Date(expFrom).getTime() : null;
+      const toTs = expTo ? new Date(expTo + "T23:59:59").getTime() : null;
+      const filteredCalls = calls.filter(c => {
+        if (!c.initiated_at) return true;
+        const t = new Date(c.initiated_at).getTime();
+        if (fromTs && t < fromTs) return false;
+        if (toTs && t > toTs) return false;
+        return true;
+      });
+      if (filteredCalls.length === 0) {
+        toast.error("Nenhuma ligação no período selecionado");
+        return;
+      }
+      const rows = buildRows(filteredCalls);
+      const stamp = Date.now();
+      if (exportFmt === "csv") {
+        const Papa = (await import("papaparse")).default;
+        const csv = Papa.unparse(rows);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `ligacoes_${stamp}.csv`;
+        a.click(); URL.revokeObjectURL(url);
+      } else {
+        const xlsx = await import("xlsx");
+        const ws = xlsx.utils.json_to_sheet(rows);
+        const wb = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(wb, ws, "Ligações");
+        xlsx.writeFile(wb, `ligacoes_${stamp}.xlsx`);
+      }
+      toast.success(`${filteredCalls.length} ligações exportadas`);
+      setExportOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao exportar");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -72,7 +117,7 @@ export default function Calls() {
             <TabsTrigger value="discador" className="h-6 text-xs">Discador Automático</TabsTrigger>
           </TabsList>
           <div className="flex-1" />
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={exportXlsx} disabled={calls.length === 0}>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setExpFrom(from); setExpTo(to); setExportOpen(true); }} disabled={calls.length === 0}>
             <Download className="h-3 w-3 mr-1" /> Exportar
           </Button>
         </div>
@@ -174,6 +219,44 @@ export default function Calls() {
           <Dialer />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Exportar ligações</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs">Formato</Label>
+              <RadioGroup value={exportFmt} onValueChange={(v) => setExportFmt(v as "csv" | "xlsx")} className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="xlsx" /> <span className="text-sm">Excel (.xlsx)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value="csv" /> <span className="text-sm">CSV</span>
+                </label>
+              </RadioGroup>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">De</Label>
+                <Input type="date" value={expFrom} onChange={(e) => setExpFrom(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Até</Label>
+                <Input type="date" value={expTo} onChange={(e) => setExpTo(e.target.value)} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Deixe em branco para exportar todas as ligações carregadas.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportOpen(false)} disabled={exporting}>Cancelar</Button>
+            <Button onClick={runExport} disabled={exporting}>
+              {exporting ? "Exportando…" : "Exportar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
