@@ -616,10 +616,6 @@ export default function PropostaEditor() {
             <h3 className="font-semibold">Condições comerciais</h3>
 
             <div className="max-w-xs">
-          <section className="border-t pt-4 space-y-4">
-            <h3 className="font-semibold">Condições comerciais</h3>
-
-            <div className="max-w-xs">
               <Label>Tipo</Label>
               <Select value={paymentType} onValueChange={(v) => setPaymentType(v as PaymentType)}>
                 <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
