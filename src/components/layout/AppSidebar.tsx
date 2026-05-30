@@ -220,7 +220,7 @@ export function AppSidebar() {
                       <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
                         <NavLink
                           to={item.url}
-                          onClick={handleRailClick}
+                          className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
                           className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center"
                         >
                           <item.icon className="h-5 w-5" />
