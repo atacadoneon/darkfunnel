@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useStages } from "@/features/pipeline/hooks";
 import { useMessages, useConversationById } from "@/features/inbox/hooks";
+import { useQuery } from "@tanstack/react-query";
 import { MessageThread } from "@/features/inbox/MessageThread";
 import { Composer } from "@/features/inbox/Composer";
 import { ConversationHeader } from "@/features/inbox/ConversationHeader";
@@ -63,8 +64,26 @@ export default function DialerRun() {
   const [outcomeOpen, setOutcomeOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const { data: conversation } = useConversationById(currentItem?.conversation_id ?? null);
-  const { data: messages = [] } = useMessages(currentItem?.conversation_id ?? null);
+  // Fallback: se o item da fila não tem conversation_id, busca a conversa mais recente do contato.
+  const { data: fallbackConvId } = useQuery({
+    queryKey: ["dialer-contact-conversation", currentItem?.contact_id, ws?.id],
+    enabled: !!currentItem?.contact_id && !currentItem?.conversation_id && !!ws,
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await (supabase as any)
+        .from("conversations")
+        .select("id")
+        .eq("workspace_id", ws!.id)
+        .eq("contact_id", currentItem!.contact_id)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return (data?.id as string) ?? null;
+    },
+  });
+  const resolvedConvId = currentItem?.conversation_id ?? fallbackConvId ?? null;
+  const { data: conversation } = useConversationById(resolvedConvId);
+  const { data: messages = [] } = useMessages(resolvedConvId);
 
   const stage = stages.find((s) => s.id === currentItem?.deal?.stage_id);
   const stageName = stage?.name ?? (currentItem as any)?.stage_name ?? null;
@@ -394,7 +413,7 @@ export default function DialerRun() {
               />
               <Composer conversation={conversation} />
             </>
-          ) : currentItem.conversation_id ? (
+          ) : resolvedConvId ? (
             <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Carregando conversa...
             </div>
