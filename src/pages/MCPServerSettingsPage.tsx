@@ -121,10 +121,35 @@ export default function MCPServerSettingsPage() {
 
       {/* Ferramentas */}
       <Card className="p-4 space-y-4">
-        <div>
-          <h3 className="font-semibold">Ferramentas MCP</h3>
-          <p className="text-sm text-muted-foreground">Gerencie as configurações individuais das ferramentas</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Ferramentas MCP</h3>
+            <p className="text-sm text-muted-foreground">Gerencie as configurações individuais das ferramentas ({catalog.length} no total)</p>
+          </div>
+          {catalog.length > 0 && (
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" variant="outline"
+                onClick={() => {
+                  bulk.mutate(
+                    { slugs: catalog.map((t) => t.slug), enabled: true },
+                    { onSuccess: () => toast.success(`${catalog.length} ferramentas habilitadas`) }
+                  );
+                }}>
+                Habilitar todas
+              </Button>
+              <Button size="sm" variant="outline"
+                onClick={() => {
+                  bulk.mutate(
+                    { slugs: catalog.map((t) => t.slug), enabled: false },
+                    { onSuccess: () => toast.success(`${catalog.length} ferramentas desabilitadas`) }
+                  );
+                }}>
+                Desabilitar todas
+              </Button>
+            </div>
+          )}
         </div>
+
 
         {categories.length === 0 ? (
           <div className="text-sm text-muted-foreground">Carregando catálogo…</div>

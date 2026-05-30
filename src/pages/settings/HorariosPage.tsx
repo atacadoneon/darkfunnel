@@ -35,7 +35,10 @@ export default function HorariosPage() {
   const copyMonday = () => {
     const mon = byDay(1);
     if (!mon) return;
-    setDraft((p) => p.map((r) => r.day_of_week === 1 ? r : { ...r, opens_at: mon.opens_at, closes_at: mon.closes_at, is_closed: mon.is_closed }));
+    const WEEKDAYS = [2, 3, 4, 5]; // ter, qua, qui, sex — não tocar sábado(6) e domingo(0)
+    setDraft((p) => p.map((r) => WEEKDAYS.includes(r.day_of_week)
+      ? { ...r, opens_at: mon.opens_at, closes_at: mon.closes_at, is_closed: mon.is_closed }
+      : r));
   };
 
   const submit = () => save.mutate(draft.map((r) => ({
