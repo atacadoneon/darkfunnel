@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Printer,
@@ -79,6 +79,10 @@ import {
   type Proposal,
 } from "@/hooks/useProposals";
 import { SellerSelect } from "@/components/sellers/SellerSelect";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 type SortKey =
   | "number"
@@ -226,6 +230,8 @@ export default function Propostas() {
     open: boolean;
     ids: string[];
   }>({ open: false, ids: [] });
+
+  const [importOpen, setImportOpen] = useState(false);
 
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
   const { data: selectedTagsRows = [] } = useProposalTagsFor(selectedIds);
@@ -482,9 +488,15 @@ export default function Propostas() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem disabled>importar propostas</DropdownMenuItem>
-              <DropdownMenuItem disabled>exportar CSV</DropdownMenuItem>
-              <DropdownMenuItem disabled>configurar modelos</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                importar propostas
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportProposalsCsv(filtered)}>
+                exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setTab("modelo"); setPage(1); }}>
+                configurar modelos
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -989,7 +1001,146 @@ export default function Propostas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportProposalsDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
+  );
+}
+
+function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length === 0) return { headers: [], rows: [] };
+  const split = (l: string) => l.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
+  const headers = split(lines[0]).map((h) => h.toLowerCase());
+  const rows = lines.slice(1).map((l) => {
+    const vals = split(l);
+    const o: Record<string, string> = {};
+    headers.forEach((h, i) => (o[h] = vals[i] ?? ""));
+    return o;
+  });
+  return { headers, rows };
+}
+
+function csvEscape(v: any): string {
+  const s = v == null ? "" : String(v);
+  if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function exportProposalsCsv(rows: Proposal[]) {
+  const header = ["numero", "data", "cliente", "valor", "status", "vendedor", "marcadores"];
+  const lines = [header.join(",")];
+  for (const p of rows) {
+    lines.push([
+      `${p.series ?? "P"}-${String(p.number).padStart(4, "0")}`,
+      p.issue_date ?? p.created_at ?? "",
+      p.customer_name ?? "",
+      ((p.total_cents ?? 0) / 100).toFixed(2),
+      p.status ?? "",
+      p.owner_user_id ?? "",
+      "",
+    ].map(csvEscape).join(","));
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `propostas_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success(`${rows.length} proposta(s) exportada(s)`);
+}
+
+function ImportProposalsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+  const [file, setFile] = useState<File | null>(null);
+  const [parsed, setParsed] = useState<{ headers: string[]; rows: Record<string, string>[] } | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    if (!open) { setFile(null); setParsed(null); }
+  }, [open]);
+
+  const onFile = async (f: File | null) => {
+    setFile(f);
+    if (!f) { setParsed(null); return; }
+    const text = await f.text();
+    setParsed(parseCsv(text));
+  };
+
+  const doImport = async () => {
+    if (!parsed || !current) return;
+    setImporting(true);
+    try {
+      const rows = parsed.rows.map((r) => {
+        const totalRaw = r["total_cents"] || r["valor"] || r["total"] || "0";
+        const totalCents = /[.,]/.test(totalRaw)
+          ? Math.round(parseFloat(totalRaw.replace(/\./g, "").replace(",", ".")) * 100)
+          : parseInt(totalRaw, 10) || 0;
+        return {
+          workspace_id: current.id,
+          title: r["title"] || r["titulo"] || null,
+          customer_name: r["customer_name"] || r["cliente"] || null,
+          total_cents: totalCents,
+          subtotal_cents: totalCents,
+          due_date: r["due_date"] || r["vencimento"] || null,
+          status: "rascunho",
+        };
+      }).filter((r) => r.customer_name || r.title);
+      if (rows.length === 0) {
+        toast.error("Nenhuma linha válida encontrada");
+        setImporting(false);
+        return;
+      }
+      const { error } = await (supabase as any).from("proposals").insert(rows);
+      if (error) throw error;
+      toast.success(`${rows.length} proposta(s) importada(s)`);
+      qc.invalidateQueries({ queryKey: ["proposals"] });
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error("Falha ao importar", { description: e?.message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Importar propostas</DialogTitle>
+          <DialogDescription>
+            Envie um CSV com colunas: title, customer_name, total_cents (ou valor), due_date.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input type="file" accept=".csv,.xlsx" onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
+          {parsed && (
+            <div className="rounded border p-3 text-xs space-y-2 max-h-64 overflow-auto">
+              <div className="font-medium">
+                {parsed.rows.length} linha(s) — colunas: {parsed.headers.join(", ")}
+              </div>
+              {parsed.rows.slice(0, 5).map((r, i) => (
+                <div key={i} className="border-t pt-1 font-mono">
+                  {parsed.headers.map((h) => `${h}=${r[h]}`).join(" | ")}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            onClick={doImport}
+            disabled={!parsed || importing}
+            className="bg-violet-600 hover:bg-violet-700 text-white"
+          >
+            {importing ? "Importando..." : "Importar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
