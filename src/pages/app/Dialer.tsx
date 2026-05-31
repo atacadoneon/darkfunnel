@@ -216,6 +216,30 @@ export default function Dialer() {
       )}
 
       <NewCampaignDialog open={showNew} onOpenChange={setShowNew} />
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A campanha "{toDelete?.name}" será removida. Esta ação pode ser desfeita por um admin do banco. Tem certeza?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                if (!toDelete) return;
+                deleteCampaign.mutate(toDelete.id, { onSuccess: () => setToDelete(null) });
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
