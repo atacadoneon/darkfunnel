@@ -64,11 +64,22 @@ export function DealCard({ deal, onClick, overlay }: Props) {
       {...attributes}
       {...listeners}
       className={cn(
-        "p-3 cursor-pointer hover:border-primary/50 transition-colors space-y-2 bg-card",
+        "group p-3 cursor-pointer hover:border-primary/50 transition-colors space-y-2 bg-card relative",
         isDragging && "opacity-40",
-        overlay && "shadow-lg ring-2 ring-primary"
+        overlay && "shadow-lg ring-2 ring-primary",
+        selected && "ring-2 ring-primary"
       )}
     >
+      <div
+        className={cn(
+          "absolute top-2 right-2 z-10 transition-opacity",
+          selected || anySelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); sel.toggle(deal.id); }}
+      >
+        <Checkbox checked={selected} className="bg-background" />
+      </div>
       <div className="flex items-start gap-2">
         <h4 className="font-semibold text-sm flex-1 truncate">{contactLabel}</h4>
         <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
