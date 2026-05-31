@@ -119,7 +119,7 @@ export function DetalheCobrancaDrawer({ open, onOpenChange, payment }: Props) {
 
           <TabsContent value="attempts">
             {attempts.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
-              (attempts.data ?? []).length === 0 ? <EmptyState title="Sem tentativas" description="Esta cobrança ainda não teve tentativas de pagamento." /> :
+              (attempts.data ?? []).length === 0 ? <EmptyState icon={Inbox} title="Sem tentativas" description="Esta cobrança ainda não teve tentativas de pagamento." /> :
               <div className="space-y-2">
                 {(attempts.data ?? []).map((a: any) => (
                   <Card key={a.id} className="p-3 text-sm">
@@ -136,7 +136,7 @@ export function DetalheCobrancaDrawer({ open, onOpenChange, payment }: Props) {
 
           <TabsContent value="webhooks">
             {webhooks.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> :
-              (webhooks.data ?? []).length === 0 ? <EmptyState title="Sem webhooks" description="Nenhum evento recebido." /> :
+              (webhooks.data ?? []).length === 0 ? <EmptyState icon={Webhook} title="Sem webhooks" description="Nenhum evento recebido." /> :
               <div className="space-y-2">
                 {(webhooks.data ?? []).map((w: any) => (
                   <Card key={w.id} className="p-3 text-sm space-y-1">
