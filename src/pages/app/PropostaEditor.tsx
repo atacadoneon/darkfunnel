@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Search, Trash2, Upload, Repeat } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -59,6 +60,11 @@ export default function PropostaEditor() {
   const isNew = !id || id === "novo";
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const qsLead = searchParams.get("lead");
+  const qsDeal = searchParams.get("deal");
+  const [vendedorError, setVendedorError] = useState(false);
+
 
   const [form, setForm] = useState<any>({
     customer_name: "",
@@ -143,7 +149,54 @@ export default function PropostaEditor() {
       setPaymentFreetext((prop as any).payment_freetext);
     }
   }, [prop]);
+
+  // Pre-fill defaults from ?lead= / ?deal= query params (new proposals only)
   useEffect(() => {
+    if (!isNew || !current) return;
+    let cancelled = false;
+    (async () => {
+      let contactId: string | null = qsLead;
+      let dealRow: any = null;
+      if (qsDeal) {
+        const { data } = await supabase
+          .from("deals")
+          .select("id,contact_id,assigned_user_id")
+          .eq("id", qsDeal)
+          .maybeSingle();
+        dealRow = data;
+        if (data?.contact_id && !contactId) contactId = data.contact_id;
+      }
+      let contactRow: any = null;
+      if (contactId) {
+        const { data } = await supabase
+          .from("contacts")
+          .select("id,full_name,email,phone,assigned_user_id")
+          .eq("id", contactId)
+          .maybeSingle();
+        contactRow = data;
+      }
+      if (cancelled) return;
+      setForm((f: any) => ({
+        ...f,
+        contact_id: contactId ?? f.contact_id,
+        deal_id: qsDeal ?? f.deal_id,
+        customer_name: contactRow?.full_name ?? f.customer_name,
+        email: contactRow?.email ?? f.email,
+        celular: contactRow?.phone ?? f.celular,
+        vendedor_user_id:
+          dealRow?.assigned_user_id ??
+          contactRow?.assigned_user_id ??
+          user?.id ??
+          f.vendedor_user_id,
+      }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isNew, current, qsLead, qsDeal, user?.id]);
+
+  useEffect(() => {
+
     if (!dbItems) return;
     if (dbItems.length === 0) { setItems([emptyItem(1)]); return; }
     setItems(dbItems.map((it: any) => ({
@@ -222,11 +275,16 @@ export default function PropostaEditor() {
       if (!current || !user) throw new Error("sem workspace");
       if (!form.customer_name?.trim()) throw new Error("Informe o cliente");
       const vendedor = form.vendedor_user_id?.trim?.() || form.vendedor_user_id;
-      if (!vendedor) throw new Error("Informe o vendedor");
+      if (!vendedor) {
+        setVendedorError(true);
+        throw new Error("Informe o vendedor responsável");
+      }
+      setVendedorError(false);
       const hasProduct = items.some(
         (it) => (it.product_id || it.descricao?.trim() || it.sku?.trim()) && it.qtde > 0
       );
       if (!hasProduct) throw new Error("Adicione ao menos um produto");
+
       let nextNumber = form.number;
       if (isNew) {
         const { data: maxRow } = await supabase
@@ -274,11 +332,13 @@ export default function PropostaEditor() {
         payment_input: paymentInput || null,
         payment_terms: paymentTerms,
         payment_freetext: paymentFreetext || null,
+        contact_id: form.contact_id || null,
+        deal_id: form.deal_id || null,
+        owner_user_id: vendedor,
       };
       let propId = id;
       if (isNew) {
         payload.created_by_user_id = user.id;
-        payload.owner_user_id = user.id;
         const { data, error } = await supabase.from("proposals").insert(payload).select("id").single();
         if (error) throw error;
         propId = data.id;
@@ -286,6 +346,7 @@ export default function PropostaEditor() {
         const { error } = await supabase.from("proposals").update(payload).eq("id", id!);
         if (error) throw error;
       }
+
       // sync items: simplest — delete all then insert
       await supabase.from("proposal_items").delete().eq("proposal_id", propId!);
       const validItems = items.filter((it) => (it.descricao || it.sku || it.preco_un_cents > 0));
@@ -456,9 +517,17 @@ export default function PropostaEditor() {
               <Input disabled value={form.number ?? "auto"} className="bg-muted/40" />
             </div>
             <div>
-              <Label>Vendedor</Label>
-              <SellerSelect value={form.vendedor_user_id ?? ""} onValueChange={(v) => setF("vendedor_user_id", v)} />
+              <Label className={vendedorError ? "text-destructive" : ""}>Vendedor responsável *</Label>
+              <SellerSelect
+                value={form.vendedor_user_id ?? ""}
+                onValueChange={(v) => { setF("vendedor_user_id", v); setVendedorError(false); }}
+                className={vendedorError ? "border-destructive ring-1 ring-destructive" : ""}
+              />
+              {vendedorError && (
+                <p className="text-xs text-destructive mt-1">Selecione um vendedor responsável</p>
+              )}
             </div>
+
             <div>
               <Label>Data</Label>
               <Input type="date" value={form.issue_date} onChange={(e) => setF("issue_date", e.target.value)} />
