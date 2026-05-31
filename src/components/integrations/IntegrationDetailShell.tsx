@@ -110,14 +110,28 @@ export function IntegrationDetailShell(props: IntegrationShellProps) {
 
 /* ============ CONEXÃO ============ */
 function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }) {
-  const defaultVersion = conn?.provider_version ?? (props.supportsV2 ? "v2" : "v3");
-  const [version, setVersion] = useState<string>(defaultVersion);
+  const { data: oauthMeta } = useOAuthAppMetadata(props.slug);
+  const oauthReady = !!(oauthMeta?.has_secret && oauthMeta?.client_id);
+
+  const derivedDefaultVersion = useMemo(() => {
+    if (conn?.status === "active" && conn?.provider_version) return conn.provider_version;
+    if (oauthMeta?.has_secret && oauthMeta?.client_id) return "v3";
+    if (conn?.credentials_jsonb?.api_token) return props.supportsV2 ? "v2" : "v3";
+    return "v3";
+  }, [conn, oauthMeta, props.supportsV2]);
+
+  const [version, setVersion] = useState<string>(derivedDefaultVersion);
+  useEffect(() => { setVersion(derivedDefaultVersion); }, [derivedDefaultVersion]);
+
   const [token, setToken] = useState<string>(conn?.credentials_jsonb?.api_token ?? "");
+  useEffect(() => { setToken(conn?.credentials_jsonb?.api_token ?? ""); }, [conn?.credentials_jsonb?.api_token]);
   const [testing, setTesting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const upsert = useUpsertIntegrationConnection();
-  const { data: oauthMeta } = useOAuthAppMetadata(props.slug);
-  const oauthReady = !!(oauthMeta?.has_secret && oauthMeta?.client_id);
+
+  const activeVersion = conn?.status === "active" ? conn?.provider_version : null;
+  const connectedAtRaw = (conn as any)?.connected_at ?? conn?.last_sync_at ?? null;
+  const connectedAtLabel = connectedAtRaw ? new Date(connectedAtRaw).toLocaleDateString("pt-BR") : null;
 
   async function testConnection() {
     if (!token) return toast.error("Informe o token");
