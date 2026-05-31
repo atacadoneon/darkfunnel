@@ -12,6 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/EmptyState";
+import { Inbox, Webhook } from "lucide-react";
 import { usePaymentAttempts, usePaymentWebhooks, useUpdatePayment, type PaymentRow } from "@/hooks/usePayments";
 import { STATUS_META } from "./paymentMeta";
 
