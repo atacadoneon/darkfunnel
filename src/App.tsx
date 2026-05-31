@@ -179,6 +179,7 @@ const App = () => (
                     <Route path="settings/departamentos" element={<DepartamentosPage />} />
                     <Route path="settings/horarios" element={<HorariosPage />} />
                     <Route path="settings/integracoes" element={<IntegracoesPage />} />
+                    <Route path="settings/integracoes/tiny" element={<TinyIntegrationPage />} />
                     <Route path="settings/armazenamento" element={<ArmazenamentoPage />} />
                     <Route path="settings/canais" element={<Settings />} />
                     <Route path="settings/wallet" element={<Wallet />} />
