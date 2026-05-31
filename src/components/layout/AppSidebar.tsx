@@ -334,14 +334,19 @@ export function AppSidebar() {
       </Sidebar>
 
       {footerMenus.map((menu) => {
-        const visibleItems = filterByRole(menu.items);
-        if (visibleItems.length === 0) return null;
+        const visibleSections = menu.sections
+          .map((s) => ({
+            title: s.title,
+            items: filterByRole(s.items).map(({ label, to, icon }) => ({ label, to, icon })),
+          }))
+          .filter((s) => s.items.length > 0);
+        if (visibleSections.length === 0) return null;
         return (
           <SubmenuPanel
             key={menu.key}
             id={menu.key}
             title={menu.label}
-            items={visibleItems.map(({ label, to, icon }) => ({ label, to, icon }))}
+            sections={visibleSections}
             overlay={openSubmenu === menu.key && !pinnedSubmenus[menu.key]}
           />
         );
@@ -349,3 +354,4 @@ export function AppSidebar() {
     </>
   );
 }
+
