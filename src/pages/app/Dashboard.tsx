@@ -9,6 +9,7 @@ import { AtendimentoView } from "@/features/dashboard/AtendimentoView";
 import { TrafegoView } from "@/features/dashboard/TrafegoView";
 import { FunilView } from "@/features/dashboard/FunilView";
 import { MetasView } from "@/features/dashboard/MetasView";
+import { PersonalizadoView } from "@/features/dashboard/PersonalizadoView";
 
 const TABS = [
   { value: "comercial", label: "Comercial", icon: TrendingUp },
