@@ -175,3 +175,87 @@ export default function AutomacaoEditorPage() {
     </div>
   );
 }
+
+function ManualInvokePopover({
+  flow,
+  onSave,
+}: {
+  flow: import("@/hooks/useFlow").Flow;
+  onSave: (patch: Partial<import("@/hooks/useFlow").Flow>) => void;
+}) {
+  const [allow, setAllow] = useState<boolean>(!!flow.allow_manual_invoke);
+  const [label, setLabel] = useState<string>(flow.manual_invoke_label ?? flow.name ?? "");
+  const [desc, setDesc] = useState<string>(flow.description ?? "");
+  const [icon, setIcon] = useState<string>(flow.icon ?? "Zap");
+
+  useEffect(() => {
+    setAllow(!!flow.allow_manual_invoke);
+    setLabel(flow.manual_invoke_label ?? flow.name ?? "");
+    setDesc(flow.description ?? "");
+    setIcon(flow.icon ?? "Zap");
+  }, [flow.id]);
+
+  const iconOptions = ["Zap", "Sparkles", "Send", "Bot", "Rocket", "Play", "Wand2", "MessageSquare"];
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={flow.allow_manual_invoke ? "default" : "ghost"}
+          size="icon"
+          className="h-8 w-8"
+          title="Invocação manual"
+        >
+          <Zap className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 space-y-3" align="end">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-medium">Invocação manual</div>
+            <div className="text-xs text-muted-foreground">Aparece no menu da conversa.</div>
+          </div>
+          <Switch checked={allow} onCheckedChange={setAllow} />
+        </div>
+        {allow && (
+          <div className="space-y-2">
+            <div>
+              <Label className="text-xs">Label do botão</Label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} className="h-8 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs">Descrição (opcional)</Label>
+              <Input value={desc} onChange={(e) => setDesc(e.target.value)} className="h-8 text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs">Ícone</Label>
+              <select
+                value={icon}
+                onChange={(e) => setIcon(e.target.value)}
+                className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+              >
+                {iconOptions.map((i) => (
+                  <option key={i} value={i}>{i}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+        <Button
+          size="sm"
+          className="w-full"
+          onClick={() =>
+            onSave({
+              allow_manual_invoke: allow,
+              manual_invoke_label: allow ? (label || flow.name) : null,
+              description: desc || null,
+              icon: allow ? icon : null,
+            } as any)
+          }
+        >
+          Salvar
+        </Button>
+      </PopoverContent>
+    </Popover>
+  );
+}
