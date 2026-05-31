@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { X, Layers, User, CircleCheck, Megaphone, Tag as TagIcon, Trash2 } from "lucide-react";
+import { X, Layers, User, CircleCheck, Megaphone, Tag as TagIcon, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { useDealSelection } from "./selection";
 import type { Stage, Deal } from "./hooks";
@@ -65,7 +65,7 @@ export function BulkActionsBar({ stages, deals }: Props) {
     mut.mutate(patch);
   };
   const setOrigin = (originId: string | null) => mut.mutate({ origin_id: originId });
-  const softDelete = () => mut.mutate({ deleted_at: new Date().toISOString() });
+  const archive = () => mut.mutate({ archived_at: new Date().toISOString() });
 
   const addTag = async (tagId: string) => {
     try {
@@ -162,8 +162,8 @@ export function BulkActionsBar({ stages, deals }: Props) {
           </PopoverContent>
         </Popover>
 
-        <button onClick={() => setDeleteOpen(true)} className="hover:bg-destructive/30 rounded-full p-1.5" title="Excluir">
-          <Trash2 className="h-4 w-4" />
+        <button onClick={() => setDeleteOpen(true)} className="hover:bg-primary-foreground/10 rounded-full p-1.5" title="Arquivar">
+          <Archive className="h-4 w-4" />
         </button>
       </div>
 
@@ -190,12 +190,12 @@ export function BulkActionsBar({ stages, deals }: Props) {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir {size} deals?</AlertDialogTitle>
-            <AlertDialogDescription>Esta ação move os deals para a lixeira (soft delete).</AlertDialogDescription>
+            <AlertDialogTitle>Arquivar {size} deals?</AlertDialogTitle>
+            <AlertDialogDescription>Os deals saem do funil mas podem ser restaurados depois.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => { softDelete(); setDeleteOpen(false); }}>Excluir</AlertDialogAction>
+            <AlertDialogAction onClick={() => { archive(); setDeleteOpen(false); }}>Arquivar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
