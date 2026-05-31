@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDashboardFilters } from "@/contexts/DashboardFiltersContext";
-import { useCommercialSummary, useAdsRoi } from "@/hooks/useDashboard";
+import { useCommercialSummary, useAdsRoi, useLeadsDaily30d } from "@/hooks/useDashboard";
 import { usePaymentsCommissions } from "@/hooks/usePayments";
 
 const brl = (cents: number) =>
