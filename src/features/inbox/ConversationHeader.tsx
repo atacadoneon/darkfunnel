@@ -2,8 +2,19 @@ import { useState } from "react";
 import { format } from "date-fns";
 import {
   Gift, Clock, ClipboardList, StickyNote, Search, Mail,
-  Sparkles, Plus, Loader2, Send, FileText,
+  Sparkles, Plus, Loader2, Send, FileText, MoreVertical,
+  MailOpen, Archive, UserPlus, Bot, Ban, Trash2, Zap, Rocket, Play, Wand2, MessageSquare,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub,
+  DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { SellerSelect } from "@/components/sellers/SellerSelect";
+import { useInvokableFlows, useInvokeFlowManually } from "@/hooks/useFlow";
+import { useAssignConversation } from "./inboxFeatureHooks";
+import { toast } from "sonner";
 import { CallButton } from "@/features/voice/CallButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,6 +154,8 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
         <IconBtn label="Observações internas do contato" onClick={() => setOpenNotes(true)}>
           <FileText className="h-3.5 w-3.5" />
         </IconBtn>
+
+        <ConversationMoreMenu conversation={conversation} contactDealId={contactDeal?.id ?? null} />
       </div>
 
       {openSchedule && (
@@ -329,6 +342,110 @@ function PlaybookDialog({ conversation, open, onOpenChange }: { conversation: Co
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Zap, Sparkles, Send, Bot, Rocket, Play, Wand2, MessageSquare,
+};
+
+function ConversationMoreMenu({
+  conversation,
+  contactDealId,
+}: {
+  conversation: ConversationRow;
+  contactDealId: string | null;
+}) {
+  const { data: flows = [] } = useInvokableFlows();
+  const invoke = useInvokeFlowManually();
+  const assign = useAssignConversation();
+
+  const runFlow = async (flowId: string) => {
+    try {
+      await invoke.mutateAsync({
+        flow_id: flowId,
+        context: {
+          conversation_id: conversation.id,
+          contact_id: conversation.contact_id,
+          deal_id: contactDealId,
+        },
+      });
+      toast.success("Automação iniciada");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao iniciar automação");
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Mais ações">
+          <MoreVertical className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem onClick={() => toast("Em breve")}>
+          <MailOpen className="h-3.5 w-3.5 mr-2" /> Marcar como não lido
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => toast("Em breve")}>
+          <Archive className="h-3.5 w-3.5 mr-2" /> Arquivar conversa
+        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <UserPlus className="h-3.5 w-3.5 mr-2" /> Atribuir a vendedor
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent className="p-2 w-64">
+              <SellerSelect
+                value={conversation.assigned_user_id ?? null}
+                includeUnassigned
+                onValueChange={(v) =>
+                  assign.mutate(
+                    { conversation_id: conversation.id, user_id: v || null },
+                  )
+                }
+              />
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Bot className="h-3.5 w-3.5 mr-2" /> Automação
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent className="w-64">
+              {flows.length === 0 ? (
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                  Nenhuma automação invocável.
+                </DropdownMenuLabel>
+              ) : (
+                flows.map((f) => {
+                  const Icon = (f.icon && ICON_MAP[f.icon]) || Zap;
+                  return (
+                    <DropdownMenuItem key={f.id} onClick={() => runFlow(f.id)}>
+                      <Icon className="h-3.5 w-3.5 mr-2" />
+                      {f.manual_invoke_label ?? f.name}
+                    </DropdownMenuItem>
+                  );
+                })
+              )}
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => toast("Em breve")}>
+          <Ban className="h-3.5 w-3.5 mr-2" /> Bloquear contato
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => toast("Em breve")}>
+          <Trash2 className="h-3.5 w-3.5 mr-2" /> Excluir conversa
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

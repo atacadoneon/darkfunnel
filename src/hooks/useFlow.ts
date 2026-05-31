@@ -23,7 +23,45 @@ export type Flow = {
   last_run_at: string | null;
   created_at: string;
   updated_at: string;
+  allow_manual_invoke?: boolean | null;
+  manual_invoke_label?: string | null;
+  icon?: string | null;
 };
+
+export type InvokableFlow = {
+  id: string;
+  name: string;
+  manual_invoke_label: string | null;
+  description: string | null;
+  icon: string | null;
+};
+
+export function useInvokableFlows() {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["invokable_flows", current?.id],
+    enabled: !!current,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("list_invokable_flows" as any);
+      if (error) throw error;
+      return (data ?? []) as InvokableFlow[];
+    },
+  });
+}
+
+export function useInvokeFlowManually() {
+  return useMutation({
+    mutationFn: async (input: { flow_id: string; context: Record<string, any> }) => {
+      const { data, error } = await supabase.rpc("invoke_flow_manually" as any, {
+        p_flow_id: input.flow_id,
+        p_context: input.context,
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
 
 export function useFlows() {
   const { current } = useWorkspace();
