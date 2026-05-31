@@ -482,9 +482,15 @@ export default function Propostas() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem disabled>importar propostas</DropdownMenuItem>
-              <DropdownMenuItem disabled>exportar CSV</DropdownMenuItem>
-              <DropdownMenuItem disabled>configurar modelos</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                importar propostas
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportProposalsCsv(filtered)}>
+                exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setTab("modelo"); setPage(1); }}>
+                configurar modelos
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
