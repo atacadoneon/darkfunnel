@@ -154,6 +154,8 @@ export function ConversationHeader({ conversation, onToggleSearch, searchActive 
         <IconBtn label="Observações internas do contato" onClick={() => setOpenNotes(true)}>
           <FileText className="h-3.5 w-3.5" />
         </IconBtn>
+
+        <ConversationMoreMenu conversation={conversation} contactDealId={contactDeal?.id ?? null} />
       </div>
 
       {openSchedule && (
