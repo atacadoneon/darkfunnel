@@ -2,8 +2,19 @@ import { useState } from "react";
 import { format } from "date-fns";
 import {
   Gift, Clock, ClipboardList, StickyNote, Search, Mail,
-  Sparkles, Plus, Loader2, Send, FileText,
+  Sparkles, Plus, Loader2, Send, FileText, MoreVertical,
+  MailOpen, Archive, UserPlus, Bot, Ban, Trash2, Zap, Rocket, Play, Wand2, MessageSquare,
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub,
+  DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { SellerSelect } from "@/components/sellers/SellerSelect";
+import { useInvokableFlows, useInvokeFlowManually } from "@/hooks/useFlow";
+import { useAssignConversation, useContactDeal as _unused } from "./inboxFeatureHooks";
+import { toast } from "sonner";
 import { CallButton } from "@/features/voice/CallButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
