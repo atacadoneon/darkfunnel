@@ -74,11 +74,20 @@ function writeFiltersToURL(prev: URLSearchParams, f: Filters): URLSearchParams {
 }
 
 export default function Pipeline() {
+  return (
+    <DealSelectionProvider>
+      <PipelineInner />
+    </DealSelectionProvider>
+  );
+}
+
+function PipelineInner() {
   const { current } = useWorkspace();
   const qc = useQueryClient();
-  const { data: stages = [], isLoading: loadingStages } = useStages();
+  const { data: allStages = [], isLoading: loadingStages } = useStages();
   const { data: members = [] } = useWorkspaceMembers();
   const { data: origins = [] } = useLeadOrigins();
+  const { data: pipelines = [] } = usePipelinesFull();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
@@ -87,7 +96,7 @@ export default function Pipeline() {
   const [importOpen, setImportOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const showArchived = params.get("archived") === "1";
-  const { data: deals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
+  const { data: allDeals = [], isLoading: loadingDeals } = useDeals({ includeArchived: showArchived });
   const tab: Tab = "funil";
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -98,6 +107,27 @@ export default function Pipeline() {
     if (v === "kanban") next.delete("view"); else next.set("view", v);
     setParams(next, { replace: true });
   };
+
+  const urlPipeline = params.get("pipeline");
+  const defaultPipelineId = pipelines.find((p) => p.is_default)?.id ?? pipelines[0]?.id ?? null;
+  const currentPipelineId = urlPipeline ?? defaultPipelineId;
+  const selectPipeline = (id: string) => {
+    const next = new URLSearchParams(params);
+    next.set("pipeline", id);
+    setParams(next, { replace: true });
+  };
+
+  const stages = useMemo(() => {
+    if (!currentPipelineId) return allStages;
+    const filtered = allStages.filter((s) => (s as any).pipeline_id === currentPipelineId);
+    return filtered.length > 0 ? filtered : allStages;
+  }, [allStages, currentPipelineId]);
+
+  const deals = useMemo(() => {
+    if (!currentPipelineId) return allDeals;
+    const stageIds = new Set(stages.map((s) => s.id));
+    return allDeals.filter((d) => stageIds.has(d.stage_id) || (d as any).pipeline_id === currentPipelineId);
+  }, [allDeals, stages, currentPipelineId]);
 
   const filters = useMemo(() => parseFiltersFromURL(params), [params]);
   const setFilters = (f: Filters) => setParams(writeFiltersToURL(params, f), { replace: true });
