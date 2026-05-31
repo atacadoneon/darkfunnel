@@ -49,7 +49,7 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const style = { transform: CSS.Transform.toString(transform), transition };
   const contactLabel = deal.contact?.display_name || deal.contact?.phone_e164 || deal.title;
   const ago = timeAgo(deal.updated_at ?? deal.created_at);
-  const lastAgo = timeAgo(deal.last_interaction_at ?? deal.updated_at);
+  
 
   const assignee = members.find((m: any) => m.user_id === deal.assigned_to);
   const assigneeName = assignee?.display_name ?? assignee?.email ?? null;
@@ -124,10 +124,6 @@ export function DealCard({ deal, onClick, overlay }: Props) {
         </div>
       )}
 
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-        Última interação {lastAgo || "—"}
-      </div>
 
       <div className="flex items-center gap-1.5 text-xs">
         <User className="h-3 w-3 text-muted-foreground" />
