@@ -98,55 +98,69 @@ const sections: { label: string; items: Item[] }[] = [
 ];
 
 type FooterSubItem = SubmenuItem & { roles?: WorkspaceRole[] };
-type FooterMenu = { key: SubmenuId; label: string; icon: LucideIcon; items: FooterSubItem[] };
+type FooterSection = { title?: string; items: FooterSubItem[] };
+type FooterMenu = {
+  key: SubmenuId;
+  label: string;
+  icon: LucideIcon;
+  sections: FooterSection[];
+};
 
 const footerMenus: FooterMenu[] = [
   {
     key: "automacoes",
     label: "Automações",
     icon: Zap,
-    items: [
-      { label: "Automação", to: "/automacoes", icon: Workflow },
-      { label: "Email Marketing", to: "/emailmarketing", icon: Mail },
-      { label: "Fluxo de Cadência", to: "/cadencia", icon: MessageSquare },
-      { label: "Playbook", to: "/playbook", icon: BookOpen },
-      { label: "Trackeamento", to: "/trackeamento", icon: Target },
-      { label: "Disparo em Massa", to: "/broadcasts", icon: Send },
-      { label: "Rodízio de Leads", to: "/settings/rodizio", icon: Shuffle, roles: ["proprietario", "gerente"] },
-    ],
-  },
-  {
-    key: "cadastros",
-    label: "Cadastros",
-    icon: FolderPlus,
-    items: [
-      { label: "Listas", to: "/settings/listas", icon: ListIcon },
-      { label: "Motivos de Perda", to: "/settings/motivos-perda", icon: XIcon },
-      { label: "Tipo de Atividade", to: "/settings/tipos-atividade", icon: CalendarCheck },
-      { label: "Tags", to: "/settings/tags", icon: Tag },
+    sections: [
+      {
+        items: [
+          { label: "Automação", to: "/automacoes", icon: Workflow },
+          { label: "Email Marketing", to: "/emailmarketing", icon: Mail },
+          { label: "Fluxo de Cadência", to: "/cadencia", icon: MessageSquare },
+          { label: "Playbook", to: "/playbook", icon: BookOpen },
+          { label: "Trackeamento", to: "/trackeamento", icon: Target },
+          { label: "Disparo em Massa", to: "/broadcasts", icon: Send },
+          { label: "Rodízio de Leads", to: "/settings/rodizio", icon: Shuffle, roles: ["proprietario", "gerente"] },
+        ],
+      },
     ],
   },
   {
     key: "configuracoes",
     label: "Configurações",
     icon: Settings,
-    items: [
-      { label: "Empresa", to: "/settings/empresa", icon: Building2 },
-      { label: "Planos e uso", to: "/settings/planos", icon: BarChart3 },
-      { label: "Usuários", to: "/settings/usuarios", icon: Users },
-      { label: "Departamentos", to: "/settings/departamentos", icon: FolderTree },
-      { label: "Horários de trabalho", to: "/settings/horarios", icon: Clock },
-      { label: "Integrações", to: "/settings/integracoes", icon: Plug },
-      { label: "Conexões", to: "/settings/canais", icon: Wifi },
-      { label: "Aquecimento de Chip", to: "/settings/aquecimento-chip", icon: Flame },
-      { label: "Servidor MCP", to: "/config/mcp-server", icon: Server, roles: ["proprietario", "gerente"] },
-      { label: "Webhook de Entrada", to: "/config/inbound-webhooks", icon: Webhook, roles: ["proprietario", "gerente"] },
-      { label: "Armazenamento", to: "/settings/armazenamento", icon: Database },
-      { label: "Campos adicionais", to: "/config/custom-fields", icon: PlusCircle, roles: ["proprietario", "gerente"] },
-      { label: "Administração", to: "/admin", icon: Shield, roles: ["proprietario", "platform_admin"] },
+    sections: [
+      {
+        title: "Cadastros",
+        items: [
+          { label: "Listas", to: "/settings/listas", icon: ListIcon },
+          { label: "Motivos de Perda", to: "/settings/motivos-perda", icon: XIcon },
+          { label: "Tipo de Atividade", to: "/settings/tipos-atividade", icon: CalendarCheck },
+          { label: "Tags", to: "/settings/tags", icon: Tag },
+        ],
+      },
+      {
+        title: "Configurações",
+        items: [
+          { label: "Empresa", to: "/settings/empresa", icon: Building2 },
+          { label: "Planos e uso", to: "/settings/planos", icon: BarChart3 },
+          { label: "Usuários", to: "/settings/usuarios", icon: Users },
+          { label: "Departamentos", to: "/settings/departamentos", icon: FolderTree },
+          { label: "Horários de trabalho", to: "/settings/horarios", icon: Clock },
+          { label: "Integrações", to: "/settings/integracoes", icon: Plug },
+          { label: "Conexões", to: "/settings/canais", icon: Wifi },
+          { label: "Servidor MCP", to: "/config/mcp-server", icon: Server, roles: ["proprietario", "gerente"] },
+          { label: "Webhook de Entrada", to: "/config/inbound-webhooks", icon: Webhook, roles: ["proprietario", "gerente"] },
+          { label: "Armazenamento", to: "/settings/armazenamento", icon: Database },
+          { label: "Campos adicionais", to: "/config/custom-fields", icon: PlusCircle, roles: ["proprietario", "gerente"] },
+          { label: "Aquecimento de Chip", to: "/settings/aquecimento-chip", icon: Flame },
+          { label: "Administração", to: "/admin", icon: Shield, roles: ["proprietario", "platform_admin"] },
+        ],
+      },
     ],
   },
 ];
+
 
 export function AppSidebar() {
   const { state, setOpen } = useSidebar();
@@ -259,9 +273,13 @@ export function AppSidebar() {
         <SidebarFooter className="border-t p-2 gap-2">
           <SidebarMenu>
             {footerMenus.map((menu) => {
-              const visibleItems = filterByRole(menu.items);
-              if (visibleItems.length === 0) return null;
-              const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
+              const visibleSections = menu.sections
+                .map((s) => ({ ...s, items: filterByRole(s.items) }))
+                .filter((s) => s.items.length > 0);
+              if (visibleSections.length === 0) return null;
+              const isActive = visibleSections.some((s) =>
+                s.items.some((it) => pathname.startsWith(it.to)),
+              );
               const isOpen = openSubmenu === menu.key || !!pinnedSubmenus[menu.key];
               return (
                 <SidebarMenuItem key={menu.key}>
@@ -276,6 +294,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               );
             })}
+
           </SidebarMenu>
 
           {!collapsed ? (
@@ -315,14 +334,19 @@ export function AppSidebar() {
       </Sidebar>
 
       {footerMenus.map((menu) => {
-        const visibleItems = filterByRole(menu.items);
-        if (visibleItems.length === 0) return null;
+        const visibleSections = menu.sections
+          .map((s) => ({
+            title: s.title,
+            items: filterByRole(s.items).map(({ label, to, icon }) => ({ label, to, icon })),
+          }))
+          .filter((s) => s.items.length > 0);
+        if (visibleSections.length === 0) return null;
         return (
           <SubmenuPanel
             key={menu.key}
             id={menu.key}
             title={menu.label}
-            items={visibleItems.map(({ label, to, icon }) => ({ label, to, icon }))}
+            sections={visibleSections}
             overlay={openSubmenu === menu.key && !pinnedSubmenus[menu.key]}
           />
         );
@@ -330,3 +354,4 @@ export function AppSidebar() {
     </>
   );
 }
+

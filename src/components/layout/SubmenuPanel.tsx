@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ComponentType } from "react";
+import { useEffect, useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { ChevronLeft, Pin, PinOff, X as XIcon, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,14 +10,20 @@ export type SubmenuItem = {
   icon: LucideIcon;
 };
 
+export type SubmenuSection = {
+  title?: string;
+  items: SubmenuItem[];
+};
+
 interface SubmenuPanelProps {
   id: SubmenuId;
   title: string;
-  items: SubmenuItem[];
+  items?: SubmenuItem[];
+  sections?: SubmenuSection[];
   overlay?: boolean;
 }
 
-export function SubmenuPanel({ id, title, items, overlay }: SubmenuPanelProps) {
+export function SubmenuPanel({ id, title, items, sections, overlay }: SubmenuPanelProps) {
   const {
     openSubmenu,
     setOpenSubmenu,
@@ -63,6 +69,31 @@ export function SubmenuPanel({ id, title, items, overlay }: SubmenuPanelProps) {
     ? "var(--sidebar-width, 12rem)"
     : "var(--sidebar-width-icon, 3.875rem)";
 
+  const resolvedSections: SubmenuSection[] = sections ?? [{ items: items ?? [] }];
+
+  const renderItem = (it: SubmenuItem) => {
+    const active = pathname.startsWith(it.to);
+    return (
+      <NavLink
+        key={it.to}
+        to={it.to}
+        end={it.to === "/admin"}
+        onClick={() => {
+          if (!isPinned) setOpenSubmenu(null);
+          if (!sidebarPinned) setExpanded(false);
+        }}
+        className={cn(
+          "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+          "text-foreground/80 hover:bg-accent hover:text-foreground",
+          active && "bg-accent text-accent-foreground font-medium",
+        )}
+      >
+        <it.icon className="h-4 w-4 shrink-0" />
+        <span className="truncate">{it.label}</span>
+      </NavLink>
+    );
+  };
+
   return (
     <div
       ref={ref}
@@ -102,29 +133,17 @@ export function SubmenuPanel({ id, title, items, overlay }: SubmenuPanelProps) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-        {items.map((it) => {
-          const active = pathname.startsWith(it.to);
-          return (
-            <NavLink
-              key={it.to}
-              to={it.to}
-              end={it.to === "/admin"}
-              onClick={() => {
-                if (!isPinned) setOpenSubmenu(null);
-                if (!sidebarPinned) setExpanded(false);
-              }}
-              className={cn(
-                "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
-                "text-foreground/80 hover:bg-accent hover:text-foreground",
-                active && "bg-accent text-accent-foreground font-medium",
-              )}
-            >
-              <it.icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{it.label}</span>
-            </NavLink>
-          );
-        })}
+      <div className="flex-1 overflow-y-auto p-2 space-y-3">
+        {resolvedSections.map((section, idx) => (
+          <div key={section.title ?? `__sec_${idx}`} className="space-y-0.5">
+            {section.title && (
+              <div className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {section.title}
+              </div>
+            )}
+            {section.items.map(renderItem)}
+          </div>
+        ))}
       </div>
     </div>
   );
