@@ -75,7 +75,7 @@ export default function Dashboard() {
           <TabsContent value="trafego" className="mt-0"><TrafegoView /></TabsContent>
           <TabsContent value="funil" className="mt-0"><FunilView /></TabsContent>
           <TabsContent value="metas" className="mt-0"><MetasView /></TabsContent>
-          <TabsContent value="personalizado" className="mt-0"><ComingSoon title="Personalizado" /></TabsContent>
+          <TabsContent value="personalizado" className="mt-0"><PersonalizadoView /></TabsContent>
         </Tabs>
       </div>
     </DashboardFiltersProvider>
