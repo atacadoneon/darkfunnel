@@ -116,6 +116,7 @@ export default function AutomacaoEditorPage() {
               checked={flow.is_active}
               onCheckedChange={(v) => update.mutate({ id: flow.id, patch: { is_active: v } })}
             />
+            <ManualInvokePopover flow={flow} onSave={(patch) => update.mutate({ id: flow.id, patch })} />
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setHistoryOpen(true)} title="Histórico">
               <History className="h-4 w-4" />
             </Button>
