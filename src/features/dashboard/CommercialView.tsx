@@ -75,6 +75,38 @@ export function CommercialView() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Leads diários 30d */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="h-4 w-4 text-primary" />
+            Leads diários (últimos 30 dias)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {ll ? <Skeleton className="h-[280px]" /> : (
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={(leadsDaily ?? []).map(d => ({ ...d, label: d.day.slice(8,10) + "/" + d.day.slice(5,7) }))} margin={{ top: 20, right: 10, bottom: 0, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} allowDecimals={false} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                    labelFormatter={(_, p: any) => p?.[0]?.payload?.day ?? ""}
+                    formatter={(v: any) => [num(Number(v)), "Leads"]}
+                  />
+                  <Bar dataKey="leads_count" fill="hsl(var(--primary))" radius={[4,4,0,0]}>
+                    <LabelList dataKey="leads_count" position="top" fontSize={10} fill="hsl(var(--muted-foreground))" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Linha 1 — KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon={Users} label="Leads de Entrada (30d)" value={num(summary?.leads_entrada_30d ?? 0)} />
