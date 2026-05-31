@@ -108,8 +108,8 @@ export default function Dialer() {
             const done = c.completed_count ?? 0;
             const pct = target > 0 ? Math.round((done / target) * 100) : 0;
             return (
-              <Card key={c.id} className="p-4 space-y-3 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between gap-2">
+              <Card key={c.id} className="relative p-4 space-y-3 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between gap-2 pr-8">
                   <div className="min-w-0">
                     <div className="font-semibold truncate">{c.name}</div>
                     {c.description && (
@@ -118,6 +118,22 @@ export default function Dialer() {
                   </div>
                   <StatusBadge s={c.status} />
                 </div>
+                {canDelete && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute top-2 right-2 h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setToDelete(c)}
+                        aria-label="Excluir campanha"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Excluir campanha</TooltipContent>
+                  </Tooltip>
+                )}
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs text-muted-foreground">
