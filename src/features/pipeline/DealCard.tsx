@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Globe, MessageCircle, Bell, Pencil, MoreHorizontal, User, ExternalLink } from "lucide-react";
 import { formatMoney, type Deal } from "./hooks";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ConversationPopup } from "@/features/inbox/ConversationPopup";
 import { CallButton } from "@/features/voice/CallButton";
 import { LeadEditDialog } from "./LeadEditDialog";
+import { useDealSelection } from "./selection";
 
 type Props = {
   deal: Deal & { last_interaction_at?: string | null; has_proposal?: boolean; origin_id?: string | null };
