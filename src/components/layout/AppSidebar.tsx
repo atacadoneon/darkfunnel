@@ -273,9 +273,13 @@ export function AppSidebar() {
         <SidebarFooter className="border-t p-2 gap-2">
           <SidebarMenu>
             {footerMenus.map((menu) => {
-              const visibleItems = filterByRole(menu.items);
-              if (visibleItems.length === 0) return null;
-              const isActive = visibleItems.some((it) => pathname.startsWith(it.to));
+              const visibleSections = menu.sections
+                .map((s) => ({ ...s, items: filterByRole(s.items) }))
+                .filter((s) => s.items.length > 0);
+              if (visibleSections.length === 0) return null;
+              const isActive = visibleSections.some((s) =>
+                s.items.some((it) => pathname.startsWith(it.to)),
+              );
               const isOpen = openSubmenu === menu.key || !!pinnedSubmenus[menu.key];
               return (
                 <SidebarMenuItem key={menu.key}>
@@ -290,6 +294,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               );
             })}
+
           </SidebarMenu>
 
           {!collapsed ? (
