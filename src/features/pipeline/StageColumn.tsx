@@ -24,6 +24,8 @@ type Props = {
 
 export function StageColumn({ stage, deals, totalDeals, onAddDeal, onOpenDeal, pageSize = 50 }: Props) {
   const [shown, setShown] = useState(pageSize);
+  const [selectN, setSelectN] = useState("10");
+  const sel = useDealSelection();
   const total = deals.reduce((s, d) => s + d.value_cents, 0);
   const count = totalDeals ?? deals.length;
   const visible = deals.slice(0, shown);
@@ -38,7 +40,31 @@ export function StageColumn({ stage, deals, totalDeals, onAddDeal, onOpenDeal, p
         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground tabular-nums">
           {visible.length}/{count}
         </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="p-0.5 hover:bg-muted rounded text-muted-foreground" title="Mais ações">
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => sel.add(deals.map((d) => d.id))}>
+              Selecionar todos da etapa
+            </DropdownMenuItem>
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="px-2 py-1.5 text-sm hover:bg-accent rounded cursor-pointer">Selecionar N...</div>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" side="right">
+                <div className="flex gap-2">
+                  <Input type="number" value={selectN} onChange={(e) => setSelectN(e.target.value)} className="h-8" />
+                  <Button size="sm" onClick={() => sel.add(deals.slice(0, Number(selectN) || 0).map((d) => d.id))}>OK</Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
 
       {total > 0 && (
         <div className="px-1 pb-2 text-[11px] text-muted-foreground tabular-nums">
