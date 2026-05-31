@@ -149,7 +149,54 @@ export default function PropostaEditor() {
       setPaymentFreetext((prop as any).payment_freetext);
     }
   }, [prop]);
+
+  // Pre-fill defaults from ?lead= / ?deal= query params (new proposals only)
   useEffect(() => {
+    if (!isNew || !current) return;
+    let cancelled = false;
+    (async () => {
+      let contactId: string | null = qsLead;
+      let dealRow: any = null;
+      if (qsDeal) {
+        const { data } = await supabase
+          .from("deals")
+          .select("id,contact_id,assigned_user_id")
+          .eq("id", qsDeal)
+          .maybeSingle();
+        dealRow = data;
+        if (data?.contact_id && !contactId) contactId = data.contact_id;
+      }
+      let contactRow: any = null;
+      if (contactId) {
+        const { data } = await supabase
+          .from("contacts")
+          .select("id,full_name,email,phone,assigned_user_id")
+          .eq("id", contactId)
+          .maybeSingle();
+        contactRow = data;
+      }
+      if (cancelled) return;
+      setForm((f: any) => ({
+        ...f,
+        contact_id: contactId ?? f.contact_id,
+        deal_id: qsDeal ?? f.deal_id,
+        customer_name: contactRow?.full_name ?? f.customer_name,
+        email: contactRow?.email ?? f.email,
+        celular: contactRow?.phone ?? f.celular,
+        vendedor_user_id:
+          dealRow?.assigned_user_id ??
+          contactRow?.assigned_user_id ??
+          user?.id ??
+          f.vendedor_user_id,
+      }));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isNew, current, qsLead, qsDeal, user?.id]);
+
+  useEffect(() => {
+
     if (!dbItems) return;
     if (dbItems.length === 0) { setItems([emptyItem(1)]); return; }
     setItems(dbItems.map((it: any) => ({
