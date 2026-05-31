@@ -65,7 +65,7 @@ export function BulkActionsBar({ stages, deals }: Props) {
     mut.mutate(patch);
   };
   const setOrigin = (originId: string | null) => mut.mutate({ origin_id: originId });
-  const softDelete = () => mut.mutate({ deleted_at: new Date().toISOString() });
+  const archive = () => mut.mutate({ archived_at: new Date().toISOString() });
 
   const addTag = async (tagId: string) => {
     try {
