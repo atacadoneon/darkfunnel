@@ -231,6 +231,8 @@ export default function Propostas() {
     ids: string[];
   }>({ open: false, ids: [] });
 
+  const [importOpen, setImportOpen] = useState(false);
+
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
   const { data: selectedTagsRows = [] } = useProposalTagsFor(selectedIds);
 
