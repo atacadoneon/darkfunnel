@@ -73,6 +73,7 @@ import TinyIntegrationPage from "@/pages/settings/integracoes/TinyIntegrationPag
 import BlingIntegrationPage from "@/pages/settings/integracoes/BlingIntegrationPage";
 import ArmazenamentoPage from "@/pages/settings/ArmazenamentoPage";
 import PlaybooksListPage from "@/pages/playbook/PlaybooksListPage";
+import ChipWarmingPage from "@/pages/settings/ChipWarmingPage";
 import PlaybookEditorPage from "@/pages/playbook/PlaybookEditorPage";
 import PlaybookRunsPage from "@/pages/playbook/PlaybookRunsPage";
 import BroadcastsPage from "@/pages/app/BroadcastsPage";
