@@ -24,6 +24,8 @@ import Settings from "@/pages/app/Settings";
 import Pipeline from "@/pages/app/Pipeline";
 import Dashboard from "@/pages/app/Dashboard";
 import Tasks from "@/pages/app/Tasks";
+import TasksBoardsListPage from "@/pages/app/TasksBoardsListPage";
+import TaskBoardPage from "@/pages/app/TaskBoardPage";
 import Leads from "@/pages/app/Leads";
 import AutomacoesPage from "@/pages/AutomacoesPage";
 import AutomacaoEditorPage from "@/pages/AutomacaoEditorPage";
@@ -144,7 +146,8 @@ const App = () => (
                     <Route path="emailmarketing" element={<EmailMarketing />} />
                     <Route path="email-marketing" element={<Navigate to="/emailmarketing" replace />} />
                     <Route path="metas" element={<Goals />} />
-                    <Route path="tarefas" element={<Tasks />} />
+                    <Route path="tarefas" element={<TasksBoardsListPage />} />
+                    <Route path="tarefas/:boardId" element={<TaskBoardPage />} />
                     <Route path="tasks" element={<Tasks />} />
                     <Route path="reunioes" element={<Navigate to="/agenda" replace />} />
                     <Route path="agenda" element={<Agenda />} />
