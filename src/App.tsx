@@ -189,6 +189,7 @@ const App = () => (
                     <Route path="settings/integracoes/tiny" element={<TinyIntegrationPage />} />
                     <Route path="settings/integracoes/bling" element={<BlingIntegrationPage />} />
                     <Route path="settings/armazenamento" element={<ArmazenamentoPage />} />
+                    <Route path="settings/aquecimento-chip" element={<ChipWarmingPage />} />
                     <Route path="settings/canais" element={<Settings />} />
                     <Route path="settings/wallet" element={<Wallet />} />
                     <Route path="settings/wallet" element={<Wallet />} />
