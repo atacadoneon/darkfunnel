@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { X, Layers, User, CircleCheck, Megaphone, Tag as TagIcon, Trash2 } from "lucide-react";
+import { X, Layers, User, CircleCheck, Megaphone, Tag as TagIcon, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { useDealSelection } from "./selection";
 import type { Stage, Deal } from "./hooks";
