@@ -110,6 +110,7 @@ const footerMenus: FooterMenu[] = [
       { label: "Fluxo de Cadência", to: "/cadencia", icon: MessageSquare },
       { label: "Playbook", to: "/playbook", icon: BookOpen },
       { label: "Trackeamento", to: "/trackeamento", icon: Target },
+      { label: "Disparo em Massa", to: "/broadcasts", icon: Send },
       { label: "Rodízio de Leads", to: "/settings/rodizio", icon: Shuffle, roles: ["proprietario", "gerente"] },
     ],
   },
