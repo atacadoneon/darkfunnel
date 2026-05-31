@@ -3,27 +3,25 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Search, Plug } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from "@/components/ui/dialog";
-import { Search, Plug, Loader2 } from "lucide-react";
-import { useIntegrationsCatalog, useIntegrationConnections, useConnectIntegration, useDisconnectIntegration, type IntegrationCatalogItem } from "@/features/settings/settingsHooks";
+  useIntegrationsCatalog,
+  useIntegrationConnections,
+  type IntegrationCatalogItem,
+} from "@/features/settings/settingsHooks";
 import { useIsManagerOrAdmin } from "@/features/workspace/permissions";
+import { IntegrationCredentialsCard } from "@/features/integrations/IntegrationCredentialsCard";
 
-const DEFAULT_FIELDS: Record<string, { label: string; key: string; type?: string }[]> = {
-  default: [{ label: "API Key", key: "api_key" }, { label: "API Secret", key: "api_secret" }],
-  google_calendar: [{ label: "Client ID", key: "client_id" }, { label: "Client Secret", key: "client_secret", type: "password" }],
-  google_meet: [{ label: "Client ID", key: "client_id" }, { label: "Client Secret", key: "client_secret", type: "password" }],
-  stripe: [{ label: "Secret Key", key: "secret_key", type: "password" }, { label: "Publishable Key", key: "publishable_key" }],
+const DEDICATED_ROUTES: Record<string, string> = {
+  tiny_erp: "/settings/integracoes/tiny",
+  bling: "/settings/integracoes/bling",
 };
 
 export default function IntegracoesPage() {
   const { data: catalog = [], isLoading } = useIntegrationsCatalog();
   const { data: connections = [] } = useIntegrationConnections();
-  const connect = useConnectIntegration();
-  const disconnect = useDisconnectIntegration();
   const canEdit = useIsManagerOrAdmin();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -55,9 +53,7 @@ export default function IntegracoesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {filtered.map((it) => {
             const conn = isConnected(it.id);
-            const detailRoute = it.slug === "tiny_erp" ? "/settings/integracoes/tiny"
-              : it.slug === "bling" ? "/settings/integracoes/bling"
-              : null;
+            const dedicated = DEDICATED_ROUTES[it.slug];
             return (
               <Card key={it.id} className="p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between">
@@ -71,19 +67,24 @@ export default function IntegracoesPage() {
                   <p className="text-xs text-muted-foreground">{it.category}</p>
                 </div>
                 <p className="text-sm text-muted-foreground flex-1 line-clamp-3">{it.description}</p>
-                {detailRoute ? (
+                {dedicated ? (
                   <Button
                     disabled={!canEdit}
-                    onClick={() => navigate(detailRoute)}
+                    onClick={() => navigate(dedicated)}
                     variant={conn ? "outline" : "default"}
                     className={conn ? "" : "bg-violet-600 hover:bg-violet-700 text-white"}
                   >
-                    {conn ? "Gerenciar" : "Conectar"}
+                    {conn ? "Gerenciar" : "Configurar"}
                   </Button>
-                ) : conn ? (
-                  <Button variant="outline" disabled={!canEdit} onClick={() => disconnect.mutate(conn.id)}>Desconectar</Button>
                 ) : (
-                  <Button disabled={!canEdit} onClick={() => setEditing(it)} className="bg-violet-600 hover:bg-violet-700 text-white">Conectar</Button>
+                  <Button
+                    disabled={!canEdit}
+                    onClick={() => setEditing(it)}
+                    variant={conn ? "outline" : "default"}
+                    className={conn ? "" : "bg-violet-600 hover:bg-violet-700 text-white"}
+                  >
+                    Configurar
+                  </Button>
                 )}
               </Card>
             );
@@ -91,42 +92,49 @@ export default function IntegracoesPage() {
         </div>
       )}
 
-
-      <ConnectDialog item={editing} onClose={() => setEditing(null)} onSave={async (creds) => {
-        if (!editing) return;
-        await connect.mutateAsync({ integration_id: editing.id, credentials_jsonb: creds });
-        setEditing(null);
-      }} pending={connect.isPending} />
+      <CredentialsSheet item={editing} onClose={() => setEditing(null)} />
     </div>
   );
 }
 
-function ConnectDialog({ item, onClose, onSave, pending }: { item: IntegrationCatalogItem | null; onClose: () => void; onSave: (c: Record<string, unknown>) => Promise<void>; pending: boolean }) {
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const fields = item ? (DEFAULT_FIELDS[item.slug] ?? DEFAULT_FIELDS.default) : [];
+function CredentialsSheet({ item, onClose }: { item: IntegrationCatalogItem | null; onClose: () => void }) {
+  const authType = (item as any)?.auth_type ?? "custom";
+  const showRedirect = authType === "oauth2";
 
   return (
-    <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Conectar {item?.name}</DialogTitle>
-          <DialogDescription>Informe as credenciais de acesso.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          {fields.map((f) => (
-            <div key={f.key}>
-              <Label>{f.label}</Label>
-              <Input type={f.type ?? "text"} value={vals[f.key] ?? ""} onChange={(e) => setVals((p) => ({ ...p, [f.key]: e.target.value }))} />
+    <Sheet open={!!item} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="sm:max-w-xl w-full overflow-y-auto">
+        {item && (
+          <>
+            <SheetHeader className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-md bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                  {item.icon_url ? <img src={item.icon_url} alt={item.name} className="h-8 w-8" /> : <Plug className="h-5 w-5 text-violet-600" />}
+                </div>
+                <div className="flex-1">
+                  <SheetTitle>{item.name}</SheetTitle>
+                  <SheetDescription className="flex items-center gap-2">
+                    <span>{item.category}</span>
+                    <Badge variant="outline" className="capitalize">{String(authType).replace("_", " ")}</Badge>
+                  </SheetDescription>
+                </div>
+              </div>
+            </SheetHeader>
+
+            <div className="mt-6">
+              <IntegrationCredentialsCard
+                slug={item.slug}
+                name={item.name}
+                showRedirectUri={showRedirect}
+              />
             </div>
-          ))}
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={() => onSave(vals)} disabled={pending} className="bg-violet-600 hover:bg-violet-700 text-white">
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Conectar"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+            <SheetFooter className="mt-6">
+              <Button variant="outline" onClick={onClose}>Fechar</Button>
+            </SheetFooter>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
