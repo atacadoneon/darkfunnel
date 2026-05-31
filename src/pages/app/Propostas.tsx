@@ -79,6 +79,10 @@ import {
   type Proposal,
 } from "@/hooks/useProposals";
 import { SellerSelect } from "@/components/sellers/SellerSelect";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 type SortKey =
   | "number"
