@@ -140,6 +140,8 @@ export default function Produtos() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [draft, setDraft] = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const [integrationImportOpen, setIntegrationImportOpen] = useState(false);
   const { data: tagsProduto = [] } = useTagsProduto();
 
   const query = useInfinitePaginated<Product>({
