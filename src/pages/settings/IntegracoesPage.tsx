@@ -25,6 +25,7 @@ export default function IntegracoesPage() {
   const connect = useConnectIntegration();
   const disconnect = useDisconnectIntegration();
   const canEdit = useIsManagerOrAdmin();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<IntegrationCatalogItem | null>(null);
 
