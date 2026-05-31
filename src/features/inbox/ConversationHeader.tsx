@@ -401,8 +401,7 @@ function ConversationMoreMenu({
                 includeUnassigned
                 onValueChange={(v) =>
                   assign.mutate(
-                    { conversationId: conversation.id, userId: v || null },
-                    { onSuccess: () => toast.success("Atribuído") },
+                    { conversation_id: conversation.id, user_id: v || null },
                   )
                 }
               />
