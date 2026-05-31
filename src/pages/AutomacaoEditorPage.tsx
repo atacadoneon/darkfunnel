@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  History, Pencil, Copy, Download, Upload, Trash2, ArrowLeft, FileText, Save,
+  History, Pencil, Copy, Download, Upload, Trash2, ArrowLeft, FileText, Save, Zap,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
