@@ -9,7 +9,14 @@ import {
   Calendar as CalendarIcon,
   Settings,
   ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
   FileText,
+  X,
+  Tag as TagIcon,
+  UserCog,
+  CircleDot,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,12 +45,50 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useProposals, type Proposal } from "@/hooks/useProposals";
+import { toast } from "sonner";
+import {
+  useProposals,
+  useProposalMutations,
+  useTagsProposal,
+  useProposalTagsFor,
+  useProposalTagMutations,
+  type Proposal,
+} from "@/hooks/useProposals";
+import { SellerSelect } from "@/components/sellers/SellerSelect";
 
-type SortKey = "issue_date" | "next_contact_date" | "customer_name" | "total_cents";
-type SortDir = "asc" | "desc";
+type SortKey =
+  | "number"
+  | "issue_date"
+  | "next_contact_date"
+  | "customer_name"
+  | "total_cents"
+  | "status"
+  | "deal_id";
+type SortDir = "asc" | "desc" | null;
 
 const STATUS_META: Record<
   string,
@@ -59,6 +104,17 @@ const STATUS_META: Record<
   modelo: { label: "modelo", dot: "bg-violet-500", tone: "text-violet-600" },
 };
 
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "rascunho", label: "rascunho" },
+  { value: "em_aberto", label: "em aberto" },
+  { value: "aguardando", label: "aguardando" },
+  { value: "aprovada", label: "aprovada" },
+  { value: "nao_aprovada", label: "não aprovada" },
+  { value: "concluida", label: "concluída" },
+  { value: "cancelada", label: "cancelada" },
+  { value: "modelo", label: "modelo" },
+];
+
 const TABS: { key: string; label: string; match: (s: string) => boolean }[] = [
   { key: "todas", label: "todas", match: () => true },
   { key: "em_aberto", label: "em aberto", match: (s) => s === "em_aberto" },
@@ -72,6 +128,8 @@ const TABS: { key: string; label: string; match: (s: string) => boolean }[] = [
 ];
 
 const PAGE_SIZE = 15;
+
+type PeriodKey = "all" | "today" | "month" | "interval" | "next_contact";
 
 function brl(cents: number | null | undefined) {
   return ((cents ?? 0) / 100).toLocaleString("pt-BR", {
@@ -87,6 +145,17 @@ function fmtDate(s?: string | null) {
   return d.toLocaleDateString("pt-BR");
 }
 
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function endOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
 function SortableHead({
   label,
   sortKey,
@@ -96,11 +165,11 @@ function SortableHead({
 }: {
   label: string;
   sortKey: SortKey;
-  sort: { key: SortKey; dir: SortDir };
+  sort: { key: SortKey | null; dir: SortDir };
   onSort: (k: SortKey) => void;
   className?: string;
 }) {
-  const active = sort.key === sortKey;
+  const active = sort.key === sortKey && sort.dir !== null;
   return (
     <TableHead className={className}>
       <button
@@ -111,13 +180,9 @@ function SortableHead({
         )}
       >
         {label}
-        <ChevronDown
-          className={cn(
-            "h-3 w-3 transition-transform",
-            active && sort.dir === "asc" && "rotate-180",
-            !active && "opacity-30",
-          )}
-        />
+        {!active && <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+        {active && sort.dir === "asc" && <ChevronUp className="h-3 w-3" />}
+        {active && sort.dir === "desc" && <ChevronDown className="h-3 w-3" />}
       </button>
     </TableHead>
   );
@@ -126,15 +191,44 @@ function SortableHead({
 export default function Propostas() {
   const nav = useNavigate();
   const { data: proposals = [], isLoading } = useProposals();
+  const { bulkUpdate, bulkSoftDelete } = useProposalMutations();
+  const { data: allTags = [] } = useTagsProposal();
+  const { addTags, removeTags } = useProposalTagMutations();
+
   const [tab, setTab] = useState("todas");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
+  const [sort, setSort] = useState<{ key: SortKey | null; dir: SortDir }>({
     key: "issue_date",
     dir: "desc",
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Period filter
+  const [period, setPeriod] = useState<PeriodKey>("all");
+  const [periodFrom, setPeriodFrom] = useState<string>("");
+  const [periodTo, setPeriodTo] = useState<string>("");
+
+  // Filters popover (draft + applied)
+  const [filterTagDraft, setFilterTagDraft] = useState<string>("__all__");
+  const [filterSellerDraft, setFilterSellerDraft] = useState<string>("");
+  const [filterTag, setFilterTag] = useState<string>("__all__");
+  const [filterSeller, setFilterSeller] = useState<string>("");
+
+  // Confirm aprovada dialog
+  const [approveDialog, setApproveDialog] = useState<{
+    open: boolean;
+    ids: string[];
+  }>({ open: false, ids: [] });
+  // Confirm delete
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    ids: string[];
+  }>({ open: false, ids: [] });
+
+  const selectedIds = useMemo(() => Array.from(selected), [selected]);
+  const { data: selectedTagsRows = [] } = useProposalTagsFor(selectedIds);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -148,6 +242,45 @@ export default function Propostas() {
     const tabDef = TABS.find((t) => t.key === tab) ?? TABS[0];
     const q = search.trim().toLowerCase();
     let arr = proposals.filter((p) => tabDef.match(String(p.status)));
+
+    // Period filter
+    if (period !== "all") {
+      const now = new Date();
+      if (period === "today") {
+        const s = startOfDay(now).getTime();
+        const e = endOfDay(now).getTime();
+        arr = arr.filter((p) => {
+          const d = p.issue_date ? new Date(p.issue_date).getTime() : 0;
+          return d >= s && d <= e;
+        });
+      } else if (period === "month") {
+        const s = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const e = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).getTime();
+        arr = arr.filter((p) => {
+          const d = p.issue_date ? new Date(p.issue_date).getTime() : 0;
+          return d >= s && d <= e;
+        });
+      } else if (period === "interval" && (periodFrom || periodTo)) {
+        const s = periodFrom ? startOfDay(new Date(periodFrom)).getTime() : -Infinity;
+        const e = periodTo ? endOfDay(new Date(periodTo)).getTime() : Infinity;
+        arr = arr.filter((p) => {
+          const d = p.issue_date ? new Date(p.issue_date).getTime() : 0;
+          return d >= s && d <= e;
+        });
+      } else if (period === "next_contact") {
+        const s = startOfDay(now).getTime();
+        arr = arr.filter((p) => {
+          const v = (p as any).next_contact_date;
+          if (!v) return false;
+          return new Date(v).getTime() >= s;
+        });
+      }
+    }
+
+    if (filterSeller) {
+      arr = arr.filter((p) => p.owner_user_id === filterSeller);
+    }
+
     if (q) {
       arr = arr.filter(
         (p) =>
@@ -155,21 +288,25 @@ export default function Propostas() {
           (p.customer_name ?? "").toLowerCase().includes(q),
       );
     }
-    arr = [...arr].sort((a, b) => {
+
+    if (sort.key && sort.dir) {
       const k = sort.key;
-      const av = (a as any)[k];
-      const bv = (b as any)[k];
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1;
-      if (bv == null) return -1;
-      const cmp =
-        typeof av === "number"
-          ? av - bv
-          : String(av).localeCompare(String(bv), "pt-BR");
-      return sort.dir === "asc" ? cmp : -cmp;
-    });
+      const dir = sort.dir;
+      arr = [...arr].sort((a, b) => {
+        const av = (a as any)[k];
+        const bv = (b as any)[k];
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        const cmp =
+          typeof av === "number"
+            ? av - bv
+            : String(av).localeCompare(String(bv), "pt-BR");
+        return dir === "asc" ? cmp : -cmp;
+      });
+    }
     return arr;
-  }, [proposals, tab, search, sort]);
+  }, [proposals, tab, search, sort, period, periodFrom, periodTo, filterSeller]);
 
   const totalCount = filtered.length;
   const totalValue = filtered.reduce((s, p) => s + (p.total_cents ?? 0), 0);
@@ -192,24 +329,123 @@ export default function Propostas() {
 
   const toggleRow = (id: string) => {
     const next = new Set(selected);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelected(next);
   };
 
   const toggleExpand = (id: string) => {
     const next = new Set(expanded);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setExpanded(next);
   };
 
   const onSort = (k: SortKey) => {
-    setSort((s) =>
-      s.key === k ? { key: k, dir: s.dir === "asc" ? "desc" : "asc" } : { key: k, dir: "desc" },
-    );
+    setSort((s) => {
+      if (s.key !== k) return { key: k, dir: "asc" };
+      if (s.dir === "asc") return { key: k, dir: "desc" };
+      if (s.dir === "desc") return { key: null, dir: null };
+      return { key: k, dir: "asc" };
+    });
   };
 
+  const clearSelection = () => setSelected(new Set());
+
+  const applyStatus = async (status: string) => {
+    if (status === "aprovada") {
+      setApproveDialog({ open: true, ids: selectedIds });
+      return;
+    }
+    try {
+      await bulkUpdate.mutateAsync({ ids: selectedIds, patch: { status } });
+      toast.success(`Status atualizado em ${selectedIds.length} proposta(s)`);
+      clearSelection();
+    } catch (e: any) {
+      toast.error("Falha ao atualizar status", { description: e?.message });
+    }
+  };
+
+  const applySeller = async (sellerId: string) => {
+    if (!sellerId) return;
+    try {
+      await bulkUpdate.mutateAsync({
+        ids: selectedIds,
+        patch: { owner_user_id: sellerId },
+      });
+      toast.success(`Vendedor atualizado em ${selectedIds.length} proposta(s)`);
+      clearSelection();
+    } catch (e: any) {
+      toast.error("Falha ao atualizar vendedor", { description: e?.message });
+    }
+  };
+
+  const applyAddTag = async (tagId: string) => {
+    try {
+      await addTags.mutateAsync({ proposalIds: selectedIds, tagIds: [tagId] });
+      toast.success("Marcador incluído");
+    } catch (e: any) {
+      toast.error("Falha ao incluir marcador", { description: e?.message });
+    }
+  };
+  const applyRemoveTag = async (tagId: string) => {
+    try {
+      await removeTags.mutateAsync({ proposalIds: selectedIds, tagIds: [tagId] });
+      toast.success("Marcador removido");
+    } catch (e: any) {
+      toast.error("Falha ao remover marcador", { description: e?.message });
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await bulkSoftDelete.mutateAsync(deleteDialog.ids);
+      toast.success(`${deleteDialog.ids.length} proposta(s) excluída(s)`);
+      setDeleteDialog({ open: false, ids: [] });
+      clearSelection();
+    } catch (e: any) {
+      toast.error("Falha ao excluir", { description: e?.message });
+    }
+  };
+
+  const confirmApprove = async () => {
+    try {
+      await bulkUpdate.mutateAsync({
+        ids: approveDialog.ids,
+        patch: { status: "aprovada", approved_at: new Date().toISOString() },
+      });
+      toast.success("Proposta aprovada — venda contabilizada");
+      setApproveDialog({ open: false, ids: [] });
+      clearSelection();
+    } catch (e: any) {
+      toast.error("Falha ao aprovar", { description: e?.message });
+    }
+  };
+
+  // tags currently used by selected proposals (for "remover" popover)
+  const currentSelectedTagIds = useMemo(() => {
+    const s = new Set<string>();
+    selectedTagsRows.forEach((r) => s.add(r.tag_id));
+    return s;
+  }, [selectedTagsRows]);
+
+  // Period chip label
+  const periodLabel =
+    period === "all"
+      ? "por período"
+      : period === "today"
+        ? "do dia"
+        : period === "month"
+          ? "do mês"
+          : period === "interval"
+            ? `${periodFrom || "?"} → ${periodTo || "?"}`
+            : "próximos contatos";
+
+  const activeFilterCount =
+    (filterTag !== "__all__" ? 1 : 0) + (filterSeller ? 1 : 0);
+
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-5 pb-24">
       {/* Breadcrumb + top actions */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <Breadcrumb>
@@ -273,12 +509,146 @@ export default function Propostas() {
             className="pl-9"
           />
         </div>
-        <Button variant="outline" size="sm" className="gap-1">
-          <CalendarIcon className="w-4 h-4" /> por período
-        </Button>
-        <Button variant="outline" size="sm" className="gap-1">
-          <Filter className="w-4 h-4" /> filtros
-        </Button>
+
+        {/* Período Popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1">
+              <CalendarIcon className="w-4 h-4" /> {periodLabel}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-72">
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">Período</div>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { k: "all", label: "sem filtro" },
+                  { k: "today", label: "do dia" },
+                  { k: "month", label: "do mês" },
+                  { k: "interval", label: "do intervalo" },
+                  { k: "next_contact", label: "próximos contatos" },
+                ].map((opt) => (
+                  <button
+                    key={opt.k}
+                    onClick={() => setPeriod(opt.k as PeriodKey)}
+                    className={cn(
+                      "text-xs rounded-full px-2.5 py-1 border transition-colors",
+                      period === opt.k
+                        ? "bg-violet-600 text-white border-violet-600"
+                        : "bg-background hover:bg-muted border-border",
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {period === "interval" && (
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">De</label>
+                    <Input
+                      type="date"
+                      value={periodFrom}
+                      onChange={(e) => setPeriodFrom(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Até</label>
+                    <Input
+                      type="date"
+                      value={periodTo}
+                      onChange={(e) => setPeriodTo(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Filtros Popover */}
+        <Popover
+          onOpenChange={(o) => {
+            if (o) {
+              setFilterTagDraft(filterTag);
+              setFilterSellerDraft(filterSeller);
+            }
+          }}
+        >
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1">
+              <Filter className="w-4 h-4" /> filtros
+              {activeFilterCount > 0 && (
+                <Badge className="ml-1 h-4 px-1 text-[10px] bg-violet-600">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80">
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Marcador
+                </label>
+                <Select
+                  value={filterTagDraft}
+                  onValueChange={setFilterTagDraft}
+                >
+                  <SelectTrigger className="h-9 mt-1">
+                    <SelectValue placeholder="Sem filtro por marcador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Sem filtro por marcador</SelectItem>
+                    {allTags.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Vendedor
+                </label>
+                <SellerSelect
+                  value={filterSellerDraft}
+                  onValueChange={setFilterSellerDraft}
+                  placeholder="Nome do vendedor"
+                  includeUnassigned
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilterTagDraft("__all__");
+                    setFilterSellerDraft("");
+                  }}
+                >
+                  limpar
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-violet-600 hover:bg-violet-700 text-white"
+                  onClick={() => {
+                    setFilterTag(filterTagDraft);
+                    setFilterSeller(filterSellerDraft);
+                    setPage(1);
+                  }}
+                >
+                  aplicar
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <div className="flex-1" />
         <Button variant="outline" size="icon" title="Configurar colunas">
           <Settings className="h-4 w-4" />
@@ -338,13 +708,13 @@ export default function Propostas() {
                   aria-label="Selecionar todos"
                 />
               </TableHead>
-              <TableHead className="w-28">Número</TableHead>
+              <SortableHead label="Número" sortKey="number" sort={sort} onSort={onSort} className="w-28" />
               <SortableHead label="Data" sortKey="issue_date" sort={sort} onSort={onSort} className="w-32" />
               <SortableHead label="Próx. Contato" sortKey="next_contact_date" sort={sort} onSort={onSort} className="w-36" />
               <SortableHead label="Cliente" sortKey="customer_name" sort={sort} onSort={onSort} />
               <SortableHead label="Valor" sortKey="total_cents" sort={sort} onSort={onSort} className="w-32 text-right" />
-              <TableHead>Marcadores</TableHead>
-              <TableHead>Integrações</TableHead>
+              <SortableHead label="Marcadores" sortKey="status" sort={sort} onSort={onSort} />
+              <SortableHead label="Integrações" sortKey="deal_id" sort={sort} onSort={onSort} />
               <TableHead className="w-20 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -432,6 +802,193 @@ export default function Propostas() {
           </span>
         </div>
       </div>
+
+      {/* Bulk actions bar */}
+      {selected.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pointer-events-none">
+          <div className="mx-auto max-w-5xl bg-card border shadow-lg rounded-lg px-4 py-3 flex items-center gap-2 flex-wrap pointer-events-auto">
+            <div className="text-sm font-medium flex items-center gap-1.5 mr-2">
+              <span className="text-violet-600">↑ {selected.size}</span>
+              <span className="text-muted-foreground">selecionada(s)</span>
+            </div>
+
+            {/* Alterar status */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <CircleDot className="h-3.5 w-3.5" /> Alterar status
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-1">
+                {STATUS_OPTIONS.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => applyStatus(s.value)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted text-left"
+                  >
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        STATUS_META[s.value]?.dot,
+                      )}
+                    />
+                    {s.label}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+
+            {/* Alterar vendedor */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <UserCog className="h-3.5 w-3.5" /> Alterar vendedor
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-64">
+                <div className="text-xs text-muted-foreground mb-2">
+                  Atribuir a:
+                </div>
+                <SellerSelect
+                  value=""
+                  onValueChange={(v) => applySeller(v)}
+                  placeholder="Selecione um vendedor"
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Incluir marcador */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <TagIcon className="h-3.5 w-3.5" /> Incluir marcador
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-1 max-h-72 overflow-auto">
+                {allTags.length === 0 ? (
+                  <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                    Nenhum marcador cadastrado.
+                  </div>
+                ) : (
+                  allTags.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => applyAddTag(t.id)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted text-left"
+                    >
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ background: t.color ?? "#888" }}
+                      />
+                      {t.name}
+                    </button>
+                  ))
+                )}
+              </PopoverContent>
+            </Popover>
+
+            {/* Excluir marcador */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <X className="h-3.5 w-3.5" /> Excluir marcador
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-56 p-1 max-h-72 overflow-auto">
+                {(() => {
+                  const tags = allTags.filter((t) => currentSelectedTagIds.has(t.id));
+                  if (tags.length === 0) {
+                    return (
+                      <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                        Nenhum marcador nas propostas selecionadas.
+                      </div>
+                    );
+                  }
+                  return tags.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => applyRemoveTag(t.id)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-muted text-left"
+                    >
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ background: t.color ?? "#888" }}
+                      />
+                      {t.name}
+                    </button>
+                  ));
+                })()}
+              </PopoverContent>
+            </Popover>
+
+            {/* Excluir propostas */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-destructive hover:text-destructive"
+              onClick={() => setDeleteDialog({ open: true, ids: selectedIds })}
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Excluir propostas
+            </Button>
+
+            <div className="flex-1" />
+
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              <X className="h-3.5 w-3.5 mr-1" /> Limpar seleção
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Approve confirm */}
+      <AlertDialog
+        open={approveDialog.open}
+        onOpenChange={(o) => !o && setApproveDialog({ open: false, ids: [] })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como ganho?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta proposta vai ser registrada como uma VENDA do lead e contabilizada nos relatórios. Tem certeza?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmApprove}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              Confirmar e marcar como ganho
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirm */}
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(o) => !o && setDeleteDialog({ open: false, ids: [] })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Excluir {deleteDialog.ids.length} proposta(s)?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso pode ser desfeito posteriormente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
