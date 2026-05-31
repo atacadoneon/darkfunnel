@@ -1,12 +1,24 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Phone, Plus, Play, Pause, Eye, CheckCircle2, XCircle } from "lucide-react";
+import { Phone, Plus, Play, Pause, Eye, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useCampaigns, useSetCampaignStatus, type DialerCampaign } from "@/features/dialer/hooks";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCampaigns, useSetCampaignStatus, useDeleteCampaign, type DialerCampaign } from "@/features/dialer/hooks";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { usePermission } from "@/hooks/usePermissions";
 import { NewCampaignDialog } from "@/features/dialer/NewCampaignDialog";
 
 const FILTER_KEYS = ["all", "mine", "active", "paused", "completed"] as const;
