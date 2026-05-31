@@ -209,13 +209,32 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
   return (
     <div className="space-y-4">
       <Card className="p-6 space-y-4 max-w-2xl">
+        <div>
+          {conn?.status === "active" ? (
+            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
+              <Check className="h-3 w-3" />
+              Conectado via {conn?.provider_version}
+              {connectedAtLabel ? ` desde ${connectedAtLabel}` : ""}
+            </Badge>
+          ) : conn?.status === "error" ? (
+            <Badge className="bg-red-600 hover:bg-red-600 text-white">Conexão com erro — reconecte</Badge>
+          ) : (
+            <Badge variant="secondary">Não conectado</Badge>
+          )}
+        </div>
         <div className="space-y-2">
           <Label>Versão da API</Label>
           <Select value={version} onValueChange={setVersion}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {props.supportsV2 && <SelectItem value="v2">v2 (Token API)</SelectItem>}
-              <SelectItem value="v3">v3 (OAuth 2.0)</SelectItem>
+              {props.supportsV2 && (
+                <SelectItem value="v2">
+                  v2 (Token API){activeVersion === "v2" ? " ✓ Conectado" : ""}
+                </SelectItem>
+              )}
+              <SelectItem value="v3">
+                v3 (OAuth 2.0){activeVersion === "v3" ? " ✓ Conectado" : ""}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
