@@ -517,9 +517,17 @@ export default function PropostaEditor() {
               <Input disabled value={form.number ?? "auto"} className="bg-muted/40" />
             </div>
             <div>
-              <Label>Vendedor</Label>
-              <SellerSelect value={form.vendedor_user_id ?? ""} onValueChange={(v) => setF("vendedor_user_id", v)} />
+              <Label className={vendedorError ? "text-destructive" : ""}>Vendedor responsável *</Label>
+              <SellerSelect
+                value={form.vendedor_user_id ?? ""}
+                onValueChange={(v) => { setF("vendedor_user_id", v); setVendedorError(false); }}
+                className={vendedorError ? "border-destructive ring-1 ring-destructive" : ""}
+              />
+              {vendedorError && (
+                <p className="text-xs text-destructive mt-1">Selecione um vendedor responsável</p>
+              )}
             </div>
+
             <div>
               <Label>Data</Label>
               <Input type="date" value={form.issue_date} onChange={(e) => setF("issue_date", e.target.value)} />
