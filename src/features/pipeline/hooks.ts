@@ -11,6 +11,7 @@ export type Stage = {
   position: number;
   is_won: boolean;
   is_lost: boolean;
+  pipeline_id?: string | null;
 };
 
 export type Deal = {
