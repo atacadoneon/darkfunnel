@@ -332,11 +332,13 @@ export default function PropostaEditor() {
         payment_input: paymentInput || null,
         payment_terms: paymentTerms,
         payment_freetext: paymentFreetext || null,
+        contact_id: form.contact_id || null,
+        deal_id: form.deal_id || null,
+        owner_user_id: vendedor,
       };
       let propId = id;
       if (isNew) {
         payload.created_by_user_id = user.id;
-        payload.owner_user_id = user.id;
         const { data, error } = await supabase.from("proposals").insert(payload).select("id").single();
         if (error) throw error;
         propId = data.id;
@@ -344,6 +346,7 @@ export default function PropostaEditor() {
         const { error } = await supabase.from("proposals").update(payload).eq("id", id!);
         if (error) throw error;
       }
+
       // sync items: simplest — delete all then insert
       await supabase.from("proposal_items").delete().eq("proposal_id", propId!);
       const validItems = items.filter((it) => (it.descricao || it.sku || it.preco_un_cents > 0));
