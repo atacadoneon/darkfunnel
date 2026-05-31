@@ -40,6 +40,9 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const { data: members = [] } = useWorkspaceMembers();
   const [chatOpen, setChatOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const sel = useDealSelection();
+  const selected = sel.isSelected(deal.id);
+  const anySelected = sel.size > 0;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id, data: { type: "deal", deal } });
 
