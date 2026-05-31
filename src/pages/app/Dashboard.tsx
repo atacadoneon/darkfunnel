@@ -5,6 +5,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardFiltersProvider } from "@/contexts/DashboardFiltersContext";
 import { DashboardFiltersBar } from "@/features/dashboard/DashboardFiltersBar";
 import { CommercialView } from "@/features/dashboard/CommercialView";
+import { AtendimentoView } from "@/features/dashboard/AtendimentoView";
+import { TrafegoView } from "@/features/dashboard/TrafegoView";
+import { FunilView } from "@/features/dashboard/FunilView";
+import { MetasView } from "@/features/dashboard/MetasView";
 
 const TABS = [
   { value: "comercial", label: "Comercial", icon: TrendingUp },
