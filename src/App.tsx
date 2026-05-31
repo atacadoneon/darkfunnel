@@ -69,6 +69,7 @@ import UsuariosPage from "@/pages/settings/UsuariosPage";
 import DepartamentosPage from "@/pages/settings/DepartamentosPage";
 import HorariosPage from "@/pages/settings/HorariosPage";
 import IntegracoesPage from "@/pages/settings/IntegracoesPage";
+import TinyIntegrationPage from "@/pages/settings/integracoes/TinyIntegrationPage";
 import ArmazenamentoPage from "@/pages/settings/ArmazenamentoPage";
 import PlaybooksListPage from "@/pages/playbook/PlaybooksListPage";
 import PlaybookEditorPage from "@/pages/playbook/PlaybookEditorPage";
