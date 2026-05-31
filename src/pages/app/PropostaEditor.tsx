@@ -275,11 +275,16 @@ export default function PropostaEditor() {
       if (!current || !user) throw new Error("sem workspace");
       if (!form.customer_name?.trim()) throw new Error("Informe o cliente");
       const vendedor = form.vendedor_user_id?.trim?.() || form.vendedor_user_id;
-      if (!vendedor) throw new Error("Informe o vendedor");
+      if (!vendedor) {
+        setVendedorError(true);
+        throw new Error("Informe o vendedor responsável");
+      }
+      setVendedorError(false);
       const hasProduct = items.some(
         (it) => (it.product_id || it.descricao?.trim() || it.sku?.trim()) && it.qtde > 0
       );
       if (!hasProduct) throw new Error("Adicione ao menos um produto");
+
       let nextNumber = form.number;
       if (isNew) {
         const { data: maxRow } = await supabase
