@@ -194,7 +194,9 @@ function PipelineInner() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full">
+      <PipelinesPanel currentPipelineId={currentPipelineId} onSelect={selectPipeline} />
+      <div className="flex flex-col flex-1 min-w-0 h-full">
       {/* Search + Filters */}
       <div className="px-4 md:px-6 pt-4 pb-3 flex items-center gap-2">
         <div className="relative flex-1 max-w-md">
