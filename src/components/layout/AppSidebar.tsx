@@ -139,6 +139,7 @@ const footerMenus: FooterMenu[] = [
       { label: "Horários de trabalho", to: "/settings/horarios", icon: Clock },
       { label: "Integrações", to: "/settings/integracoes", icon: Plug },
       { label: "Conexões", to: "/settings/canais", icon: Wifi },
+      { label: "Aquecimento de Chip", to: "/settings/aquecimento-chip", icon: Flame },
       { label: "Servidor MCP", to: "/config/mcp-server", icon: Server, roles: ["proprietario", "gerente"] },
       { label: "Webhook de Entrada", to: "/config/inbound-webhooks", icon: Webhook, roles: ["proprietario", "gerente"] },
       { label: "Armazenamento", to: "/settings/armazenamento", icon: Database },
