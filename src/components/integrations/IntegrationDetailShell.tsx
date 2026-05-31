@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ChevronRight, ExternalLink, Loader2, Plug, RefreshCw } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, Loader2, Plug, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -110,14 +110,28 @@ export function IntegrationDetailShell(props: IntegrationShellProps) {
 
 /* ============ CONEXÃO ============ */
 function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }) {
-  const defaultVersion = conn?.provider_version ?? (props.supportsV2 ? "v2" : "v3");
-  const [version, setVersion] = useState<string>(defaultVersion);
+  const { data: oauthMeta } = useOAuthAppMetadata(props.slug);
+  const oauthReady = !!(oauthMeta?.has_secret && oauthMeta?.client_id);
+
+  const derivedDefaultVersion = useMemo(() => {
+    if (conn?.status === "active" && conn?.provider_version) return conn.provider_version;
+    if (oauthMeta?.has_secret && oauthMeta?.client_id) return "v3";
+    if (conn?.credentials_jsonb?.api_token) return props.supportsV2 ? "v2" : "v3";
+    return "v3";
+  }, [conn, oauthMeta, props.supportsV2]);
+
+  const [version, setVersion] = useState<string>(derivedDefaultVersion);
+  useEffect(() => { setVersion(derivedDefaultVersion); }, [derivedDefaultVersion]);
+
   const [token, setToken] = useState<string>(conn?.credentials_jsonb?.api_token ?? "");
+  useEffect(() => { setToken(conn?.credentials_jsonb?.api_token ?? ""); }, [conn?.credentials_jsonb?.api_token]);
   const [testing, setTesting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const upsert = useUpsertIntegrationConnection();
-  const { data: oauthMeta } = useOAuthAppMetadata(props.slug);
-  const oauthReady = !!(oauthMeta?.has_secret && oauthMeta?.client_id);
+
+  const activeVersion = conn?.status === "active" ? conn?.provider_version : null;
+  const connectedAtRaw = (conn as any)?.connected_at ?? conn?.last_sync_at ?? null;
+  const connectedAtLabel = connectedAtRaw ? new Date(connectedAtRaw).toLocaleDateString("pt-BR") : null;
 
   async function testConnection() {
     if (!token) return toast.error("Informe o token");
@@ -195,13 +209,32 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
   return (
     <div className="space-y-4">
       <Card className="p-6 space-y-4 max-w-2xl">
+        <div>
+          {conn?.status === "active" ? (
+            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
+              <Check className="h-3 w-3" />
+              Conectado via {conn?.provider_version}
+              {connectedAtLabel ? ` desde ${connectedAtLabel}` : ""}
+            </Badge>
+          ) : conn?.status === "error" ? (
+            <Badge className="bg-red-600 hover:bg-red-600 text-white">Conexão com erro — reconecte</Badge>
+          ) : (
+            <Badge variant="secondary">Não conectado</Badge>
+          )}
+        </div>
         <div className="space-y-2">
           <Label>Versão da API</Label>
           <Select value={version} onValueChange={setVersion}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {props.supportsV2 && <SelectItem value="v2">v2 (Token API)</SelectItem>}
-              <SelectItem value="v3">v3 (OAuth 2.0)</SelectItem>
+              {props.supportsV2 && (
+                <SelectItem value="v2">
+                  v2 (Token API){activeVersion === "v2" ? " ✓ Conectado" : ""}
+                </SelectItem>
+              )}
+              <SelectItem value="v3">
+                v3 (OAuth 2.0){activeVersion === "v3" ? " ✓ Conectado" : ""}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
