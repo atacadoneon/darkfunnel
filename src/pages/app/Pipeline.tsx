@@ -302,6 +302,8 @@ function PipelineInner() {
       <CaptureDialog open={config === "capture"} onOpenChange={(v) => !v && setConfig(null)} />
       <AutomationsDialog open={config === "automations"} onOpenChange={(v) => !v && setConfig(null)} />
       <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      </div>
+      <BulkActionsBar stages={stages} deals={deals} />
     </div>
   );
 }
