@@ -57,3 +57,187 @@ export function useAdsRoi(_filters: DashboardFilters) {
     },
   });
 }
+
+/* ---------- SLA / Atendimento ---------- */
+export type SlaBySeller = {
+  workspace_id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  conversas: number;
+  resolvidas: number;
+  avg_response_minutes: number | null;
+  pendentes_24h: number;
+};
+
+export function useSlaBySeller(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_sla_by_seller", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<SlaBySeller[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_sla_by_seller" as any)
+        .select("*")
+        .eq("workspace_id", current!.id);
+      if (error) throw error;
+      return ((data as any[]) ?? []) as SlaBySeller[];
+    },
+  });
+}
+
+/* ---------- Ads by Campaign ---------- */
+export type AdsByCampaign = {
+  workspace_id: string;
+  campaign: string | null;
+  source: string | null;
+  medium: string | null;
+  attributions: number;
+  deals_count: number;
+  total_revenue_cents: number;
+  invested_cents: number;
+  messages_count: number;
+};
+
+export function useAdsByCampaign(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_ads_by_campaign", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<AdsByCampaign[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_ads_by_campaign" as any)
+        .select("*")
+        .eq("workspace_id", current!.id)
+        .order("total_revenue_cents", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return ((data as any[]) ?? []) as AdsByCampaign[];
+    },
+  });
+}
+
+/* ---------- Funnel by Stage ---------- */
+export type FunnelByStage = {
+  workspace_id: string;
+  pipeline_id: string;
+  stage_id: string;
+  stage_name: string;
+  color: string | null;
+  sort_order: number;
+  count: number;
+  total_value_cents: number;
+  avg_days_in_stage?: number | null;
+};
+
+export function useFunnelByStage(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_funnel_by_stage", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<FunnelByStage[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_funnel_by_stage" as any)
+        .select("*")
+        .eq("workspace_id", current!.id)
+        .order("sort_order");
+      if (error) throw error;
+      return ((data as any[]) ?? []) as FunnelByStage[];
+    },
+  });
+}
+
+/* ---------- Stuck deals (open, no movement >14d) ---------- */
+export function useStuckDeals() {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_stuck_deals", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 14 * 86400_000).toISOString();
+      const { data, error } = await supabase
+        .from("deals")
+        .select("id,title,value_cents,updated_at,stage_id,pipeline_id,contact_id,assigned_to")
+        .eq("workspace_id", current!.id)
+        .eq("status", "open")
+        .is("deleted_at", null)
+        .lt("updated_at", cutoff)
+        .order("updated_at", { ascending: true })
+        .limit(20);
+      if (error) throw error;
+      return (data as any[]) ?? [];
+    },
+  });
+}
+
+/* ---------- Conversations volume by day (14d) ---------- */
+export function useConvVolume14d() {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_conv_volume_14d", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 14 * 86400_000).toISOString();
+      const { data, error } = await supabase
+        .from("conversations")
+        .select("created_at")
+        .eq("workspace_id", current!.id)
+        .gte("created_at", since)
+        .limit(20000);
+      if (error) throw error;
+      const map = new Map<string, number>();
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 86400_000);
+        const k = d.toISOString().slice(0, 10);
+        map.set(k, 0);
+      }
+      for (const r of (data as any[]) ?? []) {
+        const k = (r.created_at as string).slice(0, 10);
+        if (map.has(k)) map.set(k, (map.get(k) ?? 0) + 1);
+      }
+      return Array.from(map.entries()).map(([day, count]) => ({ day: day.slice(5), count }));
+    },
+  });
+}
+
+/* ---------- Goals progress ---------- */
+export type GoalProgress = {
+  workspace_id: string;
+  goal_id: string;
+  name: string;
+  scope: "workspace" | "department" | "user" | string;
+  scope_label: string | null;
+  target_cents: number;
+  current_cents: number;
+  progress_pct: number;
+  period_start: string;
+  period_end: string;
+  days_remaining: number;
+  period_elapsed_pct: number;
+  user_id?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+};
+
+export function useGoalsProgress(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_goals_progress", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<GoalProgress[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_goals_progress" as any)
+        .select("*")
+        .eq("workspace_id", current!.id);
+      if (error) throw error;
+      return ((data as any[]) ?? []) as GoalProgress[];
+    },
+  });
+}
+
