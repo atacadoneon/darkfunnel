@@ -70,6 +70,7 @@ import DepartamentosPage from "@/pages/settings/DepartamentosPage";
 import HorariosPage from "@/pages/settings/HorariosPage";
 import IntegracoesPage from "@/pages/settings/IntegracoesPage";
 import TinyIntegrationPage from "@/pages/settings/integracoes/TinyIntegrationPage";
+import BlingIntegrationPage from "@/pages/settings/integracoes/BlingIntegrationPage";
 import ArmazenamentoPage from "@/pages/settings/ArmazenamentoPage";
 import PlaybooksListPage from "@/pages/playbook/PlaybooksListPage";
 import PlaybookEditorPage from "@/pages/playbook/PlaybookEditorPage";
@@ -180,6 +181,7 @@ const App = () => (
                     <Route path="settings/horarios" element={<HorariosPage />} />
                     <Route path="settings/integracoes" element={<IntegracoesPage />} />
                     <Route path="settings/integracoes/tiny" element={<TinyIntegrationPage />} />
+                    <Route path="settings/integracoes/bling" element={<BlingIntegrationPage />} />
                     <Route path="settings/armazenamento" element={<ArmazenamentoPage />} />
                     <Route path="settings/canais" element={<Settings />} />
                     <Route path="settings/wallet" element={<Wallet />} />

@@ -55,7 +55,9 @@ export default function IntegracoesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {filtered.map((it) => {
             const conn = isConnected(it.id);
-            const isTiny = it.slug === "tiny_erp";
+            const detailRoute = it.slug === "tiny_erp" ? "/settings/integracoes/tiny"
+              : it.slug === "bling" ? "/settings/integracoes/bling"
+              : null;
             return (
               <Card key={it.id} className="p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between">
@@ -69,14 +71,14 @@ export default function IntegracoesPage() {
                   <p className="text-xs text-muted-foreground">{it.category}</p>
                 </div>
                 <p className="text-sm text-muted-foreground flex-1 line-clamp-3">{it.description}</p>
-                {isTiny ? (
+                {detailRoute ? (
                   <Button
                     disabled={!canEdit}
-                    onClick={() => navigate("/settings/integracoes/tiny")}
+                    onClick={() => navigate(detailRoute)}
                     variant={conn ? "outline" : "default"}
                     className={conn ? "" : "bg-violet-600 hover:bg-violet-700 text-white"}
                   >
-                    {conn ? "Configurar" : "Conectar"}
+                    {conn ? "Gerenciar" : "Conectar"}
                   </Button>
                 ) : conn ? (
                   <Button variant="outline" disabled={!canEdit} onClick={() => disconnect.mutate(conn.id)}>Desconectar</Button>
