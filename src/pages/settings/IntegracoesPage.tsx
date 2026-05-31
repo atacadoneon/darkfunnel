@@ -73,21 +73,12 @@ export default function IntegracoesPage() {
                   <Button
                     disabled={!canEdit}
                     onClick={() => navigate("/settings/integracoes/tiny")}
-                    className={conn ? "" : "bg-violet-600 hover:bg-violet-700 text-white"}
                     variant={conn ? "outline" : "default"}
+                    className={conn ? "" : "bg-violet-600 hover:bg-violet-700 text-white"}
                   >
                     {conn ? "Configurar" : "Conectar"}
                   </Button>
                 ) : conn ? (
-                  </div>
-                  {conn && <Badge className="bg-emerald-600 hover:bg-emerald-600">Conectado</Badge>}
-                </div>
-                <div>
-                  <h3 className="font-semibold">{it.name}</h3>
-                  <p className="text-xs text-muted-foreground">{it.category}</p>
-                </div>
-                <p className="text-sm text-muted-foreground flex-1 line-clamp-3">{it.description}</p>
-                {conn ? (
                   <Button variant="outline" disabled={!canEdit} onClick={() => disconnect.mutate(conn.id)}>Desconectar</Button>
                 ) : (
                   <Button disabled={!canEdit} onClick={() => setEditing(it)} className="bg-violet-600 hover:bg-violet-700 text-white">Conectar</Button>
@@ -97,6 +88,7 @@ export default function IntegracoesPage() {
           })}
         </div>
       )}
+
 
       <ConnectDialog item={editing} onClose={() => setEditing(null)} onSave={async (creds) => {
         if (!editing) return;
