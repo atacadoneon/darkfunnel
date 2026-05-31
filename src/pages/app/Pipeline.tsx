@@ -32,6 +32,10 @@ import { FiltersSheet, EMPTY_FILTERS, applyFilters, countActive, type Filters } 
 import { DealsTable } from "@/features/pipeline/DealsTable";
 import { PipelineDashboard } from "@/features/pipeline/PipelineDashboard";
 import { CsvImportDialog } from "@/features/pipeline/CsvImportDialog";
+import { DealSelectionProvider } from "@/features/pipeline/selection";
+import { BulkActionsBar } from "@/features/pipeline/BulkActionsBar";
+import { PipelinesPanel } from "@/features/pipeline/PipelinesPanel";
+import { usePipelinesFull } from "@/features/pipeline/pipelinesHooks";
 
 type Tab = "funil" | "banco" | "dashboard";
 type ConfigKey = "stages" | "loss" | "origins" | "products" | "capture" | "automations" | null;
