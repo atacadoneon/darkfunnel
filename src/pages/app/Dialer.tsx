@@ -1,12 +1,24 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Phone, Plus, Play, Pause, Eye, CheckCircle2, XCircle } from "lucide-react";
+import { Phone, Plus, Play, Pause, Eye, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useCampaigns, useSetCampaignStatus, type DialerCampaign } from "@/features/dialer/hooks";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCampaigns, useSetCampaignStatus, useDeleteCampaign, type DialerCampaign } from "@/features/dialer/hooks";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { usePermission } from "@/hooks/usePermissions";
 import { NewCampaignDialog } from "@/features/dialer/NewCampaignDialog";
 
 const FILTER_KEYS = ["all", "mine", "active", "paused", "completed"] as const;
@@ -34,8 +46,11 @@ export default function Dialer() {
   const { data: campaigns = [] } = useCampaigns();
   const { user } = useAuth();
   const setStatus = useSetCampaignStatus();
+  const deleteCampaign = useDeleteCampaign();
+  const canDelete = usePermission("dialer.campaign_delete");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [showNew, setShowNew] = useState(false);
+  const [toDelete, setToDelete] = useState<DialerCampaign | null>(null);
 
   const filtered = useMemo(() => {
     return campaigns.filter((c) => {
@@ -93,8 +108,8 @@ export default function Dialer() {
             const done = c.completed_count ?? 0;
             const pct = target > 0 ? Math.round((done / target) * 100) : 0;
             return (
-              <Card key={c.id} className="p-4 space-y-3 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between gap-2">
+              <Card key={c.id} className="relative p-4 space-y-3 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between gap-2 pr-8">
                   <div className="min-w-0">
                     <div className="font-semibold truncate">{c.name}</div>
                     {c.description && (
@@ -103,6 +118,22 @@ export default function Dialer() {
                   </div>
                   <StatusBadge s={c.status} />
                 </div>
+                {canDelete && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute top-2 right-2 h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setToDelete(c)}
+                        aria-label="Excluir campanha"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Excluir campanha</TooltipContent>
+                  </Tooltip>
+                )}
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-xs text-muted-foreground">
@@ -185,6 +216,30 @@ export default function Dialer() {
       )}
 
       <NewCampaignDialog open={showNew} onOpenChange={setShowNew} />
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A campanha "{toDelete?.name}" será removida. Esta ação pode ser desfeita por um admin do banco. Tem certeza?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                if (!toDelete) return;
+                deleteCampaign.mutate(toDelete.id, { onSuccess: () => setToDelete(null) });
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

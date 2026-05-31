@@ -198,6 +198,25 @@ export function useSetCampaignStatus() {
   });
 }
 
+export function useDeleteCampaign() {
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("dialer_campaigns")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Campanha excluída");
+      qc.invalidateQueries({ queryKey: ["dialer-campaigns", current?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export async function fetchNextLead(campaignId: string): Promise<DialerQueueItem | null> {
   const { data, error } = await (supabase as any).rpc("dialer_next_lead", { p_campaign_id: campaignId });
   if (error) throw error;
