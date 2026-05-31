@@ -116,6 +116,8 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
   const [testing, setTesting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const upsert = useUpsertIntegrationConnection();
+  const { data: oauthMeta } = useOAuthAppMetadata(props.slug);
+  const oauthReady = !!(oauthMeta?.has_secret && oauthMeta?.client_id);
 
   async function testConnection() {
     if (!token) return toast.error("Informe o token");
@@ -132,6 +134,15 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
     }
   }
 
+  function focusCredentialsCard() {
+    const el = document.getElementById("oauth-credentials-card");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-violet-500");
+      setTimeout(() => el.classList.remove("ring-2", "ring-violet-500"), 2000);
+    }
+  }
+
   async function startOAuth() {
     setConnecting(true);
     try {
@@ -139,12 +150,24 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
         body: { redirect_to: window.location.href },
       });
       if (error) throw error;
-      const url = (data as any)?.authorize_url ?? (data as any)?.url;
+      const payload = data as any;
+      if (payload?.ok === false && payload?.error === "oauth_app_not_configured") {
+        toast.error("Cadastre as credenciais OAuth antes de conectar.");
+        focusCredentialsCard();
+        return;
+      }
+      const url = payload?.authorize_url ?? payload?.url;
       if (!url) throw new Error("URL OAuth não retornada");
       window.open(url, "_blank", "width=600,height=700");
       toast.message("Conclua a autorização na janela aberta.");
     } catch (e: any) {
-      toast.error(e.message ?? "Falha ao iniciar OAuth");
+      const msg = e?.message ?? "Falha ao iniciar OAuth";
+      if (String(msg).includes("oauth_app_not_configured")) {
+        toast.error("Cadastre as credenciais OAuth antes de conectar.");
+        focusCredentialsCard();
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setConnecting(false);
     }
