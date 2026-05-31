@@ -42,6 +42,7 @@ import {
   Shield,
   PlusCircle,
   Send,
+  Flame,
 } from "lucide-react";
 import {
   Sidebar,
