@@ -16,6 +16,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ChevronRight, ExternalLink, Loader2, Plug, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { OAuthAppCredentialsCard } from "@/features/integrations/OAuthAppCredentialsCard";
+import { useOAuthAppMetadata } from "@/hooks/useOAuthApps";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import {
   useIntegrationConnection,
