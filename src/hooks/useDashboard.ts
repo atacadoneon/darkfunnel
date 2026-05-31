@@ -241,3 +241,90 @@ export function useGoalsProgress(_filters: DashboardFilters) {
   });
 }
 
+
+/* ---------- Leads daily 30d ---------- */
+export type LeadsDaily = { workspace_id: string; day: string; leads_count: number };
+export function useLeadsDaily30d(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_leads_daily_30d", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<LeadsDaily[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_leads_daily_30d" as any)
+        .select("*")
+        .eq("workspace_id", current!.id)
+        .order("day");
+      if (error) throw error;
+      return ((data as any[]) ?? []) as LeadsDaily[];
+    },
+  });
+}
+
+/* ---------- Chats accumulated 7d ---------- */
+export type ChatsAccumulated = { workspace_id: string; day: string; accumulated_count: number };
+export function useChatsAccumulated7d(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_chats_accumulated_7d", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<ChatsAccumulated[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_chats_accumulated_7d" as any)
+        .select("*")
+        .eq("workspace_id", current!.id)
+        .order("day");
+      if (error) throw error;
+      return ((data as any[]) ?? []) as ChatsAccumulated[];
+    },
+  });
+}
+
+/* ---------- Messages daily 7d ---------- */
+export type MessagesDaily = { workspace_id: string; day: string; sent_count: number; received_count: number };
+export function useMessagesDaily7d(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_messages_daily_7d", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<MessagesDaily[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_messages_daily_7d" as any)
+        .select("*")
+        .eq("workspace_id", current!.id)
+        .order("day");
+      if (error) throw error;
+      return ((data as any[]) ?? []) as MessagesDaily[];
+    },
+  });
+}
+
+/* ---------- Service time 7d ---------- */
+export type ServiceTime = {
+  workspace_id: string;
+  day: string;
+  open_avg_minutes: number | null;
+  in_progress_avg_hours: number | null;
+  waiting_avg_hours: number | null;
+  resolved_avg_days: number | null;
+};
+export function useServiceTime7d(_filters: DashboardFilters) {
+  const { current } = useWorkspace();
+  return useQuery({
+    queryKey: ["dashboard_service_time_7d", current?.id],
+    enabled: !!current?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<ServiceTime[]> => {
+      const { data, error } = await supabase
+        .from("dashboard_service_time_7d" as any)
+        .select("*")
+        .eq("workspace_id", current!.id)
+        .order("day");
+      if (error) throw error;
+      return ((data as any[]) ?? []) as ServiceTime[];
+    },
+  });
+}
