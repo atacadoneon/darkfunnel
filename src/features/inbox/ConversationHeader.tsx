@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SellerSelect } from "@/components/sellers/SellerSelect";
 import { useInvokableFlows, useInvokeFlowManually } from "@/hooks/useFlow";
-import { useAssignConversation, useContactDeal as _unused } from "./inboxFeatureHooks";
+import { useAssignConversation } from "./inboxFeatureHooks";
 import { toast } from "sonner";
 import { CallButton } from "@/features/voice/CallButton";
 import { Button } from "@/components/ui/button";
