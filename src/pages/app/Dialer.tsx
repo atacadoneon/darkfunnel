@@ -46,8 +46,11 @@ export default function Dialer() {
   const { data: campaigns = [] } = useCampaigns();
   const { user } = useAuth();
   const setStatus = useSetCampaignStatus();
+  const deleteCampaign = useDeleteCampaign();
+  const canDelete = usePermission("dialer.campaign_delete");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [showNew, setShowNew] = useState(false);
+  const [toDelete, setToDelete] = useState<DialerCampaign | null>(null);
 
   const filtered = useMemo(() => {
     return campaigns.filter((c) => {
