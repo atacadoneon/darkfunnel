@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Globe, MessageCircle, Bell, Pencil, MoreHorizontal, User, ExternalLink } from "lucide-react";
 import { formatMoney, type Deal } from "./hooks";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ConversationPopup } from "@/features/inbox/ConversationPopup";
 import { CallButton } from "@/features/voice/CallButton";
 import { LeadEditDialog } from "./LeadEditDialog";
+import { useDealSelection } from "./selection";
 
 type Props = {
   deal: Deal & { last_interaction_at?: string | null; has_proposal?: boolean; origin_id?: string | null };
@@ -38,6 +40,9 @@ export function DealCard({ deal, onClick, overlay }: Props) {
   const { data: members = [] } = useWorkspaceMembers();
   const [chatOpen, setChatOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const sel = useDealSelection();
+  const selected = sel.isSelected(deal.id);
+  const anySelected = sel.size > 0;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: deal.id, data: { type: "deal", deal } });
 
@@ -59,11 +64,22 @@ export function DealCard({ deal, onClick, overlay }: Props) {
       {...attributes}
       {...listeners}
       className={cn(
-        "p-3 cursor-pointer hover:border-primary/50 transition-colors space-y-2 bg-card",
+        "group p-3 cursor-pointer hover:border-primary/50 transition-colors space-y-2 bg-card relative",
         isDragging && "opacity-40",
-        overlay && "shadow-lg ring-2 ring-primary"
+        overlay && "shadow-lg ring-2 ring-primary",
+        selected && "ring-2 ring-primary"
       )}
     >
+      <div
+        className={cn(
+          "absolute top-2 right-2 z-10 transition-opacity",
+          selected || anySelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); sel.toggle(deal.id); }}
+      >
+        <Checkbox checked={selected} className="bg-background" />
+      </div>
       <div className="flex items-start gap-2">
         <h4 className="font-semibold text-sm flex-1 truncate">{contactLabel}</h4>
         <div className="flex items-center gap-1 shrink-0" onPointerDown={(e) => e.stopPropagation()}>
