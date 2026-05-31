@@ -50,6 +50,7 @@ export function CommercialView() {
   const { data: summary, isLoading: ls } = useCommercialSummary(filters);
   const { data: ads, isLoading: la } = useAdsRoi(filters);
   const { data: commissions, isLoading: lc } = usePaymentsCommissions();
+  const { data: leadsDaily, isLoading: ll } = useLeadsDaily30d(filters);
 
   const loading = ls || la;
 
