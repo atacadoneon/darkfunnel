@@ -156,6 +156,9 @@ const App = () => (
                     <Route path="automacoes" element={<AutomacoesPage />} />
                     <Route path="automacoes/:id" element={<AutomacaoEditorPage />} />
                     <Route path="automations" element={<AutomacoesPage />} />
+                    <Route path="broadcasts" element={<BroadcastsPage />} />
+                    <Route path="broadcasts/novo" element={<BroadcastEditor />} />
+                    <Route path="broadcasts/:id" element={<BroadcastEditor />} />
                     
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
