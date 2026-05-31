@@ -55,11 +55,30 @@ export default function IntegracoesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {filtered.map((it) => {
             const conn = isConnected(it.id);
+            const isTiny = it.slug === "tiny_erp";
             return (
               <Card key={it.id} className="p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between">
                   <div className="h-10 w-10 rounded-md bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
                     {it.icon_url ? <img src={it.icon_url} alt={it.name} className="h-8 w-8" /> : <Plug className="h-5 w-5 text-violet-600" />}
+                  </div>
+                  {conn && <Badge className="bg-emerald-600 hover:bg-emerald-600">Conectado</Badge>}
+                </div>
+                <div>
+                  <h3 className="font-semibold">{it.name}</h3>
+                  <p className="text-xs text-muted-foreground">{it.category}</p>
+                </div>
+                <p className="text-sm text-muted-foreground flex-1 line-clamp-3">{it.description}</p>
+                {isTiny ? (
+                  <Button
+                    disabled={!canEdit}
+                    onClick={() => navigate("/settings/integracoes/tiny")}
+                    className={conn ? "" : "bg-violet-600 hover:bg-violet-700 text-white"}
+                    variant={conn ? "outline" : "default"}
+                  >
+                    {conn ? "Configurar" : "Conectar"}
+                  </Button>
+                ) : conn ? (
                   </div>
                   {conn && <Badge className="bg-emerald-600 hover:bg-emerald-600">Conectado</Badge>}
                 </div>
