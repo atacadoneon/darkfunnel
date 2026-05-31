@@ -16,6 +16,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ChevronRight, ExternalLink, Loader2, Plug, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { OAuthAppCredentialsCard } from "@/features/integrations/OAuthAppCredentialsCard";
+import { useOAuthAppMetadata } from "@/hooks/useOAuthApps";
 import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
 import {
   useIntegrationConnection,
@@ -113,6 +116,8 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
   const [testing, setTesting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const upsert = useUpsertIntegrationConnection();
+  const { data: oauthMeta } = useOAuthAppMetadata(props.slug);
+  const oauthReady = !!(oauthMeta?.has_secret && oauthMeta?.client_id);
 
   async function testConnection() {
     if (!token) return toast.error("Informe o token");
@@ -129,6 +134,15 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
     }
   }
 
+  function focusCredentialsCard() {
+    const el = document.getElementById("oauth-credentials-card");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-violet-500");
+      setTimeout(() => el.classList.remove("ring-2", "ring-violet-500"), 2000);
+    }
+  }
+
   async function startOAuth() {
     setConnecting(true);
     try {
@@ -136,12 +150,24 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
         body: { redirect_to: window.location.href },
       });
       if (error) throw error;
-      const url = (data as any)?.authorize_url ?? (data as any)?.url;
+      const payload = data as any;
+      if (payload?.ok === false && payload?.error === "oauth_app_not_configured") {
+        toast.error("Cadastre as credenciais OAuth antes de conectar.");
+        focusCredentialsCard();
+        return;
+      }
+      const url = payload?.authorize_url ?? payload?.url;
       if (!url) throw new Error("URL OAuth não retornada");
       window.open(url, "_blank", "width=600,height=700");
       toast.message("Conclua a autorização na janela aberta.");
     } catch (e: any) {
-      toast.error(e.message ?? "Falha ao iniciar OAuth");
+      const msg = e?.message ?? "Falha ao iniciar OAuth";
+      if (String(msg).includes("oauth_app_not_configured")) {
+        toast.error("Cadastre as credenciais OAuth antes de conectar.");
+        focusCredentialsCard();
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setConnecting(false);
     }
@@ -149,78 +175,112 @@ function ConexaoTab({ conn, props }: { conn: any; props: IntegrationShellProps }
 
   const isV3Connected = conn?.provider_version === "v3" && conn?.status === "active";
 
-  return (
-    <Card className="p-6 space-y-4 max-w-2xl">
-      <div className="space-y-2">
-        <Label>Versão da API</Label>
-        <Select value={version} onValueChange={setVersion}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {props.supportsV2 && <SelectItem value="v2">v2 (Token API)</SelectItem>}
-            <SelectItem value="v3">v3 (OAuth 2.0)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+  const showV3 = !(version === "v2" && props.supportsV2);
+  const connectBtn = (
+    <Button
+      onClick={startOAuth}
+      disabled={connecting || !oauthReady}
+      className="bg-violet-600 hover:bg-violet-700 text-white"
+    >
+      {connecting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+      Conectar com {props.name}
+    </Button>
+  );
+  const reconnectBtn = (
+    <Button variant="outline" onClick={startOAuth} disabled={connecting || !oauthReady}>
+      {connecting && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Reconectar
+    </Button>
+  );
 
-      {version === "v2" && props.supportsV2 ? (
-        <>
-          <div className="space-y-2">
-            <Label>Token de API</Label>
-            <Input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="cole aqui o token" />
-            <a href={props.v2HelpUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-600 inline-flex items-center gap-1">
-              Como obter o token <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={testConnection} disabled={testing}>
-              {testing && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Testar conexão
-            </Button>
-            <Button
-              onClick={() => upsert.mutate({
-                integration_slug: props.slug,
-                provider_version: "v2",
-                credentials_jsonb: { ...(conn?.credentials_jsonb ?? {}), api_token: token },
-                status: "active",
-              })}
-              disabled={upsert.isPending}
-              className="bg-violet-600 hover:bg-violet-700 text-white"
-            >
-              {upsert.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
-            </Button>
-          </div>
-        </>
-      ) : (
-        <div className="space-y-3">
-          {isV3Connected ? (
-            <>
-              <div className="rounded-md border p-3 text-sm">
-                <div className="font-medium">Conta conectada</div>
-                <div className="text-xs text-muted-foreground">{conn?.credentials_jsonb?.account_name ?? "Conta OAuth ativa"}</div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={startOAuth} disabled={connecting}>
-                  {connecting && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Reconectar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => upsert.mutate({ integration_slug: props.slug, status: "disconnected" })}
-                >
-                  Desconectar
-                </Button>
-              </div>
-            </>
-          ) : (
-            <Button onClick={startOAuth} disabled={connecting} className="bg-violet-600 hover:bg-violet-700 text-white">
-              {connecting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Conectar com {props.name}
-            </Button>
-          )}
-          <a href={props.v2HelpUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-600 inline-flex items-center gap-1">
-            Documentação OAuth <ExternalLink className="h-3 w-3" />
-          </a>
+  return (
+    <div className="space-y-4">
+      <Card className="p-6 space-y-4 max-w-2xl">
+        <div className="space-y-2">
+          <Label>Versão da API</Label>
+          <Select value={version} onValueChange={setVersion}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {props.supportsV2 && <SelectItem value="v2">v2 (Token API)</SelectItem>}
+              <SelectItem value="v3">v3 (OAuth 2.0)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {!showV3 ? (
+          <>
+            <div className="space-y-2">
+              <Label>Token de API</Label>
+              <Input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="cole aqui o token" />
+              <a href={props.v2HelpUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-600 inline-flex items-center gap-1">
+                Como obter o token <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={testConnection} disabled={testing}>
+                {testing && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Testar conexão
+              </Button>
+              <Button
+                onClick={() => upsert.mutate({
+                  integration_slug: props.slug,
+                  provider_version: "v2",
+                  credentials_jsonb: { ...(conn?.credentials_jsonb ?? {}), api_token: token },
+                  status: "active",
+                })}
+                disabled={upsert.isPending}
+                className="bg-violet-600 hover:bg-violet-700 text-white"
+              >
+                {upsert.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Salvar
+              </Button>
+            </div>
+          </>
+        ) : null}
+      </Card>
+
+      {showV3 && (
+        <>
+          <OAuthAppCredentialsCard slug={props.slug} />
+
+          <Card className="p-6 space-y-3 max-w-2xl">
+            {isV3Connected ? (
+              <>
+                <div className="rounded-md border p-3 text-sm">
+                  <div className="font-medium">Conta conectada</div>
+                  <div className="text-xs text-muted-foreground">
+                    {conn?.credentials_jsonb?.account_name ?? "Conta OAuth ativa"}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {!oauthReady ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild><span>{reconnectBtn}</span></TooltipTrigger>
+                        <TooltipContent>Cadastre as credenciais antes de conectar</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : reconnectBtn}
+                  <Button
+                    variant="outline"
+                    onClick={() => upsert.mutate({ integration_slug: props.slug, status: "disconnected" })}
+                  >
+                    Desconectar
+                  </Button>
+                </div>
+              </>
+            ) : !oauthReady ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild><span>{connectBtn}</span></TooltipTrigger>
+                  <TooltipContent>Cadastre as credenciais antes de conectar</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : connectBtn}
+            <a href={props.v2HelpUrl} target="_blank" rel="noreferrer" className="text-xs text-violet-600 inline-flex items-center gap-1">
+              Documentação OAuth <ExternalLink className="h-3 w-3" />
+            </a>
+          </Card>
+        </>
       )}
-    </Card>
+    </div>
   );
 }
 
