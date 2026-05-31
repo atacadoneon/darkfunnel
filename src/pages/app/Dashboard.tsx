@@ -70,10 +70,10 @@ export default function Dashboard() {
           <DashboardFiltersBar />
 
           <TabsContent value="comercial" className="mt-0"><CommercialView /></TabsContent>
-          <TabsContent value="atendimento" className="mt-0"><ComingSoon title="Atendimento (SLA)" /></TabsContent>
-          <TabsContent value="trafego" className="mt-0"><ComingSoon title="Tráfego Pago" /></TabsContent>
-          <TabsContent value="funil" className="mt-0"><ComingSoon title="Funil" /></TabsContent>
-          <TabsContent value="metas" className="mt-0"><ComingSoon title="Metas" /></TabsContent>
+          <TabsContent value="atendimento" className="mt-0"><AtendimentoView /></TabsContent>
+          <TabsContent value="trafego" className="mt-0"><TrafegoView /></TabsContent>
+          <TabsContent value="funil" className="mt-0"><FunilView /></TabsContent>
+          <TabsContent value="metas" className="mt-0"><MetasView /></TabsContent>
           <TabsContent value="personalizado" className="mt-0"><ComingSoon title="Personalizado" /></TabsContent>
         </Tabs>
       </div>
