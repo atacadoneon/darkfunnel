@@ -75,6 +75,8 @@ import ArmazenamentoPage from "@/pages/settings/ArmazenamentoPage";
 import PlaybooksListPage from "@/pages/playbook/PlaybooksListPage";
 import PlaybookEditorPage from "@/pages/playbook/PlaybookEditorPage";
 import PlaybookRunsPage from "@/pages/playbook/PlaybookRunsPage";
+import BroadcastsPage from "@/pages/app/BroadcastsPage";
+import BroadcastEditor from "@/pages/app/BroadcastEditor";
 // DEBUG-221: removido useUserPresence (gravava em workspace_user_presence).
 // Presence canônica vive em usePresenceHeartbeat (tabela user_presence), montado no AppLayout.
 
@@ -154,6 +156,9 @@ const App = () => (
                     <Route path="automacoes" element={<AutomacoesPage />} />
                     <Route path="automacoes/:id" element={<AutomacaoEditorPage />} />
                     <Route path="automations" element={<AutomacoesPage />} />
+                    <Route path="broadcasts" element={<BroadcastsPage />} />
+                    <Route path="broadcasts/novo" element={<BroadcastEditor />} />
+                    <Route path="broadcasts/:id" element={<BroadcastEditor />} />
                     
                     <Route path="prospeccao" element={<Prospeccao />} />
                     <Route path="equipe-online" element={<EquipeOnline />} />
