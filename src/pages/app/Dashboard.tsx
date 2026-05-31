@@ -9,6 +9,7 @@ import { AtendimentoView } from "@/features/dashboard/AtendimentoView";
 import { TrafegoView } from "@/features/dashboard/TrafegoView";
 import { FunilView } from "@/features/dashboard/FunilView";
 import { MetasView } from "@/features/dashboard/MetasView";
+import { PersonalizadoView } from "@/features/dashboard/PersonalizadoView";
 
 const TABS = [
   { value: "comercial", label: "Comercial", icon: TrendingUp },
@@ -74,7 +75,7 @@ export default function Dashboard() {
           <TabsContent value="trafego" className="mt-0"><TrafegoView /></TabsContent>
           <TabsContent value="funil" className="mt-0"><FunilView /></TabsContent>
           <TabsContent value="metas" className="mt-0"><MetasView /></TabsContent>
-          <TabsContent value="personalizado" className="mt-0"><ComingSoon title="Personalizado" /></TabsContent>
+          <TabsContent value="personalizado" className="mt-0"><PersonalizadoView /></TabsContent>
         </Tabs>
       </div>
     </DashboardFiltersProvider>
