@@ -41,6 +41,7 @@ import {
   Database,
   Shield,
   PlusCircle,
+  Send,
 } from "lucide-react";
 import {
   Sidebar,
