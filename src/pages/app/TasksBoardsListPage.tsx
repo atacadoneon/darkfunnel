@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Archive, MoreHorizontal, Copy, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Archive, MoreHorizontal, Copy, Pencil, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -65,6 +65,7 @@ export default function TasksBoardsListPage() {
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
+          icon={LayoutGrid}
           title="Nenhum quadro ainda"
           description="Crie seu primeiro quadro para organizar suas tarefas"
           action={<Button onClick={() => setOpenNew(true)}><Plus className="h-4 w-4 mr-2" /> Criar primeiro quadro</Button>}
