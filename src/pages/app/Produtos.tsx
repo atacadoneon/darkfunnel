@@ -539,7 +539,237 @@ export default function Produtos() {
         singular="produto exibido"
         plural="produtos exibidos"
       />
+
+      <CsvImportProductsDialog open={csvImportOpen} onOpenChange={setCsvImportOpen} />
+      <IntegrationImportDialog open={integrationImportOpen} onOpenChange={setIntegrationImportOpen} />
+
+      <style>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          .print\\:visible, .print\\:visible * { visibility: visible !important; }
+          table, table * { visibility: visible !important; }
+          table { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+      `}</style>
     </div>
+  );
+}
+
+function csvEscape(v: any): string {
+  const s = v == null ? "" : String(v);
+  if (/[",\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length === 0) return { headers: [], rows: [] };
+  const split = (l: string) => l.split(",").map((s) => s.trim().replace(/^"|"$/g, ""));
+  const headers = split(lines[0]).map((h) => h.toLowerCase());
+  const rows = lines.slice(1).map((l) => {
+    const vals = split(l);
+    const o: Record<string, string> = {};
+    headers.forEach((h, i) => (o[h] = vals[i] ?? ""));
+    return o;
+  });
+  return { headers, rows };
+}
+
+function exportProductsCsv(rows: Product[]) {
+  const header = ["nome", "sku", "preco", "unidade", "tipo", "estoque_fisico", "estoque_disponivel"];
+  const lines = [header.join(",")];
+  for (const p of rows) {
+    lines.push([
+      p.name ?? "",
+      p.sku ?? "",
+      ((p.price_cents ?? 0) / 100).toFixed(2),
+      p.unidade ?? "UN",
+      p.kind ?? "produto",
+      p.stock_qty ?? 0,
+      p.stock_qty ?? 0,
+    ].map(csvEscape).join(","));
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `produtos_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast({ title: `${rows.length} produto(s) exportado(s)` });
+}
+
+function CsvImportProductsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { current } = useWorkspace();
+  const qc = useQueryClient();
+  const [parsed, setParsed] = useState<{ headers: string[]; rows: Record<string, string>[] } | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  useEffect(() => { if (!open) setParsed(null); }, [open]);
+
+  const onFile = async (f: File | null) => {
+    if (!f) { setParsed(null); return; }
+    const text = await f.text();
+    setParsed(parseCsv(text));
+  };
+
+  const doImport = async () => {
+    if (!parsed || !current) return;
+    setImporting(true);
+    try {
+      const rows = parsed.rows.map((r) => {
+        const priceRaw = r["price"] || r["preco"] || "0";
+        const priceCents = /[.,]/.test(priceRaw)
+          ? Math.round(parseFloat(priceRaw.replace(/\./g, "").replace(",", ".")) * 100)
+          : (parseInt(priceRaw, 10) || 0);
+        return {
+          workspace_id: current.id,
+          name: r["name"] || r["nome"] || null,
+          sku: r["sku"] || null,
+          price_cents: priceCents,
+          unidade: r["unidade"] || "UN",
+          kind: r["kind"] || r["tipo"] || "produto",
+          status: "active",
+        };
+      }).filter((r) => r.name);
+      if (rows.length === 0) {
+        toast({ title: "Nenhuma linha válida" });
+        setImporting(false);
+        return;
+      }
+      const { error } = await (supabase as any).from("products").insert(rows);
+      if (error) throw error;
+      toast({ title: `${rows.length} produto(s) importado(s)` });
+      qc.invalidateQueries({ queryKey: ["products-infinite"] });
+      onOpenChange(false);
+    } catch (e: any) {
+      toast({ title: "Falha ao importar", description: e?.message });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Importar produtos via CSV</DialogTitle>
+          <DialogDescription>
+            Colunas suportadas: name, sku, price (R$ ou cents), unidade, kind (produto/servico/assinatura).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input type="file" accept=".csv,.xlsx" onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
+          {parsed && (
+            <div className="rounded border p-3 text-xs space-y-2 max-h-64 overflow-auto">
+              <div className="font-medium">
+                {parsed.rows.length} linha(s) — colunas: {parsed.headers.join(", ")}
+              </div>
+              {parsed.rows.slice(0, 5).map((r, i) => (
+                <div key={i} className="border-t pt-1 font-mono">
+                  {parsed.headers.map((h) => `${h}=${r[h]}`).join(" | ")}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            onClick={doImport}
+            disabled={!parsed || importing}
+            className="bg-violet-600 hover:bg-violet-700 text-white"
+          >
+            {importing ? "Importando..." : "Importar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function IntegrationImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const { current } = useWorkspace();
+  const [connections, setConnections] = useState<Array<{ id: string; slug: string; api_version: string | null; status: string }>>([]);
+  const [selected, setSelected] = useState<string>("");
+  const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    if (!open || !current) return;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("integration_connections")
+        .select("id,slug,api_version,status")
+        .eq("workspace_id", current.id)
+        .eq("status", "active")
+        .in("slug", ["tiny_erp", "bling", "olist"]);
+      setConnections((data ?? []) as any);
+      if (data?.[0]) setSelected(data[0].id);
+    })();
+  }, [open, current]);
+
+  const doImport = async () => {
+    const conn = connections.find((c) => c.id === selected);
+    if (!conn || !current) return;
+    setRunning(true);
+    try {
+      const fn = conn.slug === "bling"
+        ? "bling-v3-sync"
+        : conn.slug === "tiny_erp" && conn.api_version === "v2"
+          ? "tiny-v2-import"
+          : "tiny-v3-sync";
+      const { error } = await (supabase as any).functions.invoke(fn, {
+        body: { workspace_id: current.id, connection_id: conn.id, entity: "products" },
+      });
+      if (error) throw error;
+      toast({ title: "Importação iniciada — acompanhe nas integrações" });
+      onOpenChange(false);
+    } catch (e: any) {
+      toast({ title: "Falha ao iniciar importação", description: e?.message });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Importar produtos da integração</DialogTitle>
+          <DialogDescription>
+            Selecione uma integração ativa para iniciar a importação de produtos.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {connections.length === 0 ? (
+            <div className="text-sm text-muted-foreground p-4 text-center border rounded">
+              Nenhuma integração ativa. Configure uma em /settings/integracoes.
+            </div>
+          ) : (
+            <Select value={selected} onValueChange={setSelected}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {connections.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.slug} {c.api_version ? `(${c.api_version})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            onClick={doImport}
+            disabled={!selected || running}
+            className="bg-violet-600 hover:bg-violet-700 text-white"
+          >
+            {running ? "Iniciando..." : "Importar agora"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
