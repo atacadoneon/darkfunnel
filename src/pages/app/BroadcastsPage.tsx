@@ -82,7 +82,7 @@ export default function BroadcastsPage() {
           <div className="p-8 text-sm text-muted-foreground">Carregando...</div>
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon={<Send className="h-8 w-8 text-violet-500" />}
+            icon={Send}
             title="Nenhum disparo encontrado"
             description="Crie seu primeiro disparo em massa para começar."
             action={
