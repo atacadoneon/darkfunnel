@@ -60,6 +60,11 @@ export default function PropostaEditor() {
   const isNew = !id || id === "novo";
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const qsLead = searchParams.get("lead");
+  const qsDeal = searchParams.get("deal");
+  const [vendedorError, setVendedorError] = useState(false);
+
 
   const [form, setForm] = useState<any>({
     customer_name: "",
