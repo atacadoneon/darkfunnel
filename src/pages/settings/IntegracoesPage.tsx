@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ export default function IntegracoesPage() {
   const connect = useConnectIntegration();
   const disconnect = useDisconnectIntegration();
   const canEdit = useIsManagerOrAdmin();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<IntegrationCatalogItem | null>(null);
 
@@ -53,6 +55,7 @@ export default function IntegracoesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {filtered.map((it) => {
             const conn = isConnected(it.id);
+            const isTiny = it.slug === "tiny_erp";
             return (
               <Card key={it.id} className="p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between">
@@ -66,7 +69,16 @@ export default function IntegracoesPage() {
                   <p className="text-xs text-muted-foreground">{it.category}</p>
                 </div>
                 <p className="text-sm text-muted-foreground flex-1 line-clamp-3">{it.description}</p>
-                {conn ? (
+                {isTiny ? (
+                  <Button
+                    disabled={!canEdit}
+                    onClick={() => navigate("/settings/integracoes/tiny")}
+                    variant={conn ? "outline" : "default"}
+                    className={conn ? "" : "bg-violet-600 hover:bg-violet-700 text-white"}
+                  >
+                    {conn ? "Configurar" : "Conectar"}
+                  </Button>
+                ) : conn ? (
                   <Button variant="outline" disabled={!canEdit} onClick={() => disconnect.mutate(conn.id)}>Desconectar</Button>
                 ) : (
                   <Button disabled={!canEdit} onClick={() => setEditing(it)} className="bg-violet-600 hover:bg-violet-700 text-white">Conectar</Button>
@@ -76,6 +88,7 @@ export default function IntegracoesPage() {
           })}
         </div>
       )}
+
 
       <ConnectDialog item={editing} onClose={() => setEditing(null)} onSave={async (creds) => {
         if (!editing) return;
