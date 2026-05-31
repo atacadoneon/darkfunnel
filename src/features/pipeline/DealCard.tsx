@@ -124,10 +124,6 @@ export function DealCard({ deal, onClick, overlay }: Props) {
         </div>
       )}
 
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-        Última interação {lastAgo || "—"}
-      </div>
 
       <div className="flex items-center gap-1.5 text-xs">
         <User className="h-3 w-3 text-muted-foreground" />
